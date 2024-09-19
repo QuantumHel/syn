@@ -37,14 +37,12 @@ impl PauliString{
         PauliString::new(x, z)
     }
 
-    pub(super) fn s(mut self) -> Self {
+    pub(super) fn s(&mut self) {
         self.x ^= &self.z;
-        self
     }
     
-    pub(super) fn v(mut self) -> Self {
+    pub(super) fn v(&mut self) {
         self.z ^= &self.x;
-        self
     }
 
     pub(super) fn y_bitmask(self) -> BitVec{
@@ -54,9 +52,8 @@ impl PauliString{
 }
 
 
-pub(super) fn cx(mut control: PauliString, mut target: PauliString) -> (PauliString, PauliString){
+pub(super) fn cx(control: &mut PauliString, target: &mut PauliString){
     assert!(control.len() == target.len());
     target.x ^= &control.x;
     control.z ^= &target.z;
-    (control, target)
 }

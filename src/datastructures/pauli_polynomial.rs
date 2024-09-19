@@ -1,12 +1,12 @@
-use std::{borrow::BorrowMut, cell::RefCell, rc::Rc};
+use std::{borrow::{Borrow, BorrowMut}, cell::RefCell, rc::Rc};
 
 use super::{pauli_string::{cx, PauliString}, PropagateClifford};
 
+// todo: Make this into a union / type Angle
 type Angle = f64;
 
 pub struct PauliPolynomial{
-    chains: Vec<Rc<RefCell<PauliString>>>,
-    // todo: Make this into a union / type Angle
+    chains: Vec<PauliString>,
     angles: Vec<Angle>
 }
 
@@ -25,7 +25,7 @@ impl PauliPolynomial{
         }
         let mut chains =  Vec::new();
         for chain_string in chain_strings.into_iter(){
-            chains.push(Rc::new(RefCell::new(PauliString::from_text_string(String::from_iter(chain_string.iter())))));
+            chains.push(PauliString::from_text_string(String::from_iter(chain_string.iter())));
         }
         PauliPolynomial{
             chains,
@@ -36,29 +36,42 @@ impl PauliPolynomial{
 
 impl PropagateClifford for PauliPolynomial{
     fn cx(&mut self, control: super::IndexType, target: super::IndexType) -> &mut Self {
-        cx(self.chains[control].borrow().clone(), self.chains[target].borrow().clone());
+        match control < target {
+            true => {
+                let split = self.chains.split_at_mut(target); 
+                cx(split.1.get_mut(0).unwrap(), split.0.get_mut(control).unwrap())
+            },
+            false => {
+                let split = self.chains.split_at_mut(control);
+                cx(split.0.get_mut(target).unwrap(), split.1.get_mut(0).unwrap())
+            },
+        };
         self
     }
 
     fn s(&mut self, target: super::IndexType) -> &mut Self {
-        self.chains[target].borrow().clone().s();
+        let chains_target = self.chains.get_mut(target).unwrap();
+        chains_target.s();
+
         // Update angles
-        let y_vec = self.chains[target].borrow().clone().y_bitmask();
+        let y_vec =  chains_target.to_owned().y_bitmask();
         let _ = self.angles.iter_mut().enumerate().map(|(i, a)| match y_vec[i]{
-            true => -1.0 * *a,
-            false => *a,
+            true => *a *= -1.0,
+            false => (),
         });
         self
     }
 
     fn v(&mut self, target: super::IndexType) -> &mut Self {
+        let chains_target = self.chains.get_mut(target).unwrap();
+
         // Update angles
-        let y_vec = self.chains[target].borrow().clone().y_bitmask();
+        let y_vec =  chains_target.to_owned().y_bitmask();
         let _ = self.angles.iter_mut().enumerate().map(|(i, a)| match y_vec[i]{
-            true => -1.0 * *a,
-            false => *a,
+            true => *a *= -1.0,
+            false => (),
         });
-        self.chains[target].borrow().clone().v();
+        chains_target.s();
         self
     }
 
