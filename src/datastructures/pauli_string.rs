@@ -16,6 +16,22 @@ impl PauliString{
             z: pauli_z
         }
     }
+
+    pub fn from_basis_int(i: usize, len: usize) ->Self{
+        assert!(len>i);
+        let mut x = BitVec::new();
+        let mut z = BitVec::new();
+        for j in 0..len{
+            x.push(i==j);
+            z.push(false);
+        }
+        for j in 0..len{
+            x.push(false);
+            z.push(i==j);
+        }
+        PauliString::new(x, z)
+    }
+
     pub fn len(&self) -> usize{
         self.x.len()
     }
