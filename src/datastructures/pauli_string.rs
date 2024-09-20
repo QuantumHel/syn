@@ -1,6 +1,5 @@
 use bitvec::prelude::BitVec;
 
-type PauliBit = u8;
 #[derive(Clone)]
 pub(super) struct PauliString{
     pub(super) x: BitVec,
