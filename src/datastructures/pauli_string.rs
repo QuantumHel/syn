@@ -1,74 +1,131 @@
 use bitvec::prelude::BitVec;
 
 #[derive(Clone)]
-pub(super) struct PauliString{
+pub(super) struct PauliString {
     pub(super) x: BitVec,
     pub(super) z: BitVec,
 }
 
 // type PauliString = Vec<PauliBit>;
-impl PauliString{
-    pub fn new(pauli_x: BitVec, pauli_z: BitVec) -> Self{
+impl PauliString {
+    /// Constructor for PauliString
+    pub fn new(pauli_x: BitVec, pauli_z: BitVec) -> Self {
         assert!(pauli_x.len() == pauli_z.len());
-        PauliString{ 
+        PauliString {
             x: pauli_x,
-            z: pauli_z
+            z: pauli_z,
         }
     }
 
-    pub fn from_basis_int(i: usize, len: usize) ->Self{
-        assert!(len>i);
-        let mut x = BitVec::new();
-        let mut z = BitVec::new();
-        for j in 0..len{
-            x.push(i==j);
-            z.push(false);
-        }
-        for j in 0..len{
-            x.push(false);
-            z.push(i==j);
-        }
+    /// Construct identity PauliString for position `i`
+    pub fn from_basis_int(i: usize, length: usize) -> Self {
+        assert!(length > i);
+        let mut x = BitVec::repeat(false, 2 * length);
+        let mut z = BitVec::repeat(false, 2 * length);
+        let _ = x.replace(i, true);
+        let _ = z.replace(i + length, true);
         PauliString::new(x, z)
     }
 
-    pub fn len(&self) -> usize{
+    pub fn len(&self) -> usize {
         self.x.len()
     }
 
-    pub fn from_text_string(mut pauli: String) -> Self{
-        let mut x = BitVec::new();
-        let mut z = BitVec::new();
-        while !pauli.is_empty(){
-            let (x_bit, z_bit) = match pauli.pop().unwrap(){
-                'I' => (false, false),
-                'X' => (true, false),
-                'Y' => (true, true),
-                'Z' => (false, true),
-                _ => panic!("Letter not recognized"),
-            };
-            x.push(x_bit);
-            z.push(z_bit);
-        }
+    /// Takes in a String containing "I"
+    pub fn from_text_string(mut pauli: String) -> Self {
+        let (x, z): (BitVec, BitVec) = pauli
+            .chars()
+            .map(|pauli_char| {
+                let (x, z) = match pauli_char {
+                    'I' => (false, false),
+                    'X' => (true, false),
+                    'Y' => (true, true),
+                    'Z' => (false, true),
+                    _ => panic!("Letter not recognized"),
+                };
+                (x, z)
+            })
+            .collect();
+
         PauliString::new(x, z)
     }
 
     pub(super) fn s(&mut self) {
         self.x ^= &self.z;
     }
-    
+
     pub(super) fn v(&mut self) {
         self.z ^= &self.x;
     }
 
-    pub(super) fn y_bitmask(self) -> BitVec{
+    pub(super) fn y_bitmask(self) -> BitVec {
         self.x & self.z
     }
-
 }
 
-
-pub(super) fn cx(control: &mut PauliString, target: &mut PauliString){
+pub(super) fn cx(control: &mut PauliString, target: &mut PauliString) {
     assert!(control.len() == target.len());
     target.x ^= &control.x;
     control.z ^= &target.z;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bitvec::bitvec;
+    use bitvec::prelude::Lsb0;
+
+    #[test]
+    fn test_from_basis_int() {
+        let i = 3;
+        let length = 5;
+
+        let paulivec = PauliString::from_basis_int(i, length);
+        assert!(paulivec.x.get(i).unwrap());
+        assert!(paulivec.z.get(i + length).unwrap());
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_from_basis_int_oversized_i() {
+        let i = 5;
+        let length = 3;
+        PauliString::from_basis_int(i, length);
+    }
+
+    #[test]
+    fn test_from_text_string() {
+        let pauli_string = String::from("IXYZ");
+        let paulivec = PauliString::from_text_string(pauli_string);
+        let x_ref = bitvec![0, 1, 1, 0];
+        let z_ref = bitvec![0, 0, 1, 1];
+        assert!(paulivec.x == x_ref);
+        assert!(paulivec.z == z_ref);
+    }
+
+    #[test]
+    fn test_s() {
+        let mut paulivec = PauliString::from_text_string(String::from("IXYZ"));
+        paulivec.s();
+        let paulivec_ref = PauliString::from_text_string(String::from("IXZY"));
+        assert!(paulivec.x == paulivec_ref.x);
+        assert!(paulivec.z == paulivec_ref.z);
+    }
+
+    #[test]
+    fn test_v() {
+        let mut paulivec = PauliString::from_text_string(String::from("IXYZ"));
+        paulivec.v();
+        let paulivec_ref = PauliString::from_text_string(String::from("IYXZ"));
+        assert!(paulivec.x == paulivec_ref.x);
+        assert!(paulivec.z == paulivec_ref.z);
+    }
+
+    #[test]
+    fn test_y_bitmask() {
+        let paulivec = PauliString::from_text_string(String::from("IYXYZY"));
+        let y_bitmask = paulivec.y_bitmask();
+        let y_bitmask_ref = bitvec![0, 1, 0, 1, 0, 1];
+        assert_eq!(y_bitmask, y_bitmask_ref);
+    }
 }
