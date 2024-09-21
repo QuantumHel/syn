@@ -53,8 +53,10 @@ impl PauliString {
         self.z ^= &self.x;
     }
 
-    pub(super) fn y_bitmask(self) -> BitVec {
-        self.x & self.z
+    pub(super) fn y_bitmask(&self) -> BitVec {
+        let mut mask = self.x.clone();
+        mask &= &self.z;
+        mask
     }
 }
 
