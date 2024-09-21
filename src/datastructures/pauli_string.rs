@@ -45,6 +45,10 @@ impl PauliString {
         PauliString::new(x, z)
     }
 
+    pub fn len(&self) -> usize {
+        self.x.len()
+    }
+
     pub(super) fn s(&mut self) {
         self.x ^= &self.z;
     }
