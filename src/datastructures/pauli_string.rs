@@ -21,13 +21,9 @@ impl PauliString {
         assert!(length > i);
         let mut x = BitVec::repeat(false, 2 * length);
         let mut z = BitVec::repeat(false, 2 * length);
-        let _ = x.replace(i, true);
-        let _ = z.replace(i + length, true);
+        x.set(i, true);
+        z.set(i + length, true);
         PauliString::new(x, z)
-    }
-
-    pub fn len(&self) -> usize {
-        self.x.len()
     }
 
     /// Takes in a String containing "I"
