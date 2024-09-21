@@ -27,7 +27,7 @@ impl PauliString {
     }
 
     /// Takes in a String containing "I"
-    pub fn from_text_string(mut pauli: String) -> Self {
+    pub fn from_text_string(pauli: String) -> Self {
         let (x, z): (BitVec, BitVec) = pauli
             .chars()
             .map(|pauli_char| {
