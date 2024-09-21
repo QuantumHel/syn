@@ -1,12 +1,11 @@
 use bitvec::prelude::BitVec;
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub(super) struct PauliString {
     pub(super) x: BitVec,
     pub(super) z: BitVec,
 }
 
-// type PauliString = Vec<PauliBit>;
 impl PauliString {
     /// Constructor for PauliString
     pub fn new(pauli_x: BitVec, pauli_z: BitVec) -> Self {
