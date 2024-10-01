@@ -43,8 +43,13 @@ impl PropagateClifford for CliffordTableau {
     fn cx(&mut self, control: IndexType, target: IndexType) -> &mut Self {
         let n = self.size();
         let [control, target] = self.pauli_columns.get_many_mut([control, target]).unwrap();
-        self.signs ^= (control.x.clone() & target.z.clone())
-            & (control.z.clone() ^ target.x.clone() ^ BitVec::repeat(true, 2 * n));
+        let mut scratch = BitVec::repeat(true, 2 * n);
+        scratch ^= &target.x;
+        scratch ^= &control.z;
+        scratch &= &control.x;
+        scratch &= &target.z;
+        self.signs ^= scratch;
+
         cx(control, target);
         self
     }
