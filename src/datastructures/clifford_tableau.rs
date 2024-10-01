@@ -37,17 +37,17 @@ impl PropagateClifford for CliffordTableau {
         self
     }
 
-    fn s(&mut self, target: super::IndexType) -> &mut Self {
+    fn s(&mut self, target: IndexType) -> &mut Self {
         let chains_target = self.stabilizers.get_mut(target).unwrap();
         chains_target.s();
         // Defined for Phase gate in https://arxiv.org/pdf/quant-ph/0406196
-        self.x_signs ^= chains_target.to_owned().y_bitmask();
+        self.x_signs ^= chains_target.y_bitmask();
         self
     }
 
-    fn v(&mut self, target: super::IndexType) -> &mut Self {
+    fn v(&mut self, target: IndexType) -> &mut Self {
         let chains_target = self.stabilizers.get_mut(target).unwrap();
-        self.z_signs ^= chains_target.to_owned().y_bitmask();
+        self.z_signs ^= chains_target.y_bitmask();
         // TODO Double check if this works as intended.
         chains_target.s();
         self
