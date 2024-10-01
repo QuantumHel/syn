@@ -73,6 +73,7 @@ mod tests {
     use super::*;
     use bitvec::bitvec;
     use bitvec::prelude::Lsb0;
+    use itertools::{iproduct, Itertools};
 
     #[test]
     fn test_clifford_tableau_constructor() {
@@ -459,5 +460,29 @@ mod tests {
         };
 
         assert_eq!(clifford_tableau_ref, ct);
+    }
+
+    /// This does not generate a valid Clifford Tableau. Only used to check commutation relations
+    fn setup_sample_two_qubit_ct() -> CliffordTableau {
+        // qubit 1x: II
+        // qubit 1z: IX
+        let z_1 = bitvec![0, 0, 0, 0];
+        let x_1 = bitvec![0, 0, 0, 1];
+
+        let pauli_1_ref = PauliString { x: x_1, z: z_1 };
+
+        // qubit 1x: IY
+        // qubit 1z: IZ
+        let z_2 = bitvec![0, 1, 0, 1];
+        let x_2 = bitvec![0, 1, 0, 0];
+
+        let pauli_2_ref = PauliString { x: x_2, z: z_2 };
+
+        let signs_ref = bitvec![0, 0, 0, 0];
+        CliffordTableau {
+            pauli_columns: vec![pauli_1_ref, pauli_2_ref],
+            signs: signs_ref,
+            size: 2,
+        }
     }
 }
