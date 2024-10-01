@@ -1,8 +1,10 @@
-use std::{cell::RefCell, iter, rc::Rc};
-
 use bitvec::prelude::BitVec;
+use std::iter;
 
-use super::{pauli_string::{cx, PauliString}, PropagateClifford};
+use super::{
+    pauli_string::{cx, PauliString},
+    IndexType, PropagateClifford,
+};
 
 #[derive(PartialEq, Eq, Debug)]
 pub struct CliffordTableau {
@@ -28,18 +30,10 @@ impl CliffordTableau {
     }
 }
 
-impl PropagateClifford for CliffordTableau{
-    fn cx(&mut self, control: super::IndexType, target: super::IndexType) -> &mut Self {
-        match control < target {
-            true => {
-                let split = self.stabilizers.split_at_mut(target); 
-                cx(split.1.get_mut(0).unwrap(), split.0.get_mut(control).unwrap())
-            },
-            false => {
-                let split = self.stabilizers.split_at_mut(control);
-                cx(split.0.get_mut(target).unwrap(), split.1.get_mut(0).unwrap())
-            },
-        };
+impl PropagateClifford for CliffordTableau {
+    fn cx(&mut self, control: IndexType, target: IndexType) -> &mut Self {
+        let [control, target] = self.stabilizers.get_many_mut([control, target]).unwrap();
+        cx(control, target);
         self
     }
 
