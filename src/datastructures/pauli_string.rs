@@ -50,11 +50,15 @@ impl PauliString {
     }
 
     pub(super) fn s(&mut self) {
-        self.x ^= &self.z;
+        self.z ^= &self.x;
     }
 
     pub(super) fn v(&mut self) {
-        self.z ^= &self.x;
+        self.x ^= &self.z;
+    }
+
+    pub(super) fn h(&mut self) {
+        (self.x, self.z) = (self.z.clone(), self.x.clone());
     }
 
     pub(super) fn y_bitmask(&self) -> BitVec {
@@ -108,7 +112,7 @@ mod tests {
     fn test_pauli_string_s() {
         let mut paulivec = PauliString::from_text_string(String::from("IXYZ"));
         paulivec.s();
-        let paulivec_ref = PauliString::from_text_string(String::from("IXZY"));
+        let paulivec_ref = PauliString::from_text_string(String::from("IYXZ"));
         assert!(paulivec.x == paulivec_ref.x);
         assert!(paulivec.z == paulivec_ref.z);
     }
@@ -117,7 +121,7 @@ mod tests {
     fn test_pauli_string_v() {
         let mut paulivec = PauliString::from_text_string(String::from("IXYZ"));
         paulivec.v();
-        let paulivec_ref = PauliString::from_text_string(String::from("IYXZ"));
+        let paulivec_ref = PauliString::from_text_string(String::from("IXZY"));
         assert!(paulivec.x == paulivec_ref.x);
         assert!(paulivec.z == paulivec_ref.z);
     }
@@ -125,8 +129,8 @@ mod tests {
     #[test]
     fn test_pauli_string_h() {
         let mut paulivec = PauliString::from_text_string(String::from("IXYZ"));
-        paulivec.v();
-        let paulivec_ref = PauliString::from_text_string(String::from("IYXZ"));
+        paulivec.h();
+        let paulivec_ref = PauliString::from_text_string(String::from("IZYX"));
         assert!(paulivec.x == paulivec_ref.x);
         assert!(paulivec.z == paulivec_ref.z);
     }
