@@ -1,4 +1,4 @@
-use bitvec::prelude::BitVec;
+use bitvec::{prelude::BitVec, slice::BitSlice};
 use std::iter;
 
 use super::{
@@ -8,43 +8,62 @@ use super::{
 
 #[derive(PartialEq, Eq, Debug)]
 pub struct CliffordTableau {
-    stabilizers: Vec<PauliString>,
-    x_signs: BitVec,
-    z_signs: BitVec,
-    // https://quantumcomputing.stackexchange.com/questions/28740/tracking-the-signs-of-the-inverse-tableau
+    // We keep track of the pauli letters per qubit not per stabilizer
+    pauli_columns: Vec<PauliString>,
+    signs: BitVec,
+    size: usize, // https://quantumcomputing.stackexchange.com/questions/28740/tracking-the-signs-of-the-inverse-tableau
 }
 
 impl CliffordTableau {
     /// Constructs a Clifford Tableau of `n` qubits initialized to the identity operation
     pub fn new(n: usize) -> Self {
         CliffordTableau {
-            stabilizers: { (0..n).map(|i| PauliString::from_basis_int(i, n)).collect() },
-            x_signs: BitVec::from_iter(iter::repeat(false).take(n)),
-            z_signs: BitVec::from_iter(iter::repeat(false).take(n)),
+            pauli_columns: { (0..n).map(|i| PauliString::from_basis_int(i, n)).collect() },
+            signs: BitVec::from_iter(iter::repeat(false).take(2 * n)),
+            size: n,
         }
+    }
+
+    pub fn size(&self) -> usize {
+        self.size
+    }
+
+    pub(crate) fn z_signs(&self) -> &BitSlice {
+        let n = self.size();
+        &self.signs[0..n]
+    }
+
+    pub(crate) fn x_signs(&self) -> &BitSlice {
+        let n = self.size();
+        &self.signs[n..]
     }
 }
 
 impl PropagateClifford for CliffordTableau {
     fn cx(&mut self, control: IndexType, target: IndexType) -> &mut Self {
-        let [control, target] = self.stabilizers.get_many_mut([control, target]).unwrap();
+        let [control, target] = self.pauli_columns.get_many_mut([control, target]).unwrap();
         cx(control, target);
         self
     }
 
     fn s(&mut self, target: IndexType) -> &mut Self {
-        let chains_target = self.stabilizers.get_mut(target).unwrap();
-        chains_target.s();
+        let chains_target = self.pauli_columns.get_mut(target).unwrap();
+        // Verified: SXS^dag = Y
+        //           SYS^dag = -X
+        //           SZS^dag = Z
+        self.signs ^= chains_target.y_bitmask();
         // Defined for Phase gate in https://arxiv.org/pdf/quant-ph/0406196
-        self.x_signs ^= chains_target.y_bitmask();
+        chains_target.s();
         self
     }
 
     fn v(&mut self, target: IndexType) -> &mut Self {
-        let chains_target = self.stabilizers.get_mut(target).unwrap();
-        self.z_signs ^= chains_target.y_bitmask();
-        // TODO Double check if this works as intended.
-        chains_target.s();
+        let chains_target = self.pauli_columns.get_mut(target).unwrap();
+        // Verified: VXV^dag = X
+        //           VYV^dag = Z
+        //           VZV^dag = -Y
+        chains_target.v();
+        self.signs ^= chains_target.y_bitmask();
         self
     }
 }
