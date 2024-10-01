@@ -1,12 +1,11 @@
 use bitvec::prelude::BitVec;
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub(super) struct PauliString {
     pub(super) x: BitVec,
     pub(super) z: BitVec,
 }
 
-// type PauliString = Vec<PauliBit>;
 impl PauliString {
     /// Constructor for PauliString
     pub fn new(pauli_x: BitVec, pauli_z: BitVec) -> Self {
@@ -22,17 +21,13 @@ impl PauliString {
         assert!(length > i);
         let mut x = BitVec::repeat(false, 2 * length);
         let mut z = BitVec::repeat(false, 2 * length);
-        let _ = x.replace(i, true);
-        let _ = z.replace(i + length, true);
+        x.set(i, true);
+        z.set(i + length, true);
         PauliString::new(x, z)
     }
 
-    pub fn len(&self) -> usize {
-        self.x.len()
-    }
-
     /// Takes in a String containing "I"
-    pub fn from_text_string(mut pauli: String) -> Self {
+    pub fn from_text_string(pauli: String) -> Self {
         let (x, z): (BitVec, BitVec) = pauli
             .chars()
             .map(|pauli_char| {
@@ -50,6 +45,10 @@ impl PauliString {
         PauliString::new(x, z)
     }
 
+    pub fn len(&self) -> usize {
+        self.x.len()
+    }
+
     pub(super) fn s(&mut self) {
         self.x ^= &self.z;
     }
@@ -58,8 +57,10 @@ impl PauliString {
         self.z ^= &self.x;
     }
 
-    pub(super) fn y_bitmask(self) -> BitVec {
-        self.x & self.z
+    pub(super) fn y_bitmask(&self) -> BitVec {
+        let mut mask = self.x.clone();
+        mask &= &self.z;
+        mask
     }
 }
 
