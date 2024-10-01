@@ -105,7 +105,7 @@ mod tests {
     }
 
     #[test]
-    fn test_s() {
+    fn test_pauli_string_s() {
         let mut paulivec = PauliString::from_text_string(String::from("IXYZ"));
         paulivec.s();
         let paulivec_ref = PauliString::from_text_string(String::from("IXZY"));
@@ -114,7 +114,16 @@ mod tests {
     }
 
     #[test]
-    fn test_v() {
+    fn test_pauli_string_v() {
+        let mut paulivec = PauliString::from_text_string(String::from("IXYZ"));
+        paulivec.v();
+        let paulivec_ref = PauliString::from_text_string(String::from("IYXZ"));
+        assert!(paulivec.x == paulivec_ref.x);
+        assert!(paulivec.z == paulivec_ref.z);
+    }
+
+    #[test]
+    fn test_pauli_string_h() {
         let mut paulivec = PauliString::from_text_string(String::from("IXYZ"));
         paulivec.v();
         let paulivec_ref = PauliString::from_text_string(String::from("IYXZ"));
