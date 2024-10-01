@@ -32,7 +32,7 @@ where
     }
 
     fn h(&mut self, target: IndexType) -> &mut Self {
-        self.s(target).v_dgr(target).s(target)
+        self.s(target).v(target).s(target)
     }
 
     fn cz(&mut self, control: IndexType, target: IndexType) -> &mut Self {
