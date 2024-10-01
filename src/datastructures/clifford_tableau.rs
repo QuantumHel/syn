@@ -561,11 +561,13 @@ mod tests {
         // Stab: XX, XI
         // Destab: YZ, -YY
 
+        //qubit 1x: XX
+        //qubit 1z: YY
         let z_1 = bitvec![0, 0, 1, 1];
         let x_1 = bitvec![1, 1, 1, 1];
         let pauli_1 = PauliString { x: x_1, z: z_1 };
-        //qubit 1x: IX
-        //qubit 1z: YZ
+        //qubit 2x: XI
+        //qubit 2z: ZY
         let z_2 = bitvec![0, 0, 1, 1];
         let x_2 = bitvec![1, 0, 0, 1];
         let pauli_2 = PauliString { x: x_2, z: z_2 };
