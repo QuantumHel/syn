@@ -15,15 +15,10 @@ pub struct CliffordTableau {
 }
 
 impl CliffordTableau {
-    pub fn new(n: usize) -> Self{
-        CliffordTableau{
-            stabilizers: {
-                let mut stab = Vec::new();
-                for i in 0..n{
-                    stab.push(PauliString::from_basis_int(i, n));
-                }
-                stab
-            },
+    /// Constructs a Clifford Tableau of `n` qubits initialized to the identity operation
+    pub fn new(n: usize) -> Self {
+        CliffordTableau {
+            stabilizers: { (0..n).map(|i| PauliString::from_basis_int(i, n)).collect() },
             x_signs: BitVec::from_iter(iter::repeat(false).take(n)),
             z_signs: BitVec::from_iter(iter::repeat(false).take(n)),
         }
