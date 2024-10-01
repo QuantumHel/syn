@@ -4,7 +4,8 @@ use bitvec::prelude::BitVec;
 
 use super::{pauli_string::{cx, PauliString}, PropagateClifford};
 
-pub struct CliffordTableau{
+#[derive(PartialEq, Eq, Debug)]
+pub struct CliffordTableau {
     stabilizers: Vec<PauliString>,
     x_signs: BitVec,
     z_signs: BitVec,
