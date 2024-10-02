@@ -1,5 +1,7 @@
 use std::iter::zip;
 
+use bitvec::vec::BitVec;
+
 use super::{
     pauli_string::{cx, PauliString},
     IndexType, PropagateClifford,
