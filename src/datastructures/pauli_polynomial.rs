@@ -50,8 +50,21 @@ impl PauliPolynomial {
 
 impl PropagateClifford for PauliPolynomial {
     fn cx(&mut self, control: IndexType, target: IndexType) -> &mut Self {
+        let mut bit_mask = BitVec::repeat(true, self.angles.len());
         let [control, target] = self.chains.get_many_mut([control, target]).unwrap();
+
+        bit_mask ^= &control.z;
+        bit_mask ^= &target.x;
+        bit_mask &= &control.x;
+        bit_mask &= &target.z;
+
         cx(control, target);
+        for (angle, flip) in zip(self.angles.iter_mut(), bit_mask.iter()) {
+            if *flip {
+                *angle *= -1.0;
+            }
+        }
+
         self
     }
 
