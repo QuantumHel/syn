@@ -1,1 +1,136 @@
+use std::{
+    collections::{BTreeSet, HashMap, VecDeque},
+    io::BufRead,
+};
+
+use itertools::iproduct;
+
+#[derive(Debug)]
+pub struct Connectivity {
+    size: usize,
+    edges: Vec<(usize, usize)>,
+    adjacency: HashMap<usize, Vec<usize>>,
+    distance: Vec<HashMap<usize, usize>>,
+}
+
+impl Connectivity {
+    pub fn line(size: usize) -> Self {
+        let edges = (0..(size - 1))
+            .map(|q| (q, (q + 1)))
+            .collect::<Vec<(usize, usize)>>();
+
+        let adjacency = setup_adjacency(&edges);
+        let distance = setup_distance(size, &adjacency);
+
+        Connectivity {
+            size,
+            edges,
+            adjacency,
+            distance,
+        }
+    }
+
+    pub fn cycle(size: usize) -> Self {
+        let edges = (0..size)
+            .map(|q| (q, (q + 1) % size))
+            .collect::<Vec<(usize, usize)>>();
+
+        let adjacency = setup_adjacency(&edges);
+        let distance = setup_distance(size, &adjacency);
+
+        Connectivity {
+            size,
+            edges,
+            adjacency,
+            distance,
+        }
+    }
+
+    pub fn complete(size: usize) -> Self {
+        let mut edges = Vec::new();
+
+        for i in 0..size {
+            edges.extend(((i + 1)..size).map(|q| (i, q)));
+        }
+
+        let adjacency = setup_adjacency(&edges);
+        let distance = setup_distance(size, &adjacency);
+
+        Connectivity {
+            size,
+            edges,
+            adjacency,
+            distance,
+        }
+    }
+
+    pub fn grid(length: usize, height: usize) -> Self {
+        let mut edges = Vec::new();
+        for h in 0..height {
+            let vertical_shift = h * length;
+            edges.extend((vertical_shift..(length + vertical_shift - 1)).map(|q| (q, q + 1)));
+        }
+        for h in 0..(height - 1) {
+            let vertical_shift = h * length;
+            edges.extend((vertical_shift..(length + vertical_shift)).map(|q| (q, q + length)));
+        }
+
+        let adjacency = setup_adjacency(&edges);
+        let distance = setup_distance(length * height, &adjacency);
+
+        Connectivity {
+            size: length * height,
+            edges,
+            adjacency,
+            distance,
+        }
+    }
+}
+
+fn setup_adjacency(edges: &[(usize, usize)]) -> HashMap<usize, Vec<usize>> {
+    let mut adjacency = HashMap::new();
+
+    for &(i, j) in edges.iter() {
+        adjacency
+            .entry(i)
+            .and_modify(|nodes: &mut Vec<usize>| nodes.push(j))
+            .or_insert(vec![j]);
+        adjacency
+            .entry(j)
+            .and_modify(|nodes: &mut Vec<usize>| nodes.push(i))
+            .or_insert(vec![i]);
+    }
+
+    adjacency
+}
+
+fn setup_distance(
+    size: usize,
+    adjacency: &HashMap<usize, Vec<usize>>,
+) -> Vec<HashMap<usize, usize>> {
+    let mut distance = Vec::new();
+    for i in 0..size {
+        let mut queue = VecDeque::new();
+        let mut visited = vec![false; size];
+        let mut i_distance: HashMap<usize, usize> = HashMap::new();
+        visited[i] = true;
+        i_distance.entry(i).or_insert(0);
+        queue.push_back(i);
+        while !queue.is_empty() {
+            let current = queue.pop_front().unwrap();
+            for neighbor in adjacency[&current].iter() {
+                if !visited[*neighbor] {
+                    let dist = i_distance[&current] + 1;
+                    visited[*neighbor] = true;
+                    i_distance.entry(*neighbor).or_insert(dist);
+
+                    queue.push_back(*neighbor);
+                }
+            }
+        }
+        distance.push(i_distance);
+    }
+
+    distance
+}
 
