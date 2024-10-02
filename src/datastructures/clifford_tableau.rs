@@ -470,9 +470,9 @@ mod tests {
     }
 
     /// This does not generate a valid Clifford Tableau. Only used to check commutation relations
-    fn setup_sample_two_qubit_ct(pauli_control: &str) -> CliffordTableau {
+    fn setup_sample_two_qubit_ct(pauli_control: char) -> CliffordTableau {
         let pauli_1_ref = match pauli_control {
-            "i" => {
+            'i' => {
                 // qubit 1x: II
                 // qubit 1z: II
                 let z_1 = bitvec![0, 0, 0, 0];
@@ -480,7 +480,7 @@ mod tests {
 
                 PauliString { x: x_1, z: z_1 }
             }
-            "x" => {
+            'x' => {
                 // qubit 1x: XX
                 // qubit 1z: XX
                 let z_1 = bitvec![0, 0, 0, 0];
@@ -488,7 +488,7 @@ mod tests {
 
                 PauliString { x: x_1, z: z_1 }
             }
-            "y" => {
+            'y' => {
                 // qubit 1x: YY
                 // qubit 1z: YY
                 let z_1 = bitvec![1, 1, 1, 1];
@@ -496,7 +496,7 @@ mod tests {
 
                 PauliString { x: x_1, z: z_1 }
             }
-            "z" => {
+            'z' => {
                 // qubit 1x: ZZ
                 // qubit 1z: ZZ
                 let z_1 = bitvec![1, 1, 1, 1];
@@ -526,7 +526,7 @@ mod tests {
     fn test_clifford_tableau_cx_i() {
         // Stab: II, IX
         // Destab: IY, IZ
-        let mut ct = setup_sample_two_qubit_ct("i");
+        let mut ct = setup_sample_two_qubit_ct('i');
 
         // Apply CX to 0 -> 1.
         ct.cx(0, 1);
@@ -558,7 +558,7 @@ mod tests {
     fn test_clifford_tableau_cx_x() {
         // Stab: XI, XX
         // Destab: XY, XZ
-        let mut ct = setup_sample_two_qubit_ct("x");
+        let mut ct = setup_sample_two_qubit_ct('x');
         // Apply CX to 0 -> 1.
         ct.cx(0, 1);
 
@@ -589,7 +589,7 @@ mod tests {
     fn test_clifford_tableau_cx_y() {
         // Stab: YI, YX
         // Destab: YY, YZ
-        let mut ct = setup_sample_two_qubit_ct("y");
+        let mut ct = setup_sample_two_qubit_ct('y');
         // Apply CX to 0 -> 1.
         ct.cx(0, 1);
 
@@ -620,7 +620,7 @@ mod tests {
     fn test_clifford_tableau_cx_z() {
         // Stab: ZI, ZX
         // Destab: ZY, ZZ
-        let mut ct = setup_sample_two_qubit_ct("z");
+        let mut ct = setup_sample_two_qubit_ct('z');
         // Apply CX to 0 -> 1.
         ct.cx(0, 1);
 
@@ -651,7 +651,7 @@ mod tests {
     fn test_clifford_tableau_cz_i() {
         // Stab: II, ZX
         // Destab: ZY, IZ
-        let mut ct = setup_sample_two_qubit_ct("i");
+        let mut ct = setup_sample_two_qubit_ct('i');
 
         // Apply CX to 0 -> 1.
         ct.cz(0, 1);
@@ -683,7 +683,7 @@ mod tests {
     fn test_clifford_tableau_cz_x() {
         // Stab: XI, XX
         // Destab: XY, XZ
-        let mut ct = setup_sample_two_qubit_ct("x");
+        let mut ct = setup_sample_two_qubit_ct('x');
         // Apply CX to 0 -> 1.
         ct.cz(0, 1);
 
@@ -714,7 +714,7 @@ mod tests {
     fn test_clifford_tableau_cz_y() {
         // Stab: YI, YX
         // Destab: YY, YZ
-        let mut ct = setup_sample_two_qubit_ct("y");
+        let mut ct = setup_sample_two_qubit_ct('y');
         // Apply CX to 0 -> 1.
         ct.cz(0, 1);
 
@@ -745,7 +745,7 @@ mod tests {
     fn test_clifford_tableau_cz_z() {
         // Stab: ZI, ZX
         // Destab: ZY, ZZ
-        let mut ct = setup_sample_two_qubit_ct("z");
+        let mut ct = setup_sample_two_qubit_ct('z');
         // Apply CX to 0 -> 1.
         ct.cz(0, 1);
 
