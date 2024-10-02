@@ -47,7 +47,7 @@ impl CliffordTableau {
 
     pub(crate) fn prepend(&self, lhs: &Self) -> Self {
         let size = self.size();
-        let mut pauli_columns = vec![PauliString::from_text_string("I".repeat(2 * size)); size];
+        let mut pauli_columns = vec![PauliString::from_text(&"I".repeat(2 * size)); size];
 
         // Matrix-multiplication for M(rhs o self) = M(self) * M(rhs) as this is a row-permutation.
         // Loop re-order to be (k, i, j) as j ordering is contiguous.
@@ -148,7 +148,7 @@ impl CliffordTableau {
         let size = self.size();
         // Create new CliffordTableau entries
 
-        let mut new_columns = vec![PauliString::from_text_string("I".repeat(2 * size)); size];
+        let mut new_columns = vec![PauliString::from_text(&"I".repeat(2 * size)); size];
         (0..size).for_each(|i| {
             for (j, pauli_column) in self.pauli_columns.iter().enumerate() {
                 let (x1, z1, x2, z2) = match (
