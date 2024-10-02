@@ -8,31 +8,43 @@ use super::{
 // todo: Make this into a union / type Angle
 type Angle = f64;
 
+#[derive(Debug, Clone)]
 pub struct PauliPolynomial {
     chains: Vec<PauliString>,
     angles: Vec<Angle>,
+    size: usize,
 }
 
 impl PauliPolynomial {
-    pub fn from_hamiltonian(hamiltonian_repr: Vec<(String, Angle)>) -> Self {
-        assert!(!hamiltonian_repr.is_empty());
-        let num_qubits = hamiltonian_repr[0].0.len();
+    pub fn from_hamiltonian(hamiltonian_representation: Vec<(&str, Angle)>) -> Self {
+        assert!(!hamiltonian_representation.is_empty());
+        let num_qubits = hamiltonian_representation[0].0.len();
         let mut angles = Vec::<Angle>::new();
-        let mut chain_strings = vec![Vec::new(); num_qubits];
+        let mut chain_strings = vec![String::new(); num_qubits];
         //let chains = vec![PauliString::new(); num_qubits];
-        for (mut pauli_string, angle) in hamiltonian_repr {
-            (0..num_qubits).for_each(|i| {
-                chain_strings[i].push(pauli_string.pop().unwrap());
-            });
+        for (pauli_string, angle) in hamiltonian_representation {
+            assert!(pauli_string.len() == chain_strings.len());
+            zip(chain_strings.iter_mut(), pauli_string.chars()).for_each(
+                |(chain, pauli_letter)| {
+                    chain.push(pauli_letter);
+                },
+            );
             angles.push(angle);
         }
-        let mut chains = Vec::new();
-        for chain_string in chain_strings.into_iter() {
-            chains.push(PauliString::from_text_string(String::from_iter(
-                chain_string.iter(),
-            )));
+        let chains = chain_strings
+            .iter()
+            .map(|gadget| PauliString::from_text(gadget))
+            .collect::<Vec<PauliString>>();
+
+        PauliPolynomial {
+            chains,
+            angles,
+            size: num_qubits,
         }
-        PauliPolynomial { chains, angles }
+    }
+
+    pub fn size(&self) -> usize {
+        self.size
     }
 }
 
