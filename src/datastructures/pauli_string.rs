@@ -27,7 +27,7 @@ impl PauliString {
     }
 
     /// Takes in a String containing "I"
-    pub fn from_text_string(pauli: String) -> Self {
+    pub fn from_text(pauli: &str) -> Self {
         let (x, z): (BitVec, BitVec) = pauli
             .chars()
             .map(|pauli_char| {
@@ -100,8 +100,8 @@ mod tests {
 
     #[test]
     fn test_from_text_string() {
-        let pauli_string = String::from("IXYZ");
-        let paulivec = PauliString::from_text_string(pauli_string);
+        let pauli_string = "IXYZ";
+        let paulivec = PauliString::from_text(pauli_string);
         let x_ref = bitvec![0, 1, 1, 0];
         let z_ref = bitvec![0, 0, 1, 1];
         assert!(paulivec.x == x_ref);
@@ -110,34 +110,34 @@ mod tests {
 
     #[test]
     fn test_pauli_string_s() {
-        let mut paulivec = PauliString::from_text_string(String::from("IXYZ"));
+        let mut paulivec = PauliString::from_text("IXYZ");
         paulivec.s();
-        let paulivec_ref = PauliString::from_text_string(String::from("IYXZ"));
+        let paulivec_ref = PauliString::from_text("IYXZ");
         assert!(paulivec.x == paulivec_ref.x);
         assert!(paulivec.z == paulivec_ref.z);
     }
 
     #[test]
     fn test_pauli_string_v() {
-        let mut paulivec = PauliString::from_text_string(String::from("IXYZ"));
+        let mut paulivec = PauliString::from_text("IXYZ");
         paulivec.v();
-        let paulivec_ref = PauliString::from_text_string(String::from("IXZY"));
+        let paulivec_ref = PauliString::from_text("IXZY");
         assert!(paulivec.x == paulivec_ref.x);
         assert!(paulivec.z == paulivec_ref.z);
     }
 
     #[test]
     fn test_pauli_string_h() {
-        let mut paulivec = PauliString::from_text_string(String::from("IXYZ"));
+        let mut paulivec = PauliString::from_text("IXYZ");
         paulivec.h();
-        let paulivec_ref = PauliString::from_text_string(String::from("IZYX"));
+        let paulivec_ref = PauliString::from_text("IZYX");
         assert!(paulivec.x == paulivec_ref.x);
         assert!(paulivec.z == paulivec_ref.z);
     }
 
     #[test]
     fn test_y_bitmask() {
-        let paulivec = PauliString::from_text_string(String::from("IYXYZY"));
+        let paulivec = PauliString::from_text("IYXYZY");
         let y_bitmask = paulivec.y_bitmask();
         let y_bitmask_ref = bitvec![0, 1, 0, 1, 0, 1];
         assert_eq!(y_bitmask, y_bitmask_ref);
