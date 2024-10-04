@@ -242,9 +242,44 @@ fn bfs(size: usize, adjacency: &HashMap<usize, Vec<usize>>) -> HashMap<Edge, usi
     }
     distance
 }
+
+fn floyd_warshall(
+    size: usize,
+    _adjacency: &HashMap<usize, Vec<usize>>,
+    mut distance: HashMap<Edge, usize>,
+) -> HashMap<Edge, usize> {
+    for i in 0..size {
+        distance.entry(edge!(i, i)).or_insert(0);
+    }
+    for i in 0..size {
+        for j in i..size {
+            distance.entry(edge!(i, j)).or_insert(usize::MAX / 2);
+        }
+    }
+
+    for k in 0..size {
+        for i in 0..size {
+            for j in 0..size {
+                if distance[&edge!(i, j)] > distance[&edge!(i, k)] + distance[&edge!(k, j)] {
+                    distance.insert(edge!(i, j), distance[&edge!(i, k)] + distance[&edge!(k, j)]);
+                }
+            }
+        }
     }
 
     distance
+}
+
+fn setup_distance(
+    size: usize,
+    adjacency: &HashMap<usize, Vec<usize>>,
+    edge_weights: Option<HashMap<Edge, usize>>,
+) -> HashMap<Edge, usize> {
+    if let Some(edge_weights) = edge_weights {
+        floyd_warshall(size, adjacency, edge_weights)
+    } else {
+        bfs(size, adjacency)
+    }
 }
 
 #[cfg(test)]
