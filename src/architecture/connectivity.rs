@@ -1,9 +1,112 @@
 use std::{
-    collections::{BTreeSet, HashMap, VecDeque},
-    io::BufRead,
-};
+mod edge {
+    use std::hash::Hash;
 
-use itertools::iproduct;
+    #[derive(Debug, Clone, Eq)]
+    pub struct Edge {
+        pub(crate) edge: [usize; 2],
+    }
+
+    impl Edge {
+        pub fn contains(&self, vertex: usize) -> bool {
+            self.edge.contains(&vertex)
+        }
+
+        #[must_use]
+        pub fn new(v1: usize, v2: usize) -> Self {
+            Edge { edge: [v1, v2] }
+        }
+    }
+
+    impl Hash for Edge {
+        fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+            let mut edge = self.edge;
+            edge.sort();
+            edge.hash(state);
+        }
+    }
+
+    impl PartialEq for Edge {
+        fn eq(&self, other: &Self) -> bool {
+            let mut self_edge = self.edge;
+            let mut other_edge = other.edge;
+            self_edge.sort();
+            other_edge.sort();
+
+            self_edge == other_edge
+        }
+    }
+
+    #[macro_export]
+    macro_rules! edges {
+            ( $( $x:expr ),* $(,)? ) => {
+                {
+                    &[$(Edge{edge: ($x.into())}),*]
+                }
+            };
+        }
+
+    #[macro_export]
+    macro_rules! edge {
+        ( $x:expr, $y:expr ) => {{
+            Edge { edge: [$x, $y] }
+        }};
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use std::{
+            collections::HashMap,
+            hash::{DefaultHasher, Hasher},
+        };
+
+        use super::*;
+
+        #[test]
+        fn test_constructor() {
+            let e1 = Edge { edge: [1, 2] };
+            let e2 = Edge::new(2, 1);
+
+            assert_eq!(e1, e2);
+        }
+
+        #[test]
+        fn test_hash() {
+            let e1 = Edge { edge: [2, 1] };
+            let e2 = Edge::new(2, 1);
+
+            // Manually contructing Edge means vertices can be out of order and still pas equality.
+            assert_eq!(e1, e2);
+
+            let mut h1 = DefaultHasher::new();
+            let mut h2 = DefaultHasher::new();
+            e1.hash(&mut h1);
+            e2.hash(&mut h2);
+            // Hash should ensure that Edges containing the same vertices are treated as the same hashmap key.
+            assert_eq!(h1.finish(), h2.finish());
+        }
+
+        #[test]
+        fn test_hashmap() {
+            let e1 = Edge { edge: [2, 1] };
+            let e2 = Edge::new(1, 2);
+
+            let mut edge_weights = HashMap::new();
+
+            edge_weights.entry(e1.clone()).or_insert(1);
+            edge_weights.entry(e2).and_modify(|v| *v = 5);
+
+            assert_eq!(5, *edge_weights.get(&e1).unwrap());
+        }
+
+        #[test]
+        fn test_edge_macro() {
+            let edges = edges!((1, 2), (2, 3));
+
+            assert_eq!(vec![Edge::new(2, 1), Edge::new(3, 2)], edges);
+        }
+    }
+}
 
 #[derive(Debug)]
 pub struct Connectivity {
