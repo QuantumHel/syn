@@ -1,9 +1,6 @@
 use crate::edge;
 use edge::Edge;
-use std::{
-    collections::{HashMap, VecDeque},
-    usize,
-};
+use std::collections::{HashMap, VecDeque};
 
 mod edge {
     use std::hash::Hash;
@@ -287,7 +284,6 @@ mod tests {
     use std::iter::zip;
 
     use edge::Edge;
-    use itertools::Itertools;
 
     use crate::{edge, edges};
 
