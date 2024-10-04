@@ -284,12 +284,19 @@ fn setup_distance(
 
 #[cfg(test)]
 mod tests {
+    use std::iter::zip;
+
+    use edge::Edge;
+    use itertools::Itertools;
+
+    use crate::{edge, edges};
+
     use super::*;
 
     #[test]
     fn test_adjacency_line() {
-        let edges = vec![(0, 1), (1, 2), (2, 3), (3, 4)];
-        let adjacency = setup_adjacency(&edges);
+        let edge_vec = edges![(0, 1), (1, 2), (2, 3), (3, 4)].to_vec();
+        let adjacency = setup_adjacency(&edge_vec);
 
         let ref_adjacency = HashMap::from([
             (0, vec![1]),
@@ -303,7 +310,7 @@ mod tests {
 
     #[test]
     fn test_adjacency_cycle() {
-        let edges = vec![(0, 1), (1, 2), (2, 3), (3, 0)];
+        let edges = edges![(0, 1), (1, 2), (2, 3), (3, 0)].to_vec();
         let adjacency = setup_adjacency(&edges);
 
         let ref_adjacency = HashMap::from([
@@ -317,7 +324,7 @@ mod tests {
 
     #[test]
     fn test_adjacency_complete() {
-        let edges = vec![(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)];
+        let edges = edges![(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)].to_vec();
         let adjacency = setup_adjacency(&edges);
 
         let ref_adjacency = HashMap::from([
@@ -331,7 +338,7 @@ mod tests {
 
     #[test]
     fn test_adjacency_grid() {
-        let edges = vec![
+        let edges = edges![
             (0, 1),
             (1, 2),
             (3, 4),
@@ -343,8 +350,9 @@ mod tests {
             (2, 5),
             (3, 6),
             (4, 7),
-            (5, 8),
-        ];
+            (5, 8)
+        ]
+        .to_vec();
         let mut adjacency = setup_adjacency(&edges);
 
         // Entries are the same but permuted due to algorithm ordering
@@ -370,16 +378,30 @@ mod tests {
     #[test]
     fn test_distance_line() {
         let size = 5;
-        let edges = vec![(0, 1), (1, 2), (2, 3), (3, 4)];
+        let edges = edges![(0, 1), (1, 2), (2, 3), (3, 4)].to_vec();
         let adjacency = setup_adjacency(&edges);
-        let distance = setup_distance(size, &adjacency);
-        let ref_distance = vec![
-            HashMap::from([(0, 0), (1, 1), (2, 2), (3, 3), (4, 4)]),
-            HashMap::from([(0, 1), (1, 0), (2, 1), (3, 2), (4, 3)]),
-            HashMap::from([(0, 2), (1, 1), (2, 0), (3, 1), (4, 2)]),
-            HashMap::from([(0, 3), (1, 2), (2, 1), (3, 0), (4, 1)]),
-            HashMap::from([(0, 4), (1, 3), (2, 2), (3, 1), (4, 0)]),
-        ];
+        let distance = setup_distance(size, &adjacency, None);
+        let ref_distance = HashMap::from_iter(zip(
+            edges![
+                (0, 0),
+                (0, 1),
+                (0, 2),
+                (0, 3),
+                (0, 4),
+                (1, 1),
+                (1, 2),
+                (1, 3),
+                (1, 4),
+                (2, 2),
+                (2, 3),
+                (2, 4),
+                (3, 3),
+                (3, 4),
+                (4, 4),
+            ]
+            .to_owned(),
+            [0, 1, 2, 3, 4, 0, 1, 2, 3, 0, 1, 2, 0, 1, 0],
+        ));
 
         assert_eq!(ref_distance, distance);
     }
@@ -387,15 +409,25 @@ mod tests {
     #[test]
     fn test_distance_cycle() {
         let size = 4;
-        let edges = vec![(0, 1), (1, 2), (2, 3), (3, 0)];
+        let edges = edges![(0, 1), (1, 2), (2, 3), (3, 0)].to_vec();
         let adjacency = setup_adjacency(&edges);
-        let distance = setup_distance(size, &adjacency);
-        let ref_distance = vec![
-            HashMap::from([(0, 0), (1, 1), (2, 2), (3, 1)]),
-            HashMap::from([(0, 1), (1, 0), (2, 1), (3, 2)]),
-            HashMap::from([(0, 2), (1, 1), (2, 0), (3, 1)]),
-            HashMap::from([(0, 1), (1, 2), (2, 1), (3, 0)]),
-        ];
+        let distance = setup_distance(size, &adjacency, None);
+        let ref_distance = HashMap::from_iter(zip(
+            edges![
+                (0, 0),
+                (0, 1),
+                (0, 2),
+                (0, 3),
+                (1, 1),
+                (1, 2),
+                (1, 3),
+                (2, 2),
+                (2, 3),
+                (3, 3),
+            ]
+            .to_owned(),
+            [0, 1, 2, 1, 0, 1, 2, 0, 1, 0],
+        ));
 
         assert_eq!(ref_distance, distance);
     }
@@ -403,15 +435,25 @@ mod tests {
     #[test]
     fn test_distance_complete() {
         let size = 4;
-        let edges = vec![(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)];
+        let edges = edges![(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)].to_vec();
         let adjacency = setup_adjacency(&edges);
-        let distance = setup_distance(size, &adjacency);
-        let ref_distance = vec![
-            HashMap::from([(0, 0), (1, 1), (2, 1), (3, 1)]),
-            HashMap::from([(0, 1), (1, 0), (2, 1), (3, 1)]),
-            HashMap::from([(0, 1), (1, 1), (2, 0), (3, 1)]),
-            HashMap::from([(0, 1), (1, 1), (2, 1), (3, 0)]),
-        ];
+        let distance = setup_distance(size, &adjacency, None);
+        let ref_distance = HashMap::from_iter(zip(
+            edges![
+                (0, 0),
+                (0, 1),
+                (0, 2),
+                (0, 3),
+                (1, 1),
+                (1, 2),
+                (1, 3),
+                (2, 2),
+                (2, 3),
+                (3, 3),
+            ]
+            .to_owned(),
+            [0, 1, 1, 1, 0, 1, 1, 0, 1, 0],
+        ));
 
         assert_eq!(ref_distance, distance);
     }
@@ -419,7 +461,7 @@ mod tests {
     #[test]
     fn test_distance_grid() {
         let size = 9;
-        let edges = vec![
+        let edges = edges![
             (0, 1),
             (1, 2),
             (3, 4),
@@ -432,45 +474,205 @@ mod tests {
             (3, 6),
             (4, 7),
             (5, 8),
-        ];
+        ]
+        .to_owned();
         let adjacency = setup_adjacency(&edges);
-        let distance = setup_distance(size, &adjacency);
-        let ref0 = HashMap::from([
-            (0, 0),
-            (1, 1),
-            (3, 1),
-            (2, 2),
-            (4, 2),
-            (6, 2),
-            (5, 3),
-            (7, 3),
-            (8, 4),
-        ]);
-        let ref4 = HashMap::from([
-            (0, 2),
-            (1, 1),
-            (3, 1),
-            (2, 2),
-            (4, 0),
-            (6, 2),
-            (5, 1),
-            (7, 1),
-            (8, 2),
-        ]);
-        let ref8 = HashMap::from([
-            (0, 4),
-            (1, 3),
-            (3, 3),
-            (2, 2),
-            (4, 2),
-            (6, 2),
-            (5, 1),
-            (7, 1),
-            (8, 0),
-        ]);
+        let distance = setup_distance(size, &adjacency, None);
 
-        assert_eq!(ref0, distance[0]);
-        assert_eq!(ref4, distance[4]);
-        assert_eq!(ref8, distance[8]);
+        let ref_iter = zip(
+            edges![
+                (0, 0),
+                (0, 1),
+                (0, 2),
+                (0, 3),
+                (0, 4),
+                (0, 5),
+                (0, 6),
+                (0, 7),
+                (0, 8),
+            ]
+            .to_owned(),
+            [0, 1, 2, 1, 2, 3, 2, 3, 4],
+        );
+
+        let ref_iter = ref_iter.chain(zip(
+            edges![
+                (1, 1),
+                (1, 2),
+                (1, 3),
+                (1, 4),
+                (1, 5),
+                (1, 6),
+                (1, 7),
+                (1, 8),
+            ]
+            .to_owned(),
+            [0, 1, 2, 1, 2, 3, 2, 3],
+        ));
+
+        let ref_iter = ref_iter.chain(zip(
+            edges![(2, 2), (2, 3), (2, 4), (2, 5), (2, 6), (2, 7), (2, 8),].to_owned(),
+            [0, 3, 2, 1, 4, 3, 2],
+        ));
+
+        let ref_iter = ref_iter.chain(zip(
+            edges![(3, 3), (3, 4), (3, 5), (3, 6), (3, 7), (3, 8),].to_owned(),
+            [0, 1, 2, 1, 2, 3],
+        ));
+
+        let ref_iter = ref_iter.chain(zip(
+            edges![(4, 4), (4, 5), (4, 6), (4, 7), (4, 8),].to_owned(),
+            [0, 1, 2, 1, 2],
+        ));
+
+        let ref_iter = ref_iter.chain(zip(
+            edges![(5, 5), (5, 6), (5, 7), (5, 8),].to_owned(),
+            [0, 3, 2, 1],
+        ));
+
+        let ref_iter = ref_iter.chain(zip(edges![(6, 6), (6, 7), (6, 8),].to_owned(), [0, 1, 2]));
+
+        let ref_iter = ref_iter.chain(zip(edges![(7, 7), (7, 8),].to_owned(), [0, 1]));
+
+        let ref_iter = ref_iter.chain(zip(edges![(8, 8),].to_owned(), [0]));
+
+        let ref_distance = HashMap::from_iter(ref_iter);
+
+        assert_eq!(ref_distance, distance);
+    }
+
+    #[test]
+    fn test_distance_weighted_line() {
+        let size = 5;
+        let edges = edges![(0, 1), (1, 2), (2, 3), (3, 4)].to_vec();
+        let adjacency = setup_adjacency(&edges);
+
+        let edge_weights = HashMap::from_iter(zip(edges, [2, 3, 4, 5]));
+
+        let distance = setup_distance(size, &adjacency, Some(edge_weights));
+        let ref_distance = HashMap::from_iter(zip(
+            edges![
+                (0, 0),
+                (0, 1),
+                (0, 2),
+                (0, 3),
+                (0, 4),
+                (1, 1),
+                (1, 2),
+                (1, 3),
+                (1, 4),
+                (2, 2),
+                (2, 3),
+                (2, 4),
+                (3, 3),
+                (3, 4),
+                (4, 4),
+            ]
+            .to_owned(),
+            [0, 2, 5, 9, 14, 0, 3, 7, 12, 0, 4, 9, 0, 5, 0],
+        ));
+
+        assert_eq!(ref_distance, distance);
+    }
+
+    #[test]
+    fn test_distance_weighted_cycle() {
+        let size = 4;
+        let edges = edges![(0, 1), (1, 2), (2, 3), (3, 0)].to_vec();
+        let adjacency = setup_adjacency(&edges);
+
+        let mut edge_weights = HashMap::from_iter(zip(edges, [2, 3, 4, 4]));
+        let entry = edge_weights.entry(edge![0, 3]);
+        println!("entry: {:?}", entry);
+        let distance = setup_distance(size, &adjacency, Some(edge_weights));
+        let ref_distance = HashMap::from_iter(zip(
+            edges![
+                (0, 0),
+                (0, 1),
+                (0, 2),
+                (0, 3),
+                (1, 1),
+                (1, 2),
+                (1, 3),
+                (2, 2),
+                (2, 3),
+                (3, 3),
+            ]
+            .to_owned(),
+            [0, 2, 5, 4, 0, 3, 6, 0, 4, 0],
+        ));
+
+        assert_eq!(ref_distance, distance);
+    }
+
+    #[test]
+    fn test_connectivity_line() {
+        let num_qubits = 5;
+        let connectivity = Connectivity::line(num_qubits, None);
+
+        let ref_connectivity = Connectivity {
+            size: num_qubits,
+            edges: edges![(0, 1), (1, 2), (2, 3), (3, 4)].to_vec(),
+            adjacency: Default::default(),
+            distance: Default::default(),
+        };
+        assert_eq!(ref_connectivity.edges, connectivity.edges);
+    }
+
+    #[test]
+    fn test_connectivity_cycle() {
+        let num_qubits = 4;
+        let connectivity = Connectivity::cycle(num_qubits, None);
+
+        let ref_connectivity = Connectivity {
+            size: num_qubits,
+            edges: edges![(0, 1), (1, 2), (2, 3), (3, 0)].to_vec(),
+            adjacency: Default::default(),
+            distance: Default::default(),
+        };
+        assert_eq!(ref_connectivity.edges, connectivity.edges);
+    }
+
+    #[test]
+    fn test_connectivity_complete() {
+        let num_qubits = 4;
+        let connectivity = Connectivity::complete(num_qubits, None);
+
+        let ref_connectivity = Connectivity {
+            size: num_qubits,
+            edges: edges![(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)].to_vec(),
+            adjacency: Default::default(),
+            distance: Default::default(),
+        };
+        assert_eq!(ref_connectivity.edges, connectivity.edges);
+    }
+
+    #[test]
+    fn test_connectivity_grid() {
+        let length = 3;
+        let height = 3;
+        let connectivity = Connectivity::grid(length, height, None);
+
+        let ref_connectivity = Connectivity {
+            size: length * height,
+            edges: edges![
+                (0, 1),
+                (1, 2),
+                (3, 4),
+                (4, 5),
+                (6, 7),
+                (7, 8),
+                (0, 3),
+                (1, 4),
+                (2, 5),
+                (3, 6),
+                (4, 7),
+                (5, 8)
+            ]
+            .to_vec(),
+            adjacency: Default::default(),
+            distance: Default::default(),
+        };
+        assert_eq!(ref_connectivity.edges, connectivity.edges);
     }
 }
