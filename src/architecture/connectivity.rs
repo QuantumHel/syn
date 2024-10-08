@@ -256,7 +256,7 @@ fn floyd_warshall(
 
     for k in 0..size {
         for i in 0..size {
-            for j in 0..size {
+            for j in i..size {
                 if distance[&edge!(i, j)] > distance[&edge!(i, k)] + distance[&edge!(k, j)] {
                     distance.insert(edge!(i, j), distance[&edge!(i, k)] + distance[&edge!(k, j)]);
                 }
