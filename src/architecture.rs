@@ -1,1 +1,1 @@
-mod connectivity;
+pub mod connectivity;
