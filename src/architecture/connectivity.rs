@@ -216,6 +216,7 @@ fn setup_adjacency(edges: &[Edge]) -> HashMap<usize, Vec<usize>> {
     adjacency
 }
 
+/// Breadth-first search to identify shortest distances in unweighted graph.
 fn bfs(size: usize, adjacency: &HashMap<usize, Vec<usize>>) -> HashMap<Edge, usize> {
     let mut distance = HashMap::new();
     for i in 0..size {
@@ -240,14 +241,18 @@ fn bfs(size: usize, adjacency: &HashMap<usize, Vec<usize>>) -> HashMap<Edge, usi
     distance
 }
 
+/// Floyd-Warshall to identify shortest distances in a weighted, undirected graph.
 fn floyd_warshall(
     size: usize,
     _adjacency: &HashMap<usize, Vec<usize>>,
     mut distance: HashMap<Edge, usize>,
 ) -> HashMap<Edge, usize> {
+    // Set distance to self as 0.
     for i in 0..size {
         distance.entry(edge!(i, i)).or_insert(0);
     }
+
+    // Set all edges not defined in `distance` as max/2 to prevent overflow.
     for i in 0..size {
         for j in i..size {
             distance.entry(edge!(i, j)).or_insert(usize::MAX / 2);
