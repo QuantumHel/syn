@@ -100,8 +100,6 @@ impl PropagateClifford for PauliPolynomial {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bitvec::bitvec;
-    use bitvec::prelude::Lsb0;
 
     impl PartialEq for PauliPolynomial {
         fn eq(&self, other: &Self) -> bool {
