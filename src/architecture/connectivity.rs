@@ -577,6 +577,90 @@ mod tests {
     }
 
     #[test]
+    fn test_distance_weighted_grid() {
+        let size = 9;
+        let edges = edges![
+            (0, 1),
+            (1, 2),
+            (3, 4),
+            (4, 5),
+            (6, 7),
+            (7, 8),
+            (0, 3),
+            (1, 4),
+            (2, 5),
+            (3, 6),
+            (4, 7),
+            (5, 8),
+        ]
+        .to_owned();
+        let adjacency = setup_adjacency(&edges);
+        let edge_weights = HashMap::from_iter(zip(edges, [2, 2, 1, 1, 2, 2, 3, 1, 3, 3, 1, 3]));
+        let distance = setup_distance(size, &adjacency, Some(edge_weights));
+
+        let ref_iter = zip(
+            edges![
+                (0, 0),
+                (0, 1),
+                (0, 2),
+                (0, 3),
+                (0, 4),
+                (0, 5),
+                (0, 6),
+                (0, 7),
+                (0, 8),
+            ]
+            .to_owned(),
+            [0, 2, 4, 3, 3, 4, 6, 4, 6],
+        );
+
+        let ref_iter = ref_iter.chain(zip(
+            edges![
+                (1, 1),
+                (1, 2),
+                (1, 3),
+                (1, 4),
+                (1, 5),
+                (1, 6),
+                (1, 7),
+                (1, 8),
+            ]
+            .to_owned(),
+            [0, 2, 2, 1, 2, 4, 2, 4],
+        ));
+
+        let ref_iter = ref_iter.chain(zip(
+            edges![(2, 2), (2, 3), (2, 4), (2, 5), (2, 6), (2, 7), (2, 8),].to_owned(),
+            [0, 4, 3, 3, 6, 4, 6],
+        ));
+
+        let ref_iter = ref_iter.chain(zip(
+            edges![(3, 3), (3, 4), (3, 5), (3, 6), (3, 7), (3, 8),].to_owned(),
+            [0, 1, 2, 3, 2, 4],
+        ));
+
+        let ref_iter = ref_iter.chain(zip(
+            edges![(4, 4), (4, 5), (4, 6), (4, 7), (4, 8),].to_owned(),
+            [0, 1, 3, 1, 3],
+        ));
+
+        let ref_iter = ref_iter.chain(zip(
+            edges![(5, 5), (5, 6), (5, 7), (5, 8),].to_owned(),
+            [0, 4, 2, 3],
+        ));
+
+        let ref_iter = ref_iter.chain(zip(edges![(6, 6), (6, 7), (6, 8),].to_owned(), [0, 2, 4]));
+
+        let ref_iter = ref_iter.chain(zip(edges![(7, 7), (7, 8),].to_owned(), [0, 2]));
+
+        let ref_iter = ref_iter.chain(zip(edges![(8, 8),].to_owned(), [0]));
+
+        let ref_distance = HashMap::from_iter(ref_iter);
+
+        assert_eq!(ref_distance, distance);
+    }
+
+    #[test]
     fn test_distance_weighted_cycle() {
         let size = 4;
         let edges = edges![(0, 1), (1, 2), (2, 3), (3, 0)].to_vec();
