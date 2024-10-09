@@ -1,11 +1,12 @@
+use std::cmp::{max, min};
 use crate::edge;
 use edge::Edge;
-use std::collections::{HashMap, VecDeque};
+use std::collections::{BinaryHeap, HashMap, HashSet, VecDeque};
 
 mod edge {
     use std::hash::Hash;
 
-    #[derive(Debug, Clone, Eq)]
+    #[derive(Debug, Clone, Eq, Ord, PartialOrd)]
     pub struct Edge {
         pub(crate) edge: [usize; 2],
     }
@@ -284,6 +285,58 @@ fn setup_distance(
     }
 }
 
+/// Rust implementation of prims algorithm to get the MST
+pub fn prims_algorithm(
+    adjacency: &HashMap<usize, Vec<usize>>,
+    terminal_nodes: &HashSet<usize>,
+    distance: Option<HashMap<Edge, usize>>,
+) -> Vec<Edge> {
+    let mut mst = Vec::new();
+    let mut visited = HashSet::new();
+    let mut heap = BinaryHeap::new();
+
+    if let Some(&start_node) = terminal_nodes.iter().next() {
+        heap.push((0, start_node, None,));
+
+        while let Some((_, node, parent)) = heap.pop() {
+            println!("{:?}", node);
+            if visited.contains(&node) {
+                continue;
+            }
+
+            visited.insert(node);
+
+            if let Some(parent_node) = parent {
+                mst.push(Edge::new(min(node, parent_node), max(node, parent_node)));
+            }
+
+
+            if let Some(neighbors) = adjacency.get(&node) {
+                for neighbor in neighbors {
+                    if !visited.contains(&neighbor) && terminal_nodes.contains(neighbor) {
+                        let edge = Edge::new(min(node, *neighbor), max(node, *neighbor));
+                        let cost = if let Some(ref _distance) = distance {
+                            *_distance.get(&edge).unwrap_or(&1)
+                        } else {
+                            1
+                        };
+                        // The BinaryHeap is a max heap in rust (see: https://doc.rust-lang.org/std/collections/struct.BinaryHeap.html)
+                        // We sort by the negative edge weight which defaults to 1 for the unweighted case
+                        heap.push((-(cost as isize), *neighbor, Some(node)));
+                    }
+                }
+            }
+
+            if terminal_nodes.is_subset(&visited) {
+                break;
+            }
+        }
+    }
+
+    mst
+}
+
+
 #[cfg(test)]
 mod tests {
     use std::iter::zip;
@@ -293,6 +346,129 @@ mod tests {
     use crate::{edge, edges};
 
     use super::*;
+
+    #[test]
+    fn test_prims_algorithm_arbitrary_graph() {
+        let edge_vec = edges![(0, 2), (1, 2), (2, 3), (3, 4)].to_vec();
+        let terminals: HashSet<usize> = HashSet::from([0, 1, 2, 3, 4]);
+        let adjacency = setup_adjacency(&edge_vec);
+        let mut expected_tree = edges![(0, 2), (1, 2), (2, 3), (3, 4)].to_vec();
+        expected_tree.sort();
+
+        let mut mst: Vec<Edge> = prims_algorithm(&adjacency, &terminals, None);
+        mst.sort();
+        assert_eq!(mst, expected_tree);
+    }
+
+    #[test]
+    fn test_prims_algorithm_arbitrary_graph_weight() {
+        let edge_vec = edges![(0, 2), (0, 1), (1, 2), (2, 3)].to_vec();
+        let terminals: HashSet<usize> = HashSet::from([0, 1, 2]);
+        let adjacency = setup_adjacency(&edge_vec);
+
+        let mut distance: Option<HashMap<Edge, usize>> = Some(HashMap::new());
+        if let Some(ref mut map) = distance {
+            map.insert(Edge::new(0, 1), 2);
+            map.insert(Edge::new(0, 2), 0);
+            map.insert(Edge::new(1, 2), 0);
+            map.insert(Edge::new(2, 3), 0);
+        }
+
+        let mut expected_tree = edges![(0, 2), (1, 2)].to_vec();
+        expected_tree.sort();
+
+        let mut mst: Vec<Edge> = prims_algorithm(&adjacency, &terminals, distance);
+        mst.sort();
+        assert_eq!(mst, expected_tree);
+    }
+
+    #[test]
+    fn test_prims_algorithm_arbitrary_graph_different_weight() {
+        let edge_vec = edges![(0, 2), (0, 1), (1, 2), (2, 3)].to_vec();
+        let terminals: HashSet<usize> = HashSet::from([0, 1, 2]);
+        let adjacency = setup_adjacency(&edge_vec);
+
+        let mut distance: Option<HashMap<Edge, usize>> = Some(HashMap::new());
+        if let Some(ref mut map) = distance {
+            map.insert(Edge::new(0, 1), 0);
+            map.insert(Edge::new(0, 2), 0);
+            map.insert(Edge::new(1, 2), 2);
+            map.insert(Edge::new(2, 3), 0);
+        }
+
+        let mut expected_tree = edges![(0, 2), (0, 1)].to_vec();
+        expected_tree.sort();
+
+        let mut mst: Vec<Edge> = prims_algorithm(&adjacency, &terminals, distance);
+        mst.sort();
+        assert_eq!(mst, expected_tree);
+    }
+
+
+    #[test]
+    fn test_prims_algorithm_line() {
+        let edge_vec = edges![(0, 1), (1, 2), (2, 3), (3, 4)].to_vec();
+        let terminals: HashSet<usize> = HashSet::from([0, 1, 2]);
+        let adjacency = setup_adjacency(&edge_vec);
+        let mut expected_tree = edges![(0, 1), (1, 2)].to_vec();
+        expected_tree.sort();
+
+        let mut mst: Vec<Edge> = prims_algorithm(&adjacency, &terminals, None);
+        mst.sort();
+        assert_eq!(mst, expected_tree);
+    }
+
+    #[test]
+    fn test_prims_algorithm_cycle() {
+        let edge_vec = edges![(0, 1), (1, 2), (2, 3), (3, 0)].to_vec();;
+        let terminals: HashSet<usize> = HashSet::from([0, 1, 2]);
+        let adjacency = setup_adjacency(&edge_vec);
+        let mut expected_tree = edges![(0, 1), (1, 2)].to_vec();
+        expected_tree.sort();
+
+        let mut mst: Vec<Edge> = prims_algorithm(&adjacency, &terminals, None);
+        mst.sort();
+        assert_eq!(mst, expected_tree);
+    }
+
+    #[test]
+    fn test_prims_algorithm_cycle_more_terminals() {
+        let edge_vec = edges![(0, 1), (1, 2), (2, 3), (3, 4),(4, 0)].to_vec();;
+        let terminals: HashSet<usize> = HashSet::from([0, 1, 2, 4]);
+        let adjacency = setup_adjacency(&edge_vec);
+        let mut expected_tree = edges![(0, 1), (1, 2), (0, 4)].to_vec();
+        expected_tree.sort();
+
+        let mut mst: Vec<Edge> = prims_algorithm(&adjacency, &terminals, None);
+        mst.sort();
+        assert_eq!(mst, expected_tree);
+    }
+
+    #[test]
+    fn test_prims_algorithm_grid() {
+        let edge_vec = edges![
+            (0, 1),
+            (1, 2),
+            (3, 4),
+            (4, 5),
+            (6, 7),
+            (7, 8),
+            (0, 3),
+            (1, 4),
+            (2, 5),
+            (3, 6),
+            (4, 7),
+            (5, 8)
+        ].to_vec();
+        let terminals: HashSet<usize> = HashSet::from([0, 1, 2]);
+        let adjacency = setup_adjacency(&edge_vec);
+        let mut expected_tree = edges![(0, 1), (1, 2)].to_vec();
+        expected_tree.sort();
+
+        let mut mst: Vec<Edge> = prims_algorithm(&adjacency, &terminals, None);
+        mst.sort();
+        assert_eq!(expected_tree, mst);
+    }
 
     #[test]
     fn test_adjacency_line() {
@@ -353,7 +529,7 @@ mod tests {
             (4, 7),
             (5, 8)
         ]
-        .to_vec();
+            .to_vec();
         let mut adjacency = setup_adjacency(&edges);
 
         // Entries are the same but permuted due to algorithm ordering
@@ -400,7 +576,7 @@ mod tests {
                 (3, 4),
                 (4, 4),
             ]
-            .to_owned(),
+                .to_owned(),
             [0, 1, 2, 3, 4, 0, 1, 2, 3, 0, 1, 2, 0, 1, 0],
         ));
 
@@ -426,7 +602,7 @@ mod tests {
                 (2, 3),
                 (3, 3),
             ]
-            .to_owned(),
+                .to_owned(),
             [0, 1, 2, 1, 0, 1, 2, 0, 1, 0],
         ));
 
@@ -452,7 +628,7 @@ mod tests {
                 (2, 3),
                 (3, 3),
             ]
-            .to_owned(),
+                .to_owned(),
             [0, 1, 1, 1, 0, 1, 1, 0, 1, 0],
         ));
 
@@ -476,7 +652,7 @@ mod tests {
             (4, 7),
             (5, 8),
         ]
-        .to_owned();
+            .to_owned();
         let adjacency = setup_adjacency(&edges);
         let distance = setup_distance(size, &adjacency, None);
 
@@ -492,7 +668,7 @@ mod tests {
                 (0, 7),
                 (0, 8),
             ]
-            .to_owned(),
+                .to_owned(),
             [0, 1, 2, 1, 2, 3, 2, 3, 4],
         );
 
@@ -507,7 +683,7 @@ mod tests {
                 (1, 7),
                 (1, 8),
             ]
-            .to_owned(),
+                .to_owned(),
             [0, 1, 2, 1, 2, 3, 2, 3],
         ));
 
@@ -569,7 +745,7 @@ mod tests {
                 (3, 4),
                 (4, 4),
             ]
-            .to_owned(),
+                .to_owned(),
             [0, 2, 5, 9, 14, 0, 3, 7, 12, 0, 4, 9, 0, 5, 0],
         ));
 
@@ -593,7 +769,7 @@ mod tests {
             (4, 7),
             (5, 8),
         ]
-        .to_owned();
+            .to_owned();
         let adjacency = setup_adjacency(&edges);
         let edge_weights = HashMap::from_iter(zip(edges, [2, 2, 1, 1, 2, 2, 3, 1, 3, 3, 1, 3]));
         let distance = setup_distance(size, &adjacency, Some(edge_weights));
@@ -610,7 +786,7 @@ mod tests {
                 (0, 7),
                 (0, 8),
             ]
-            .to_owned(),
+                .to_owned(),
             [0, 2, 4, 3, 3, 4, 6, 4, 6],
         );
 
@@ -625,7 +801,7 @@ mod tests {
                 (1, 7),
                 (1, 8),
             ]
-            .to_owned(),
+                .to_owned(),
             [0, 2, 2, 1, 2, 4, 2, 4],
         ));
 
@@ -683,7 +859,7 @@ mod tests {
                 (2, 3),
                 (3, 3),
             ]
-            .to_owned(),
+                .to_owned(),
             [0, 2, 5, 4, 0, 3, 6, 0, 4, 0],
         ));
 
@@ -754,7 +930,7 @@ mod tests {
                 (4, 7),
                 (5, 8)
             ]
-            .to_vec(),
+                .to_vec(),
             adjacency: Default::default(),
             distance: Default::default(),
         };
