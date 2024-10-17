@@ -262,6 +262,25 @@ impl Mul for CliffordTableau {
     }
 }
 
+impl fmt::Display for CliffordTableau {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        writeln!(f, "CliffordTableau({})", self.size())?;
+        for pauli_column in self.pauli_columns.iter() {
+            writeln!(f, "{}", pauli_column)?;
+        }
+        let mut sign_str = String::new();
+        for bit in self.signs.iter() {
+            match *bit {
+                true => sign_str.push('-'),
+                false => sign_str.push('+'),
+            }
+            sign_str.push(' ')
+        }
+        sign_str.pop();
+        write!(f, "{}", sign_str)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1040,5 +1059,14 @@ mod tests {
         assert_eq!(ct_ref, adjoint_ct);
         let identity = CliffordTableau::new(2);
         assert_eq!(identity, ct * adjoint_ct);
+    }
+
+    #[test]
+    fn test_clifford_tableau_display() {
+        let ct = setup_sample_ct();
+        assert_eq!(
+            ct.to_string(),
+            "CliffordTableau(3)\nZ Y X I X I\nZ I I X X Y\nZ Y X I I Y\n+ - + - + +"
+        );
     }
 }
