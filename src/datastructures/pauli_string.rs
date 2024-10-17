@@ -88,7 +88,10 @@ impl fmt::Display for PauliString {
                 (true, false) => pauli_str.push('X'),
                 (true, true) => pauli_str.push('Y'),
             }
+            pauli_str.push(' ');
         }
+        pauli_str.pop();
+        // pauli_str.push_str("]");
         write!(f, "{}", pauli_str)
     }
 }
