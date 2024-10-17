@@ -142,6 +142,70 @@ impl CliffordTableau {
             size,
         }
     }
+
+    pub fn adjoint(&self) -> Self {
+        // Algorithm taken from https://algassert.com/post/2002
+        let size = self.size();
+        // Create new CliffordTableau entries
+
+        let mut new_columns = vec![PauliString::from_text_string("I".repeat(2 * size)); size];
+        (0..size).for_each(|i| {
+            for (j, pauli_column) in self.pauli_columns.iter().enumerate() {
+                let (x1, z1, x2, z2) = match (
+                    *pauli_column.x.get(i).unwrap(),
+                    *pauli_column.z.get(i).unwrap(),
+                    *pauli_column.x.get(i + size).unwrap(),
+                    *pauli_column.z.get(i + size).unwrap(),
+                ) {
+                    // II -> II
+                    (false, false, false, false) => (false, false, false, false),
+                    // IX -> IX
+                    (false, false, true, false) => (false, false, true, false),
+                    // IY -> XX
+                    (false, false, true, true) => (true, false, true, false),
+                    // IZ -> XI
+                    (false, false, false, true) => (true, false, false, false),
+                    // XI -> IZ
+                    (true, false, false, false) => (false, false, false, true),
+                    // XX -> IY
+                    (true, false, true, false) => (false, false, true, true),
+                    // XY -> XY
+                    (true, false, true, true) => (true, false, true, true),
+                    // XZ -> XZ
+                    (true, false, false, true) => (true, false, false, true),
+                    // YI -> ZZ
+                    (true, true, false, false) => (false, true, false, true),
+                    // YX -> ZY
+                    (true, true, true, false) => (false, true, true, true),
+                    // YY -> YY
+                    (true, true, true, true) => (true, true, true, true),
+                    // YZ -> YZ
+                    (true, true, false, true) => (true, true, false, true),
+                    // ZI -> ZI
+                    (false, true, false, false) => (false, true, true, false),
+                    // ZX -> ZX
+                    (false, true, true, false) => (false, true, true, false),
+                    // ZY -> YX
+                    (false, true, true, true) => (true, true, true, false),
+                    // ZZ -> YI
+                    (false, true, false, true) => (true, true, false, false),
+                };
+
+                new_columns[i].x.replace(j, x1);
+                new_columns[i].z.replace(j, z1);
+                new_columns[i].x.replace(j + size, x2);
+                new_columns[i].z.replace(j + size, z2);
+            }
+        });
+        let mut adjoint_table = CliffordTableau {
+            pauli_columns: new_columns,
+            signs: BitVec::repeat(false, 2 * size),
+            size,
+        };
+
+        adjoint_table.signs ^= (adjoint_table.compose(self)).signs;
+        adjoint_table
+    }
 }
 
 impl PropagateClifford for CliffordTableau {
@@ -945,5 +1009,36 @@ mod tests {
 
         assert_eq!(ref_ct, third);
         assert_eq!(ref_ct, second_ct * first_ct);
+    }
+
+    #[test]
+    fn test_clifford_tableau_inverse() {
+        let mut ct = CliffordTableau::new(2);
+        ct.x(0);
+        ct.h(0);
+        ct.cx(0, 1);
+
+        let adjoint_ct = ct.adjoint();
+
+        let ct_size = 2;
+
+        let x_1 = bitvec![0, 0, 1, 1];
+        let z_1 = bitvec![1, 0, 0, 0];
+        let pauli_1 = PauliString { x: x_1, z: z_1 };
+
+        let x_2 = bitvec![1, 1, 0, 0];
+        let z_2 = bitvec![0, 0, 0, 1];
+        let pauli_2 = PauliString { x: x_2, z: z_2 };
+
+        let ct_signs = bitvec![1, 0, 0, 0];
+        let ct_ref = CliffordTableau {
+            pauli_columns: vec![pauli_1, pauli_2],
+            signs: ct_signs,
+            size: ct_size,
+        };
+
+        assert_eq!(ct_ref, adjoint_ct);
+        let identity = CliffordTableau::new(2);
+        assert_eq!(identity, ct * adjoint_ct);
     }
 }
