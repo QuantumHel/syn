@@ -169,7 +169,7 @@ mod tests {
     #[test]
     fn test_pauli_string_display() {
     let pauli_string = PauliString::from_text_string(String::from("IXYZI"));    
-    assert_eq!(String::from("IXYZI"), pauli_string.to_string());
+    assert_eq!(String::from("I X Y Z I"), pauli_string.to_string());
 }
 
 }
