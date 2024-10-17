@@ -5,3 +5,4 @@ edition = "2021"
 
 [dependencies]
 bitvec = "1.0.1"
+itertools = "0.13.0"
