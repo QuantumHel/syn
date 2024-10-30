@@ -45,6 +45,7 @@ impl CliffordTableau {
         rhs.prepend(self)
     }
 
+    /// Implements algorithms from https://doi.org/10.22331/q-2022-06-13-734 and Qiskit Clifford implementation
     pub(crate) fn prepend(&self, lhs: &Self) -> Self {
         let size = self.size();
         let mut pauli_columns = vec![PauliString::from_text(&"I".repeat(2 * size)); size];
