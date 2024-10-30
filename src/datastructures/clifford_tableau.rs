@@ -311,8 +311,8 @@ mod tests {
     }
 
     fn setup_sample_ct() -> CliffordTableau {
-        // Stab: ZZZ, YIY, XIX
-        // Destab: IXI, XXI, IYY
+        // Stab: ZZZ, -YIY, XIX
+        // Destab: -IXI, XXI, IYY
         let ct_size = 3;
         // qubit 1x: ZYX
         // qubit 1z: IXI
