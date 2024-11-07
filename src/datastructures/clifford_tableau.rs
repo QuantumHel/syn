@@ -890,7 +890,7 @@ mod tests {
         // Stab: XI, XX
         // Destab: XY, XZ
         let mut ct = setup_sample_two_qubit_ct('x');
-        // Apply CX to 0 -> 1.
+        // Apply CZ to 0 -> 1.
         ct.cz(0, 1);
 
         // Stab: XZ, YY
@@ -921,7 +921,7 @@ mod tests {
         // Stab: YI, YX
         // Destab: YY, YZ
         let mut ct = setup_sample_two_qubit_ct('y');
-        // Apply CX to 0 -> 1.
+        // Apply CZ to 0 -> 1.
         ct.cz(0, 1);
 
         // Stab: YZ, -XY
@@ -952,7 +952,7 @@ mod tests {
         // Stab: ZI, ZX
         // Destab: ZY, ZZ
         let mut ct = setup_sample_two_qubit_ct('z');
-        // Apply CX to 0 -> 1.
+        // Apply CZ to 0 -> 1.
         ct.cz(0, 1);
 
         // Stab: ZI, IX
