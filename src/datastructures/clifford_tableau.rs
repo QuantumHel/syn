@@ -855,11 +855,11 @@ mod tests {
 
     #[test]
     fn test_clifford_tableau_cz_i() {
-        // Stab: II, ZX
-        // Destab: ZY, IZ
+        // Stab: II, IX
+        // Destab: IY, IZ
         let mut ct = setup_sample_two_qubit_ct('i');
 
-        // Apply CX to 0 -> 1.
+        // Apply CZ to 0 -> 1.
         ct.cz(0, 1);
 
         // Stab: II, ZX
