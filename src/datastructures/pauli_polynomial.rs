@@ -157,11 +157,15 @@ mod tests {
 
     #[test]
     fn test_pauli_polynomial_s() {
+        // Polynomials: IZY, XYI, YXX
         let size = 3;
         let mut pp = setup_sample_pp();
 
+        // Apply S to qubits 0 and 1.
         pp.s(0);
         pp.s(1);
+
+        // Polynomials: IZY, -YXI, -XYX
 
         // IXY -> IY(-X)
         let pg1_ref = PauliString::from_text("IYX");
@@ -180,9 +184,11 @@ mod tests {
 
     #[test]
     fn test_pauli_polynomial_v() {
+        // Polynomials: IZY, XYI, YXX
         let size = 3;
         let mut pp = setup_sample_pp();
 
+        // Apply V to qubits 0 and 1.
         pp.v(1);
         pp.v(2);
 
@@ -203,9 +209,11 @@ mod tests {
 
     #[test]
     fn test_pauli_polynomial_s_dgr() {
+        // Polynomials: IZY, XYI, YXX
         let size = 3;
         let mut pp = setup_sample_pp();
 
+        // Apply Sdgr to qubits 1 and 2.
         pp.s_dgr(1);
         pp.s_dgr(2);
 
@@ -226,9 +234,11 @@ mod tests {
 
     #[test]
     fn test_pauli_polynomial_v_dgr() {
+        // Polynomials: IZY, XYI, YXX
         let size = 3;
         let mut pp = setup_sample_pp();
 
+        // Apply Vdgr to qubits 1 and 2.
         pp.v_dgr(1);
         pp.v_dgr(2);
 
@@ -249,9 +259,11 @@ mod tests {
 
     #[test]
     fn test_pauli_polynomial_h() {
+        // Polynomials: IZY, XYI, YXX
         let size = 3;
         let mut pp = setup_sample_pp();
 
+        // Apply H to qubits 0 and 1.
         pp.h(0);
         pp.h(1);
 
@@ -295,6 +307,9 @@ mod tests {
     #[test]
     fn test_pauli_polynomial_cx_i() {
         let size = 3;
+        // Setup:
+        // q0 -> IIII
+        // q1 -> IXYZ
         let mut pp = setup_sample_two_qubit_pp('i');
 
         pp.cx(0, 1);
@@ -319,6 +334,9 @@ mod tests {
     #[test]
     fn test_pauli_polynomial_cx_x() {
         let size = 3;
+        // Setup:
+        // q0 -> XXXX
+        // q1 -> IXYZ
         let mut pp = setup_sample_two_qubit_pp('x');
 
         pp.cx(0, 1);
@@ -342,6 +360,9 @@ mod tests {
     #[test]
     fn test_pauli_polynomial_cx_y() {
         let size = 3;
+        // Setup:
+        // q0 -> YYYY
+        // q1 -> IXYZ
         let mut pp = setup_sample_two_qubit_pp('y');
 
         pp.cx(0, 1);
@@ -365,6 +386,9 @@ mod tests {
     #[test]
     fn test_pauli_polynomial_cx_z() {
         let size = 3;
+        // Setup:
+        // q0 -> ZZZZ
+        // q1 -> IXYZ
         let mut pp = setup_sample_two_qubit_pp('z');
 
         pp.cx(0, 1);
@@ -388,6 +412,9 @@ mod tests {
     #[test]
     fn test_pauli_polynomial_cz_i() {
         let size = 3;
+        // Setup:
+        // q0 -> IIII
+        // q1 -> IXYZ
         let mut pp = setup_sample_two_qubit_pp('i');
 
         pp.cz(0, 1);
@@ -412,6 +439,9 @@ mod tests {
     #[test]
     fn test_pauli_polynomial_cz_x() {
         let size = 3;
+        // Setup:
+        // q0 -> XXXX
+        // q1 -> IXYZ
         let mut pp = setup_sample_two_qubit_pp('x');
 
         pp.cz(0, 1);
@@ -435,6 +465,9 @@ mod tests {
     #[test]
     fn test_pauli_polynomial_cz_y() {
         let size = 3;
+        // Setup:
+        // q0 -> YYYY
+        // q1 -> IXYZ
         let mut pp = setup_sample_two_qubit_pp('y');
 
         pp.cz(0, 1);
@@ -458,6 +491,9 @@ mod tests {
     #[test]
     fn test_pauli_polynomial_cz_z() {
         let size = 3;
+        // Setup:
+        // q0 -> ZZZZ
+        // q1 -> IXYZ
         let mut pp = setup_sample_two_qubit_pp('z');
 
         pp.cz(0, 1);
