@@ -1,4 +1,6 @@
 use bitvec::prelude::BitVec;
+use std::fmt;
+use std::iter::zip;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub(super) struct PauliString {
@@ -74,6 +76,25 @@ pub(super) fn cx(control: &mut PauliString, target: &mut PauliString) {
     control.z ^= &target.z;
 }
 
+impl fmt::Display for PauliString {
+    // This trait requires `fmt` with this exact signature.
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut pauli_str = String::new();
+        for (x, z) in zip(self.x.iter(), self.z.iter()) {
+            match (*x, *z) {
+                (false, false) => pauli_str.push('I'),
+                (false, true) => pauli_str.push('Z'),
+                (true, false) => pauli_str.push('X'),
+                (true, true) => pauli_str.push('Y'),
+            }
+            pauli_str.push(' ');
+        }
+        pauli_str.pop();
+        // pauli_str.push_str("]");
+        write!(f, "{}", pauli_str)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -141,5 +162,11 @@ mod tests {
         let y_bitmask = paulivec.y_bitmask();
         let y_bitmask_ref = bitvec![0, 1, 0, 1, 0, 1];
         assert_eq!(y_bitmask, y_bitmask_ref);
+    }
+
+    #[test]
+    fn test_pauli_string_display() {
+        let pauli_string = PauliString::from_text("IXYZI");
+        assert_eq!(String::from("I X Y Z I"), pauli_string.to_string());
     }
 }
