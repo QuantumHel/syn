@@ -3,7 +3,7 @@ use std::fmt;
 use std::iter::zip;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
-pub(crate) struct PauliString {
+pub struct PauliString {
     pub(super) x: BitVec,
     pub(super) z: BitVec,
 }

@@ -27,6 +27,16 @@ impl CliffordTableau {
         }
     }
 
+    pub fn with_pauli_columns(n: usize, pauli_columns: Vec<PauliString>, signs: BitVec) -> Self {
+        assert_eq!(pauli_columns.len(), n);
+        assert_eq!(signs.len(), 2 * n);
+        CliffordTableau {
+            pauli_columns,
+            signs,
+            size: n,
+        }
+    }
+
     pub fn size(&self) -> usize {
         self.size
     }
@@ -49,7 +59,7 @@ impl CliffordTableau {
         &self.pauli_columns[i]
     }
 
-    pub(crate) fn compose(&self, rhs: &Self) -> Self {
+    pub fn compose(&self, rhs: &Self) -> Self {
         rhs.prepend(self)
     }
 

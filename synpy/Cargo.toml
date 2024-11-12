@@ -5,6 +5,9 @@ edition = "2021"
 
 [dependencies]
 pyo3 = { version = "0.18", features = ["extension-module"] }
+syn = { path = ".." }
+bitvec = "1.0.1"
+
 
 [lib]
 crate-type = ["cdylib"]
