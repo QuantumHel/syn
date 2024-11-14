@@ -1,9 +1,12 @@
-pub mod clifford_tableau;
-pub mod pauli_polynomial;
+use crate::IndexType;
+
+mod clifford_tableau;
+mod pauli_polynomial;
 mod pauli_string;
 
-type IndexType = usize;
-
+pub use clifford_tableau::CliffordTableau;
+pub use pauli_polynomial::PauliPolynomial;
+pub(crate) use pauli_string::PauliString;
 pub trait PropagateClifford
 where
     Self: Sized,
