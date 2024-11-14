@@ -1,10 +1,10 @@
-use super::Architecture;
+use super::{Architecture, GraphIndex};
 
 /// Describes a line architecture. This ensures that consecutive numbers are adjacent. Allows for disjoint breaking of architecture in case this is required.
 #[derive(Debug)]
 pub struct Line {
-    nodes: Vec<usize>,
-    non_cutting: Vec<usize>,
+    nodes: Vec<GraphIndex>,
+    non_cutting: Vec<GraphIndex>,
     updated: bool,
 }
 
@@ -17,7 +17,7 @@ impl Line {
         }
     }
 
-    pub fn remove(&mut self, i: usize) {
+    pub fn remove(&mut self, i: GraphIndex) {
         assert!(
             self.nodes.contains(&i),
             "architecture does not contain node {i}"
@@ -27,7 +27,7 @@ impl Line {
     }
 
     /// Ensures that strict ordering is always enforced
-    pub fn insert(&mut self, i: usize) {
+    pub fn insert(&mut self, i: GraphIndex) {
         match self.nodes.binary_search(&i) {
             Ok(_) => panic!("architecture already contains node {i}"),
             Err(pos) => self.nodes.insert(pos, i),
@@ -37,7 +37,7 @@ impl Line {
 }
 
 impl Architecture for Line {
-    fn best_path(&self, i: usize, j: usize) -> Vec<usize> {
+    fn best_path(&self, i: GraphIndex, j: GraphIndex) -> Vec<GraphIndex> {
         let (smaller, larger) = (i.min(j), i.max(j));
         assert!(
             self.nodes.contains(&j),
@@ -58,7 +58,7 @@ impl Architecture for Line {
         }
     }
 
-    fn distance(&self, i: usize, j: usize) -> usize {
+    fn distance(&self, i: GraphIndex, j: GraphIndex) -> GraphIndex {
         let (smaller, larger) = (i.min(j), i.max(j));
         assert!(
             self.nodes.contains(&i),
@@ -75,7 +75,7 @@ impl Architecture for Line {
         larger - smaller
     }
 
-    fn neighbors(&self, i: usize) -> Vec<usize> {
+    fn neighbors(&self, i: GraphIndex) -> Vec<GraphIndex> {
         assert!(
             self.nodes.contains(&i),
             "architecture does not contain node {i}"
@@ -96,7 +96,7 @@ impl Architecture for Line {
         neighbors
     }
 
-    fn non_cutting(&mut self) -> &Vec<usize> {
+    fn non_cutting(&mut self) -> &Vec<GraphIndex> {
         if !self.updated {
             let mut non_cutting = Vec::new();
             non_cutting.push(self.nodes[0]);

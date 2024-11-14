@@ -1,8 +1,8 @@
-use super::Architecture;
+use super::{Architecture, GraphIndex};
 
 #[derive(Debug)]
 pub struct Complete {
-    nodes: Vec<usize>,
+    nodes: Vec<GraphIndex>,
 }
 
 impl Complete {
@@ -25,12 +25,12 @@ impl Complete {
             !self.nodes.contains(&i),
             "architecture already contains node {i}"
         );
-        self.nodes.push(i)
+        self.nodes.push(i);
     }
 }
 
 impl Architecture for Complete {
-    fn best_path(&self, i: usize, j: usize) -> Vec<usize> {
+    fn best_path(&self, i: GraphIndex, j: GraphIndex) -> Vec<GraphIndex> {
         assert!(
             self.nodes.contains(&i),
             "architecture does not contain node {i}"
@@ -42,7 +42,7 @@ impl Architecture for Complete {
         vec![i, j]
     }
 
-    fn distance(&self, i: usize, j: usize) -> usize {
+    fn distance(&self, i: GraphIndex, j: GraphIndex) -> GraphIndex {
         assert!(
             self.nodes.contains(&i),
             "architecture does not contain node {i}"
@@ -54,15 +54,15 @@ impl Architecture for Complete {
         1
     }
 
-    fn neighbors(&self, i: usize) -> Vec<usize> {
+    fn neighbors(&self, i: GraphIndex) -> Vec<GraphIndex> {
         assert!(
             self.nodes.contains(&i),
             "architecture does not contain node {i}"
         );
-        self.nodes.iter().filter(|x| **x != i).cloned().collect()
+        self.nodes.iter().filter(|x| **x != i).copied().collect()
     }
 
-    fn non_cutting(&mut self) -> &Vec<usize> {
+    fn non_cutting(&mut self) -> &Vec<GraphIndex> {
         &self.nodes
     }
 }
