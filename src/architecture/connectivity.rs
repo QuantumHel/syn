@@ -1,9 +1,9 @@
 use petgraph::{
     algo::{articulation_points::articulation_points, floyd_warshall_path},
-    graph::{NodeIndex, NodeReferences, UnGraph},
+    graph::{NodeIndex, UnGraph},
     visit::{IntoNodeReferences, NodeIndexable, NodeRef},
 };
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use super::{Architecture, EdgeWeight, GraphIndex, NodeWeight};
 
