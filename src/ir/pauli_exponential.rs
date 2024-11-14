@@ -1,1 +1,21 @@
+use crate::{
+    datastructures::{CliffordTableau, PauliPolynomial},
+    synthesis_methods::naive::Naive,
+};
 
+use super::{CliffordGates, Gates};
+
+struct PauliExponential {
+    pauli_polynomial: PauliPolynomial,
+    clifford_tableau: CliffordTableau,
+}
+
+pub struct PauliExponentialSynthesizer;
+impl<G> Naive<PauliExponential, G> for PauliExponentialSynthesizer
+where
+    G: CliffordGates + Gates,
+{
+    fn run(program: PauliExponential, external_rep: G) {
+        todo!()
+    }
+}
