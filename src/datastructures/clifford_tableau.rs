@@ -17,6 +17,16 @@ pub struct CliffordTableau {
     size: usize, // https://quantumcomputing.stackexchange.com/questions/28740/tracking-the-signs-of-the-inverse-tableau
 }
 
+impl Clone for CliffordTableau {
+    fn clone(&self) -> Self {
+        CliffordTableau {
+            pauli_columns: self.pauli_columns.clone(),
+            signs: self.signs.clone(),
+            size: self.size,
+        }
+    }
+}
+
 impl CliffordTableau {
     /// Constructs a Clifford Tableau of `n` qubits initialized to the identity operation
     pub fn new(n: usize) -> Self {

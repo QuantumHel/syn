@@ -64,8 +64,10 @@ where
             }
 
             // Use the pivot to remove all other terms in the X observable.
+            println!("Before this");
             let affected_rows = check_rows(&clifford_tableau, col, n, |p| p == 3);
             for row in affected_rows {
+                println!("Affected row: {}", row);
                 clifford_tableau.s(row);
             }
 

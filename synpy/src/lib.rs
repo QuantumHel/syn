@@ -4,6 +4,10 @@ use pyo3::basic::CompareOp;
 use syn::datastructures::clifford_tableau::CliffordTableau as SynCliffordTableau;
 use syn::datastructures::pauli_string::PauliString;
 
+use syn::ir::clifford_tableau::CliffordTableauSynthesizer;
+use syn::ir::CliffordGatesPrinter;
+
+use syn::synthesis_methods::naive::Naive;
 
 #[pyclass]
 pub struct CliffordTableau {
@@ -51,6 +55,12 @@ impl CliffordTableau {
         } else {
             Ok(false)
         }
+    }
+
+    pub fn synthesize(&self) -> Vec<String> {
+        let mut printer = CliffordGatesPrinter::new(self.size());
+        CliffordTableauSynthesizer::run(self.tableau.clone(), &mut printer);
+        printer.gates
     }
 }
 
