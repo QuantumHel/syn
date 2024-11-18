@@ -61,7 +61,7 @@ impl PauliPolynomial {
 
 impl PropagateClifford for PauliPolynomial {
     fn cx(&mut self, control: IndexType, target: IndexType) -> &mut Self {
-        let mut bit_mask = BitVec::repeat(true, self.angles.len());
+        let mut bit_mask = BitVec::<u32, Lsb0>::repeat(true, self.length());
 
         let (control, target) = match control < target {
             true => {
