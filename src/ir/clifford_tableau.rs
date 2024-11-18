@@ -4,8 +4,8 @@ use std::iter::{self, zip};
 use itertools::{iproduct, Itertools};
 
 use crate::{
-    data_structures::{CliffordTableau, PauliLetter, PauliString, PropagateClifford},
-    synthesis_methods::{custom::Custom, naive::Naive},
+    data_structures::{CliffordTableau, PauliString, PropagateClifford},
+    synthesis_methods::naive::Naive,
 };
 
 use super::CliffordGates;
