@@ -83,7 +83,7 @@ impl CliffordTableau {
         }
 
         // Accumulate the i factors when lhs basis is aggregated per rows in rhs tableau.
-        // Indices reflect a (i,j) × (j, k) matrix multiplication.
+        // Indices reflect a (i, j) × (j, k) matrix multiplication.
         // Loop re-order to be (i, k, j).
         for (i, i_factor) in i_factors.iter_mut().enumerate() {
             for rhs_pauli_column in self.pauli_columns.iter() {

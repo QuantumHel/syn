@@ -1,5 +1,5 @@
 use crate::{
-    datastructures::{CliffordTableau, PauliString, PropagateClifford},
+    data_structures::{CliffordTableau, PauliString, PropagateClifford},
     synthesis_methods::naive::Naive,
 };
 
