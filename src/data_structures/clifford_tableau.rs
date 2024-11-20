@@ -31,18 +31,14 @@ impl CliffordTableau {
         self.size
     }
 
-    pub(crate) fn z_signs(&self) -> BitVec {
+    pub(crate) fn x_signs(&self) -> BitVec {
         let n = self.size();
         self.signs[0..n].to_bitvec()
     }
 
-    pub(crate) fn x_signs(&self) -> BitVec {
+    pub(crate) fn z_signs(&self) -> BitVec {
         let n = self.size();
         self.signs[n..].to_bitvec()
-    }
-
-    pub(crate) fn columns(&self) -> &Vec<PauliString> {
-        &self.pauli_columns
     }
 
     pub(crate) fn column(&self, i: usize) -> &PauliString {
