@@ -3,7 +3,7 @@ use std::fmt;
 use std::iter::zip;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
-pub(crate) struct PauliString {
+pub struct PauliString {
     pub(super) x: BitVec,
     pub(super) z: BitVec,
 }
@@ -57,6 +57,10 @@ impl PauliString {
 
     pub fn len(&self) -> usize {
         self.x.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.x.is_empty()
     }
 
     pub(super) fn s(&mut self) {
