@@ -1,4 +1,4 @@
-use bitvec::{prelude::BitVec, slice::BitSlice};
+use bitvec::prelude::BitVec;
 use itertools::{izip, Itertools};
 use std::fmt;
 use std::iter::{self, zip};
@@ -9,7 +9,7 @@ use super::{
     IndexType, PropagateClifford,
 };
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub struct CliffordTableau {
     // We keep track of the pauli letters per qubit not per stabilizer
     pauli_columns: Vec<PauliString>,
@@ -164,45 +164,12 @@ impl CliffordTableau {
         let mut new_columns = vec![PauliString::from_text(&"I".repeat(2 * size)); size];
         (0..size).for_each(|i| {
             for (j, pauli_column) in self.pauli_columns.iter().enumerate() {
-                let (x1, z1, x2, z2) = match (
+                let (x1, z1, x2, z2) = reverse_flow(
                     *pauli_column.x.get(i).unwrap(),
                     *pauli_column.z.get(i).unwrap(),
                     *pauli_column.x.get(i + size).unwrap(),
                     *pauli_column.z.get(i + size).unwrap(),
-                ) {
-                    // II -> II
-                    (false, false, false, false) => (false, false, false, false),
-                    // IX -> IX
-                    (false, false, true, false) => (false, false, true, false),
-                    // IY -> XX
-                    (false, false, true, true) => (true, false, true, false),
-                    // IZ -> XI
-                    (false, false, false, true) => (true, false, false, false),
-                    // XI -> IZ
-                    (true, false, false, false) => (false, false, false, true),
-                    // XX -> IY
-                    (true, false, true, false) => (false, false, true, true),
-                    // XY -> XY
-                    (true, false, true, true) => (true, false, true, true),
-                    // XZ -> XZ
-                    (true, false, false, true) => (true, false, false, true),
-                    // YI -> ZZ
-                    (true, true, false, false) => (false, true, false, true),
-                    // YX -> ZY
-                    (true, true, true, false) => (false, true, true, true),
-                    // YY -> YY
-                    (true, true, true, true) => (true, true, true, true),
-                    // YZ -> YZ
-                    (true, true, false, true) => (true, true, false, true),
-                    // ZI -> ZI
-                    (false, true, false, false) => (false, true, true, false),
-                    // ZX -> ZX
-                    (false, true, true, false) => (false, true, true, false),
-                    // ZY -> YX
-                    (false, true, true, true) => (true, true, true, false),
-                    // ZZ -> YI
-                    (false, true, false, true) => (true, true, false, false),
-                };
+                );
 
                 new_columns[i].x.replace(j, x1);
                 new_columns[i].z.replace(j, z1);
@@ -218,6 +185,43 @@ impl CliffordTableau {
 
         adjoint_table.signs ^= (adjoint_table.compose(self)).signs;
         adjoint_table
+    }
+}
+
+fn reverse_flow(xx: bool, xz: bool, zx: bool, zz: bool) -> (bool, bool, bool, bool) {
+    match (xx, xz, zx, zz) {
+        // II -> II
+        (false, false, false, false) => (false, false, false, false),
+        // IX -> IX
+        (false, false, true, false) => (false, false, true, false),
+        // IY -> XX
+        (false, false, true, true) => (true, false, true, false),
+        // IZ -> XI
+        (false, false, false, true) => (true, false, false, false),
+        // XI -> IZ
+        (true, false, false, false) => (false, false, false, true),
+        // XX -> IY
+        (true, false, true, false) => (false, false, true, true),
+        // XY -> XY
+        (true, false, true, true) => (true, false, true, true),
+        // XZ -> XZ
+        (true, false, false, true) => (true, false, false, true),
+        // YI -> ZZ
+        (true, true, false, false) => (false, true, false, true),
+        // YX -> ZY
+        (true, true, true, false) => (false, true, true, true),
+        // YY -> YY
+        (true, true, true, true) => (true, true, true, true),
+        // YZ -> YZ
+        (true, true, false, true) => (true, true, false, true),
+        // ZI -> ZI
+        (false, true, false, false) => (false, true, false, false),
+        // ZX -> ZX
+        (false, true, true, false) => (false, true, true, false),
+        // ZY -> YX
+        (false, true, true, true) => (true, true, true, false),
+        // ZZ -> YI
+        (false, true, false, true) => (true, true, false, false),
     }
 }
 
@@ -1044,6 +1048,39 @@ mod tests {
     }
 
     #[test]
+    fn test_reverse_flow() {
+        let mut output = Vec::new();
+        let ordered_ref = (0..16)
+            .map(|i| {
+                (
+                    i >> 3 & 1 == 1,
+                    i >> 2 & 1 == 1,
+                    i >> 1 & 1 == 1,
+                    i & 1 == 1,
+                )
+            })
+            .collect::<Vec<_>>();
+
+        for (xx, xz, zx, zz) in ordered_ref.clone() {
+            output.push(reverse_flow(xx, xz, zx, zz));
+        }
+        let mut sorted_output = output.clone();
+        sorted_output.sort();
+
+        for (i, j) in zip(&sorted_output, &ordered_ref) {
+            assert_eq!(i, j);
+        }
+
+        let mut ordered_output = Vec::new();
+        for (xx, xz, zx, zz) in output {
+            ordered_output.push(reverse_flow(xx, xz, zx, zz));
+        }
+        for (i, j) in zip(&ordered_output, &ordered_ref) {
+            assert_eq!(i, j);
+        }
+    }
+
+    #[test]
     fn test_clifford_tableau_inverse() {
         let mut ct = CliffordTableau::new(2);
         ct.x(0);
@@ -1071,6 +1108,15 @@ mod tests {
 
         assert_eq!(ct_ref, adjoint_ct);
         let identity = CliffordTableau::new(2);
+        assert_eq!(identity, ct * adjoint_ct);
+    }
+
+    #[test]
+    fn test_clifford_tableau_inverse_complex() {
+        let ct = setup_sample_inverse_ct();
+        let adjoint_ct = ct.adjoint();
+        let identity = CliffordTableau::new(4);
+
         assert_eq!(identity, ct * adjoint_ct);
     }
 
