@@ -15,7 +15,7 @@ impl<G> Naive<PauliExponential, G> for PauliExponentialSynthesizer
 where
     G: CliffordGates + Gates,
 {
-    fn run(program: PauliExponential, external_rep: G) {
+    fn run(program: PauliExponential, external_rep: &mut G) {
         todo!()
     }
 }

@@ -6,4 +6,4 @@ pub mod import;
 pub mod ir;
 pub mod synthesis_methods;
 
-pub(crate) type IndexType = usize;
+pub type IndexType = usize;
