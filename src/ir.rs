@@ -22,20 +22,6 @@ pub trait Gates {
     fn rz(&mut self, target: IndexType, angle: f64);
 }
 
-pub struct CliffordGatesPrinter {
-    pub size: usize,
-    pub gates: Vec<String>,
-}
-
-impl CliffordGatesPrinter {
-    pub fn new(size: usize) -> Self {
-        CliffordGatesPrinter {
-            size,
-            gates: Vec::new(),
-        }
-    }
-}
-
 impl CliffordGates for &mut CliffordGatesPrinter {
     fn s(&mut self, target: IndexType) {
         self.gates.push(format!("S {}", target));

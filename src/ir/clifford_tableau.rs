@@ -1,149 +1,169 @@
 use crate::{
-    datastructures::{CliffordTableau, PauliString, PropagateClifford},
+    data_structures::{CliffordTableau, PauliString, PropagateClifford},
     synthesis_methods::naive::Naive,
 };
 
 use super::CliffordGates;
 
-fn get_pauli(pauli_string: &PauliString, i: usize) -> usize {
-    pauli_string.x(i) as usize + pauli_string.z(i) as usize
+fn get_pauli(pauli_string: &PauliString, row: usize) -> usize {
+    pauli_string.x(row) as usize + pauli_string.z(row) as usize * 2
 }
 pub struct CliffordTableauSynthesizer;
-impl<G> Naive<CliffordTableau, G> for CliffordTableauSynthesizer
+impl<G> Naive<&CliffordTableau, G> for CliffordTableauSynthesizer
 where
     G: CliffordGates,
 {
-    fn run(mut clifford_tableau: CliffordTableau, mut repr: G) {
-        let n = clifford_tableau.size();
-        for col in 0..n {
-            let mut pivot_row = col;
+    fn run(clifford_tableau: &CliffordTableau, repr: &mut G) {
+        let mut clifford_tableau = clifford_tableau.adjoint();
+
+        let num_qubits = clifford_tableau.size();
+        for row in 0..num_qubits {
+            let mut pivot_col = row;
             let mut x_pauli;
             let mut z_pauli;
             {
-                let column = clifford_tableau.column(col);
-                for row in 0..n {
+                for col in 0..num_qubits {
+                    let column = clifford_tableau.column(col);
                     x_pauli = get_pauli(column, row);
-                    z_pauli = get_pauli(column, row + n);
+                    z_pauli = get_pauli(column, row + num_qubits);
                     if x_pauli != 0 && z_pauli != 0 && x_pauli != z_pauli {
-                        pivot_row = row;
+                        pivot_col = col;
                         break;
                     }
                 }
             }
 
-            if pivot_row != col {
-                repr.cx(pivot_row, col);
-                repr.cx(col, pivot_row);
-                repr.cx(pivot_row, col);
+            if pivot_col != row {
+                repr.cx(pivot_col, row);
+                repr.cx(row, pivot_col);
+                repr.cx(pivot_col, row);
 
-                clifford_tableau.cx(pivot_row, col);
-                clifford_tableau.cx(col, pivot_row);
-                clifford_tableau.cx(pivot_row, col);
+                clifford_tableau.cx(pivot_col, row);
+                clifford_tableau.cx(row, pivot_col);
+                clifford_tableau.cx(pivot_col, row);
             }
 
             {
-                let column = clifford_tableau.column(col);
-                x_pauli = get_pauli(column, col);
-                z_pauli = get_pauli(column, col + n);
+                let column = clifford_tableau.column(row);
+                z_pauli = get_pauli(column, row + num_qubits);
             }
 
             // Transform the pivot to the XZ plane
             if z_pauli == 3 {
-                repr.s(col);
-                clifford_tableau.s(col);
-            }
-
-            if z_pauli == 2 {
-                repr.h(col);
-                clifford_tableau.h(col);
-            }
-
-            if x_pauli == 2 {
-                repr.s(col);
-                clifford_tableau.s(col);
-            }
-
-            // Use the pivot to remove all other terms in the X observable.
-            println!("Before this");
-            let affected_rows = check_rows(&clifford_tableau, col, n, |p| p == 3);
-            for row in affected_rows {
-                println!("Affected row: {}", row);
-                clifford_tableau.s(row);
-            }
-
-            let affected_rows = check_rows(&clifford_tableau, col, n, |p| p == 2);
-            for row in affected_rows {
-                repr.h(row);
-                clifford_tableau.h(row);
-            }
-
-            let affected_rows = check_rows(&clifford_tableau, col, n, |p| p != 0);
-            for row in affected_rows {
-                repr.cx(col, row);
-                clifford_tableau.cx(col, row);
-            }
-
-            // Use the pivot to remove all other terms in the Z observable.
-            let affected_rows = check_rows(&clifford_tableau, col + n, 2 * n, |p| p == 3);
-            for row in affected_rows {
                 repr.s(row);
                 clifford_tableau.s(row);
             }
 
-            let affected_rows = check_rows(&clifford_tableau, col + n, 2 * n, |p| p == 1);
-            for row in affected_rows {
+            {
+                let column = clifford_tableau.column(row);
+                z_pauli = get_pauli(column, row + num_qubits);
+            }
+
+            if z_pauli != 2 {
                 repr.h(row);
                 clifford_tableau.h(row);
             }
 
-            let affected_rows = check_rows(&clifford_tableau, col + n, 2 * n, |p| p != 0);
-            for row in affected_rows {
-                repr.cx(row - n, col);
-                clifford_tableau.cx(row - n, col);
+            {
+                let column = clifford_tableau.column(row);
+                x_pauli = get_pauli(column, row);
+            }
+
+            if x_pauli != 1 {
+                repr.s(row);
+                clifford_tableau.s(row);
+            }
+
+            // Use the pivot to remove all other terms in the X observable.
+            let affected_cols = check_x_cols(&clifford_tableau, row, |p| p == 3);
+            for col in affected_cols {
+                repr.s(col);
+                clifford_tableau.s(col);
+            }
+
+            let affected_cols = check_x_cols(&clifford_tableau, row, |p| p == 2);
+            for col in affected_cols {
+                repr.h(col);
+                clifford_tableau.h(col);
+            }
+
+            let affected_cols = check_x_cols(&clifford_tableau, row, |p| p != 0);
+            for col in affected_cols {
+                repr.cx(row, col);
+                clifford_tableau.cx(row, col);
+            }
+
+            // Use the pivot to remove all other terms in the Z observable.
+            let affected_cols = check_z_cols(&clifford_tableau, row, |p| p == 3);
+            for col in affected_cols {
+                repr.s(col);
+                clifford_tableau.s(col);
+            }
+
+            let affected_cols = check_z_cols(&clifford_tableau, row, |p| p == 1);
+            for col in affected_cols {
+                repr.h(col);
+                clifford_tableau.h(col);
+            }
+
+            let affected_cols = check_z_cols(&clifford_tableau, row, |p| p != 0);
+            for col in affected_cols {
+                repr.cx(col, row);
+                clifford_tableau.cx(col, row);
             }
         }
 
         let z_signs = clifford_tableau.z_signs();
 
-        for (col, sign) in z_signs.iter().enumerate() {
+        for (row, sign) in z_signs.iter().enumerate() {
             if *sign {
-                repr.h(col);
-                repr.s(col);
-                repr.s(col);
-                repr.h(col);
-                clifford_tableau.h(col);
-                clifford_tableau.s(col);
-                clifford_tableau.s(col);
-                clifford_tableau.h(col);
+                repr.x(row);
+                clifford_tableau.x(row);
             }
         }
 
         let x_signs = clifford_tableau.x_signs();
 
-        for (col, sign) in x_signs.iter().enumerate() {
+        for (row, sign) in x_signs.iter().enumerate() {
             if *sign {
-                repr.s(col);
-                repr.s(col);
-                clifford_tableau.s(col);
-                clifford_tableau.s(col);
+                repr.z(row);
+                clifford_tableau.z(row);
             }
         }
     }
 }
 
 /// Helper function that returns indices for a particular column `col` of `clifford_tableau` that match the provided closure `pauli_check`.
-fn check_rows(
+fn check_x_cols(
     clifford_tableau: &CliffordTableau,
-    col: usize,
-    n: usize,
+    row: usize,
     pauli_check: fn(usize) -> bool,
 ) -> Vec<usize> {
-    let column = clifford_tableau.column(col);
-    let mut affected_rows = Vec::new();
-    for row in (col + 1)..n {
-        if pauli_check(get_pauli(column, row)) {
-            affected_rows.push(row);
+    let mut affected_cols = Vec::new();
+    let num_qubits = clifford_tableau.size();
+    for col in row + 1..num_qubits {
+        let pauli_string = clifford_tableau.column(col);
+        if pauli_check(get_pauli(pauli_string, row)) {
+            affected_cols.push(col);
         }
     }
-    affected_rows
+    affected_cols
+}
+
+/// Helper function that returns indices for a particular column `col` of `clifford_tableau` that match the provided closure `pauli_check`.
+fn check_z_cols(
+    clifford_tableau: &CliffordTableau,
+    row: usize,
+    pauli_check: fn(usize) -> bool,
+) -> Vec<usize> {
+    let mut affected_cols = Vec::new();
+    let num_qubits = clifford_tableau.size();
+    for col in row + 1..num_qubits {
+        let pauli_string = clifford_tableau.column(col);
+
+        if pauli_check(get_pauli(pauli_string, row + num_qubits)) {
+            affected_cols.push(col);
+        }
+    }
+    affected_cols
 }

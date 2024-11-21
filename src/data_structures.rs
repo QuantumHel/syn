@@ -6,7 +6,7 @@ pub mod pauli_string;
 
 pub use clifford_tableau::CliffordTableau;
 pub use pauli_polynomial::PauliPolynomial;
-pub(crate) use pauli_string::PauliString;
+pub use pauli_string::PauliString;
 pub trait PropagateClifford
 where
     Self: Sized,
