@@ -1,8 +1,8 @@
 use bitvec::prelude::BitVec;
 use pyo3::prelude::*;
 use pyo3::basic::CompareOp;
-use syn::datastructures::clifford_tableau::CliffordTableau as SynCliffordTableau;
-use syn::datastructures::pauli_string::PauliString;
+use syn::data_structures::clifford_tableau::CliffordTableau as SynCliffordTableau;
+use syn::data_structures::pauli_string::PauliString;
 
 use syn::ir::clifford_tableau::CliffordTableauSynthesizer;
 use syn::ir::CliffordGatesPrinter;
@@ -24,13 +24,13 @@ impl CliffordTableau {
     }
 
     #[staticmethod]
-    pub fn with_pauli_columns(n: usize, pauli_strings: Vec<String>, signs: Vec<bool>) -> Self {
+    pub fn from_parts(pauli_strings: Vec<String>, signs: Vec<bool>, n: usize) -> Self {
         let pauli_columns: Vec<PauliString> = pauli_strings
             .iter()
             .map(|pauli_string| PauliString::from_text(pauli_string))
             .collect();
         let signs_bitvec: BitVec = signs.iter().copied().collect();
-        let tableau = SynCliffordTableau::with_pauli_columns(n, pauli_columns, signs_bitvec);
+        let tableau = SynCliffordTableau::from_parts(pauli_columns, signs_bitvec, n);
 
         CliffordTableau { tableau }
     }
@@ -59,7 +59,7 @@ impl CliffordTableau {
 
     pub fn synthesize(&self) -> Vec<String> {
         let mut printer = CliffordGatesPrinter::new(self.size());
-        CliffordTableauSynthesizer::run(self.tableau.clone(), &mut printer);
+        CliffordTableauSynthesizer::run(&self.tableau, &mut printer);
         printer.gates
     }
 }
