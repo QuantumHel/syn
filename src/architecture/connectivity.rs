@@ -1,5 +1,5 @@
 use petgraph::{
-    algo::{articulation_points::articulation_points, floyd_warshall_path},
+    algo::{articulation_points::articulation_points, floyd_warshall::floyd_warshall_path},
     graph::{NodeIndex, NodeReferences, UnGraph},
     visit::{IntoNodeReferences, NodeIndexable, NodeRef},
 };
