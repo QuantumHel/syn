@@ -4,6 +4,7 @@ mod clifford_tableau;
 mod pauli_polynomial;
 mod pauli_string;
 
+use bitvec::vec::BitVec;
 pub use clifford_tableau::CliffordTableau;
 pub use pauli_polynomial::PauliPolynomial;
 pub use pauli_string::PauliString;
@@ -46,7 +47,50 @@ where
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+pub trait MaskedPropagateClifford
+where
+    Self: Sized,
+{
+    fn masked_cx(&self, control: IndexType, target: IndexType, mask: &BitVec) -> &Self;
+    fn masked_s(&self, target: IndexType, mask: &BitVec) -> &Self;
+    fn masked_v(&self, target: IndexType, mask: &BitVec) -> &Self;
+
+    fn masked_s_dgr(&self, target: IndexType, mask: &BitVec) -> &Self {
+        self.masked_z(target, mask).masked_s(target, mask)
+    }
+
+    fn masked_v_dgr(&self, target: IndexType, mask: &BitVec) -> &Self {
+        self.masked_x(target, mask).masked_v(target, mask)
+    }
+
+    fn masked_x(&self, target: IndexType, mask: &BitVec) -> &Self {
+        self.masked_v(target, mask).masked_v(target, mask)
+    }
+
+    fn masked_y(&self, target: IndexType, mask: &BitVec) -> &Self {
+        self.masked_s_dgr(target, mask)
+            .masked_x(target, mask)
+            .masked_s(target, mask)
+    }
+
+    fn masked_z(&self, target: IndexType, mask: &BitVec) -> &Self {
+        self.masked_s(target, mask).masked_s(target, mask)
+    }
+
+    fn masked_h(&self, target: IndexType, mask: &BitVec) -> &Self {
+        self.masked_s(target, mask)
+            .masked_v(target, mask)
+            .masked_s(target, mask)
+    }
+
+    fn masked_cz(&self, control: IndexType, target: IndexType, mask: &BitVec) -> &Self {
+        self.masked_h(target, mask);
+        self.masked_cx(control, target, mask);
+        self.masked_h(target, mask)
+    }
+}
+
+#[derive(Clone, Debug)]
 pub enum PauliLetter {
     I,
     X,
