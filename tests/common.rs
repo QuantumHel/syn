@@ -1,5 +1,6 @@
-use syn::ir::CliffordGates;
+use syn::ir::{CliffordGates, Gates};
 
+type Angle = f64;
 #[derive(Debug, Default)]
 pub struct MockCircuit {
     commands: Vec<MockCommand>,
@@ -17,6 +18,9 @@ pub enum MockCommand {
     V(usize),
     SDgr(usize),
     VDgr(usize),
+    Rx(usize, f64),
+    Ry(usize, f64),
+    Rz(usize, f64),
 }
 
 impl MockCircuit {
@@ -69,5 +73,19 @@ impl CliffordGates for MockCircuit {
 
     fn cz(&mut self, control: syn::IndexType, target: syn::IndexType) {
         self.commands.push(MockCommand::CZ(control, target));
+    }
+}
+
+impl Gates for MockCircuit {
+    fn rx(&mut self, target: syn::IndexType, angle: Angle) {
+        self.commands.push(MockCommand::Rx(target, angle));
+    }
+
+    fn ry(&mut self, target: syn::IndexType, angle: Angle) {
+        self.commands.push(MockCommand::Ry(target, angle));
+    }
+
+    fn rz(&mut self, target: syn::IndexType, angle: Angle) {
+        self.commands.push(MockCommand::Rz(target, angle));
     }
 }
