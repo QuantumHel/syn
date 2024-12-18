@@ -164,8 +164,8 @@ impl CliffordTableau {
         let mut new_columns = vec![PauliString::from_text(&"I".repeat(2 * size)); size];
         (0..size).for_each(|i| {
             for (j, pauli_column) in self.pauli_columns.iter().enumerate() {
-                let (x1, z1, x2, z2) = reverse_flow(
-                    *pauli_column.x.get(i).unwrap(),
+                let ((x1, z1), (x2, z2)) = reverse_flow(
+                *pauli_column.x.get(i).unwrap(),
                     *pauli_column.z.get(i).unwrap(),
                     *pauli_column.x.get(i + size).unwrap(),
                     *pauli_column.z.get(i + size).unwrap(),
@@ -188,40 +188,30 @@ impl CliffordTableau {
     }
 }
 
-fn reverse_flow(xx: bool, xz: bool, zx: bool, zz: bool) -> (bool, bool, bool, bool) {
-    match (xx, xz, zx, zz) {
-        // II -> II
-        (false, false, false, false) => (false, false, false, false),
-        // IX -> IX
-        (false, false, true, false) => (false, false, true, false),
-        // IY -> XX
-        (false, false, true, true) => (true, false, true, false),
-        // IZ -> XI
-        (false, false, false, true) => (true, false, false, false),
-        // XI -> IZ
-        (true, false, false, false) => (false, false, false, true),
-        // XX -> IY
-        (true, false, true, false) => (false, false, true, true),
-        // XY -> XY
-        (true, false, true, true) => (true, false, true, true),
-        // XZ -> XZ
-        (true, false, false, true) => (true, false, false, true),
-        // YI -> ZZ
-        (true, true, false, false) => (false, true, false, true),
-        // YX -> ZY
-        (true, true, true, false) => (false, true, true, true),
-        // YY -> YY
-        (true, true, true, true) => (true, true, true, true),
-        // YZ -> YZ
-        (true, true, false, true) => (true, true, false, true),
-        // ZI -> ZI
-        (false, true, false, false) => (false, true, false, false),
-        // ZX -> ZX
-        (false, true, true, false) => (false, true, true, false),
-        // ZY -> YX
-        (false, true, true, true) => (true, true, true, false),
-        // ZZ -> YI
-        (false, true, false, true) => (true, true, false, false),
+
+const I: (bool, bool) = (false, false);
+const X: (bool, bool) = (true, false);
+const Y: (bool, bool) = (true, true);
+const Z: (bool, bool) = (false, true);
+
+fn reverse_flow(x1: bool, z1: bool, x2: bool, z2: bool) -> ((bool, bool), (bool, bool)) {
+    match ((x1, z1), (x2, z2)) {
+        (I, I) => (I, I),
+        (I, X) => (I, X),
+        (I, Y) => (X, X),
+        (I, Z) => (X, I),
+        (X, I) => (I, Z),
+        (X, X) => (I, Y),
+        (X, Y) => (X, Y),
+        (X, Z) => (X, Z),
+        (Y, I) => (Z, Z),
+        (Y, X) => (Z, Y),
+        (Y, Y) => (Y, Y),
+        (Y, Z) => (Y, Z),
+        (Z, I) => (Z, I),
+        (Z, X) => (Z, X),
+        (Z, Y) => (Y, X),
+        (Z, Z) => (Y, I),
     }
 }
 
@@ -1111,15 +1101,15 @@ mod tests {
         let ordered_ref = (0..16)
             .map(|i| {
                 (
-                    i >> 3 & 1 == 1,
-                    i >> 2 & 1 == 1,
-                    i >> 1 & 1 == 1,
-                    i & 1 == 1,
+                    (i >> 3 & 1 == 1,
+                    i >> 2 & 1 == 1),
+                    (i >> 1 & 1 == 1,
+                    i & 1 == 1),
                 )
             })
             .collect::<Vec<_>>();
 
-        for (xx, xz, zx, zz) in ordered_ref.clone() {
+        for ((xx, xz), (zx, zz)) in ordered_ref.clone() {
             output.push(reverse_flow(xx, xz, zx, zz));
         }
         let mut sorted_output = output.clone();
@@ -1130,7 +1120,7 @@ mod tests {
         }
 
         let mut ordered_output = Vec::new();
-        for (xx, xz, zx, zz) in output {
+        for ((xx, xz), (zx, zz)) in output {
             ordered_output.push(reverse_flow(xx, xz, zx, zz));
         }
         for (i, j) in zip(&ordered_output, &ordered_ref) {
