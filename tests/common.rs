@@ -5,7 +5,7 @@ pub struct MockCircuit {
     commands: Vec<MockCommand>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum MockCommand {
     CX(usize, usize),
     CZ(usize, usize),

@@ -7,3 +7,4 @@ edition = "2021"
 bitvec = "1.0.1"
 itertools = "0.13.0"
 petgraph = { git = "https://github.com/daehiff/petgraph", branch = "art-points", version = "0.6.5" }
+typenum = "1.17.0"
