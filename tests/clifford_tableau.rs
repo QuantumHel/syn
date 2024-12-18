@@ -5,7 +5,7 @@ use bitvec::prelude::Lsb0;
 use common::{MockCircuit, MockCommand};
 use syn::data_structures::{CliffordTableau, PauliString, PropagateClifford};
 use syn::ir::clifford_tableau::CliffordTableauSynthesizer;
-use syn::synthesis_methods::naive::Naive;
+use syn::synthesis_methods::{custom::Custom, naive::Naive};
 
 fn parse_commands(size: usize, commands: &[MockCommand]) -> CliffordTableau {
     let mut tableau = CliffordTableau::new(size);
@@ -16,6 +16,9 @@ fn parse_commands(size: usize, commands: &[MockCommand]) -> CliffordTableau {
             }
             MockCommand::S(target) => {
                 tableau.s(*target);
+            }
+            MockCommand::V(target) => {
+                tableau.v(*target);
             }
             MockCommand::CX(control, target) => {
                 tableau.cx(*control, *target);
@@ -79,20 +82,20 @@ fn setup_sample_inverse_ct() -> CliffordTableau {
 }
 
 #[test]
-fn test_naive_clifford_synthesis() {
+fn test_clifford_synthesis_breaking() {
     let clifford = setup_sample_ct();
     let mut mock = MockCircuit::new();
-    CliffordTableauSynthesizer::run(&clifford, &mut mock);
+    CliffordTableauSynthesizer::run_naive(&clifford, &mut mock);
 
     let ref_ct = parse_commands(3, mock.commands());
     assert_eq!(clifford, ref_ct);
 }
 
 #[test]
-fn test_naive_clifford_synthesis_large() {
+fn test_clifford_synthesis_large() {
     let clifford = setup_sample_inverse_ct();
     let mut mock = MockCircuit::new();
-    CliffordTableauSynthesizer::run(&clifford, &mut mock);
+    CliffordTableauSynthesizer::run_naive(&clifford, &mut mock);
 
     let ref_ct = parse_commands(4, mock.commands());
 
@@ -100,13 +103,52 @@ fn test_naive_clifford_synthesis_large() {
 }
 
 #[test]
-fn test_naive_clifford_synthesis_simple() {
+fn test_clifford_synthesis_simple() {
     let mut clifford = CliffordTableau::new(3);
     clifford.cx(0, 1);
     clifford.cx(1, 2);
     let mut mock = MockCircuit::new();
-    CliffordTableauSynthesizer::run(&clifford, &mut mock);
+    CliffordTableauSynthesizer::run_naive(&clifford, &mut mock);
 
+    let ref_ct = parse_commands(3, mock.commands());
+    assert_eq!(clifford, ref_ct);
+}
+
+#[test]
+fn test_custom_clifford_synthesis_breaking() {
+    let clifford = setup_sample_ct();
+    let mut mock = MockCircuit::new();
+    CliffordTableauSynthesizer::run_custom(&clifford, &mut mock, vec![0, 1, 2], vec![0, 1, 2]);
+
+    let ref_ct = parse_commands(3, mock.commands());
+
+    assert_eq!(clifford, ref_ct);
+}
+
+#[test]
+fn test_custom_clifford_synthesis_large() {
+    let clifford = setup_sample_inverse_ct();
+    let mut mock = MockCircuit::new();
+    CliffordTableauSynthesizer::run_custom(
+        &clifford,
+        &mut mock,
+        vec![0, 1, 2, 3],
+        vec![0, 2, 1, 3],
+    );
+
+    let mut ref_ct = parse_commands(4, mock.commands());
+    ref_ct.permute(vec![0, 2, 1, 3]);
+
+    assert_eq!(clifford, ref_ct);
+}
+
+#[test]
+fn test_custom_clifford_synthesis_simple() {
+    let mut clifford = CliffordTableau::new(3);
+    clifford.cx(0, 1);
+    clifford.cx(1, 2);
+    let mut mock = MockCircuit::new();
+    CliffordTableauSynthesizer::run_custom(&clifford, &mut mock, vec![0, 1, 2], vec![0, 1, 2]);
     let ref_ct = parse_commands(3, mock.commands());
     assert_eq!(clifford, ref_ct);
 }

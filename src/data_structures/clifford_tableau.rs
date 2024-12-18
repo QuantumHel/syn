@@ -165,7 +165,7 @@ impl CliffordTableau {
         (0..size).for_each(|i| {
             for (j, pauli_column) in self.pauli_columns.iter().enumerate() {
                 let ((x1, z1), (x2, z2)) = reverse_flow(
-                *pauli_column.x.get(i).unwrap(),
+                    *pauli_column.x.get(i).unwrap(),
                     *pauli_column.z.get(i).unwrap(),
                     *pauli_column.x.get(i + size).unwrap(),
                     *pauli_column.z.get(i + size).unwrap(),
@@ -186,8 +186,23 @@ impl CliffordTableau {
         adjoint_table.signs ^= (adjoint_table.compose(self)).signs;
         adjoint_table
     }
-}
 
+    pub fn permute(&mut self, permutation_vector: Vec<usize>) {
+        assert_eq!(
+            permutation_vector
+                .iter()
+                .copied()
+                .sorted()
+                .collect::<Vec<_>>(),
+            (0..self.size()).collect::<Vec<_>>()
+        );
+        let sorted_pauli_columns = zip(self.pauli_columns.clone(), permutation_vector)
+            .sorted_by_key(|a| a.1)
+            .map(|a| a.0)
+            .collect::<Vec<_>>();
+        self.pauli_columns = sorted_pauli_columns;
+    }
+}
 
 const I: (bool, bool) = (false, false);
 const X: (bool, bool) = (true, false);
@@ -1101,10 +1116,8 @@ mod tests {
         let ordered_ref = (0..16)
             .map(|i| {
                 (
-                    (i >> 3 & 1 == 1,
-                    i >> 2 & 1 == 1),
-                    (i >> 1 & 1 == 1,
-                    i & 1 == 1),
+                    (i >> 3 & 1 == 1, i >> 2 & 1 == 1),
+                    (i >> 1 & 1 == 1, i & 1 == 1),
                 )
             })
             .collect::<Vec<_>>();
