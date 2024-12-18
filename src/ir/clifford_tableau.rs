@@ -15,35 +15,35 @@ fn get_pauli(pauli_string: &PauliString, row: usize) -> PauliLetter {
 }
 
 fn is_i(pauli_letter: PauliLetter) -> bool {
-    return pauli_letter == PauliLetter::I;
+    pauli_letter == PauliLetter::I
 }
 
 fn is_not_i(pauli_letter: PauliLetter) -> bool {
-    return pauli_letter != PauliLetter::I;
+    pauli_letter != PauliLetter::I
 }
 
 fn is_x(pauli_letter: PauliLetter) -> bool {
-    return pauli_letter == PauliLetter::X;
+    pauli_letter == PauliLetter::X
 }
 
 fn is_not_x(pauli_letter: PauliLetter) -> bool {
-    return pauli_letter != PauliLetter::X;
+    pauli_letter != PauliLetter::X
 }
 
 fn is_y(pauli_letter: PauliLetter) -> bool {
-    return pauli_letter == PauliLetter::Y;
+    pauli_letter == PauliLetter::Y
 }
 
 fn is_not_y(pauli_letter: PauliLetter) -> bool {
-    return pauli_letter != PauliLetter::Y;
+    pauli_letter != PauliLetter::Y
 }
 
 fn is_z(pauli_letter: PauliLetter) -> bool {
-    return pauli_letter == PauliLetter::Z;
+    pauli_letter == PauliLetter::Z
 }
 
 fn is_not_z(pauli_letter: PauliLetter) -> bool {
-    return pauli_letter != PauliLetter::Z;
+    pauli_letter != PauliLetter::Z
 }
 
 pub struct CliffordTableauSynthesizer {
@@ -132,24 +132,24 @@ where
     }
 }
 
-fn clean_pivot<G>(repr: &mut G, ct: &mut CliffordTableau, pivot_column: usize, row: usize)
+fn clean_pivot<G>(repr: &mut G, ct: &mut CliffordTableau, pivot_column: usize, pivot_row: usize)
 where
     G: CliffordGates,
 {
     let num_qubits = ct.size();
-    if check_pauli(&*ct, pivot_column, row + num_qubits, is_y) {
-        ct.s(row);
-        repr.s(row);
+    if check_pauli(&*ct, pivot_row, pivot_column + num_qubits, is_y) {
+        ct.s(pivot_row);
+        repr.s(pivot_row);
     }
 
-    if check_pauli(&*ct, pivot_column, row + num_qubits, is_not_z) {
-        ct.h(row);
-        repr.h(row);
+    if check_pauli(&*ct, pivot_row, pivot_column + num_qubits, is_not_z) {
+        ct.h(pivot_row);
+        repr.h(pivot_row);
     }
 
-    if check_pauli(&*ct, pivot_column, row, is_not_x) {
-        ct.s(row);
-        repr.s(row);
+    if check_pauli(&*ct, pivot_row, pivot_column, is_not_x) {
+        ct.s(pivot_row);
+        repr.s(pivot_row);
     }
 }
 
@@ -157,11 +157,13 @@ fn clean_x_pivot<G>(repr: &mut G, ct: &mut CliffordTableau, pivot_column: usize,
 where
     G: CliffordGates,
 {
+    // These are switched around because of implementation
     if check_pauli(&*ct, pivot_row, pivot_column, is_y) {
         ct.s(pivot_row);
         repr.s(pivot_row);
     }
 
+    // These are switched around because of implementation
     if check_pauli(&*ct, pivot_row, pivot_column, is_z) {
         ct.h(pivot_row);
         repr.h(pivot_row);
@@ -173,11 +175,13 @@ where
     G: CliffordGates,
 {
     let num_qubits = ct.size();
+    // These are switched around because of implementation
     if check_pauli(&*ct, pivot_row, pivot_column + num_qubits, is_y) {
         ct.v(pivot_row);
         repr.v(pivot_row);
     }
 
+    // These are switched around because of implementation
     if check_pauli(&*ct, pivot_row, pivot_column + num_qubits, is_x) {
         ct.h(pivot_row);
         repr.h(pivot_row);
