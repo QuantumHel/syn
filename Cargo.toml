@@ -8,3 +8,10 @@ bitvec = "1.0.1"
 itertools = "0.13.0"
 petgraph = { git = "https://github.com/daehiff/petgraph", branch = "art-points", version = "0.6.5" }
 typenum = "1.17.0"
+
+[dev-dependencies]
+criterion = "0.5.1"
+
+[[bench]]
+name = "clifford_tableau"
+harness = false
