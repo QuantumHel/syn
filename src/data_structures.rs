@@ -45,3 +45,22 @@ where
         self.h(target)
     }
 }
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum PauliLetter {
+    I,
+    X,
+    Y,
+    Z,
+}
+
+impl PauliLetter {
+    pub fn new(x: bool, z: bool) -> Self {
+        match (x, z) {
+            (false, false) => PauliLetter::I,
+            (true, false) => PauliLetter::X,
+            (true, true) => PauliLetter::Y,
+            (false, true) => PauliLetter::Z,
+        }
+    }
+}
