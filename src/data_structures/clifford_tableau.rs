@@ -171,10 +171,10 @@ impl CliffordTableau {
         (0..size).for_each(|i| {
             for (j, pauli_column) in self.pauli_columns.iter().enumerate() {
                 let ((x1, z1), (x2, z2)) = reverse_flow(
-                    *pauli_column.x.get(i).unwrap(),
-                    *pauli_column.z.get(i).unwrap(),
-                    *pauli_column.x.get(i + size).unwrap(),
-                    *pauli_column.z.get(i + size).unwrap(),
+                    pauli_column.x(i),
+                    pauli_column.z(i),
+                    pauli_column.x(i + size),
+                    pauli_column.z(i + size),
                 );
 
                 new_columns[i].x.borrow_mut().replace(j, x1);
