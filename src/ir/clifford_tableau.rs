@@ -4,8 +4,11 @@ use std::iter::{self, zip};
 use itertools::{iproduct, Itertools};
 
 use crate::{
-    data_structures::{CliffordTableau, PauliString, PropagateClifford},
-    synthesis_methods::naive::Naive,
+    data_structures::{CliffordTableau, PauliLetter, PauliString, PropagateClifford},
+    synthesis_methods::{
+        custom::Custom,
+        naive::{Naive, NaiveAdjoint},
+    },
 };
 
 use super::CliffordGates;
@@ -57,6 +60,36 @@ where
     fn run_naive(clifford_tableau: &CliffordTableau, repr: &mut G) {
         let mut ct = clifford_tableau.adjoint();
 
+        let num_qubits = ct.size();
+        for row in 0..num_qubits {
+            let pivot_col = naive_pivot_search(&ct, num_qubits, row);
+
+            if pivot_col != row {
+                swap(repr, &mut ct, row, pivot_col);
+            }
+
+            // Cleanup pivot column
+            clean_pivot(repr, &mut ct, row, row);
+
+            let checked_rows = (row + 1..num_qubits).collect::<Vec<_>>();
+
+            // Use the pivot to remove all other terms in the X observable.
+            clean_x_observables(repr, &mut ct, &checked_rows, row, row);
+
+            // Use the pivot to remove all other terms in the Z observable.
+            clean_z_observables(repr, &mut ct, &checked_rows, row, row);
+        }
+
+        clean_signs(repr, &mut ct, &(0..num_qubits).collect::<Vec<_>>());
+    }
+}
+
+impl<G> NaiveAdjoint<&CliffordTableau, G> for CliffordTableauSynthesizer
+where
+    G: CliffordGates,
+{
+    fn run_naive_adjoint(clifford_tableau: &CliffordTableau, repr: &mut G) {
+        let mut ct = clifford_tableau.clone();
         let num_qubits = ct.size();
         for row in 0..num_qubits {
             let pivot_col = naive_pivot_search(&ct, num_qubits, row);
