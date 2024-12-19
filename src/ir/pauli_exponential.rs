@@ -70,6 +70,6 @@ where
             repr.rz(last_qubit, pauli_polynomial.angle(col));
             mask.replace(col, false);
         }
-        <CliffordTableauSynthesizer as NaiveAdjoint<_, _>>::run(clifford_tableau, repr);
+        CliffordTableauSynthesizer::run_naive_adjoint(&clifford_tableau, repr);
     }
 }
