@@ -1,4 +1,7 @@
-use syn::ir::{CliffordGates, Gates};
+use syn::{
+    data_structures::{CliffordTableau, PropagateClifford},
+    ir::{CliffordGates, Gates},
+};
 
 type Angle = f64;
 #[derive(Debug, Default)]
@@ -88,4 +91,34 @@ impl Gates for MockCircuit {
     fn rz(&mut self, target: syn::IndexType, angle: Angle) {
         self.commands.push(MockCommand::Rz(target, angle));
     }
+}
+
+pub fn parse_clifford_commands(size: usize, commands: &[MockCommand]) -> CliffordTableau {
+    let mut tableau = CliffordTableau::new(size);
+    for command in commands.iter() {
+        match command {
+            MockCommand::H(target) => {
+                tableau.h(*target);
+            }
+            MockCommand::S(target) => {
+                tableau.s(*target);
+            }
+            MockCommand::V(target) => {
+                tableau.v(*target);
+            }
+            MockCommand::CX(control, target) => {
+                tableau.cx(*control, *target);
+            }
+            MockCommand::X(target) => {
+                tableau.x(*target);
+            }
+            MockCommand::Z(target) => {
+                tableau.z(*target);
+            }
+            _ => {
+                panic!("not found")
+            }
+        }
+    }
+    tableau
 }
