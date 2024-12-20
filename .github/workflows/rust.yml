@@ -22,9 +22,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Setup Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          override: true
+        uses: actions-rs/cargo@v1
       - name: Install dev dependencies
         run: pip install -r requirements.txt
       - name: Run pre-commit hooks
