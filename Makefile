@@ -7,10 +7,13 @@ python_setup:
 	pyenv virtualenv $(shell cat .python-base-version) $(shell cat .python-version)
 	pyenv version
 
-project_setup:
+python_project_setup:
 	pip-compile --allow-unsafe --no-header --no-annotate --output-file=./requirements.txt requirements.in
 	pip install -r requirements.txt
 	pre-commit install --hook-type pre-commit --hook-type prepare-commit-msg --hook-type commit-msg
+
+rust_project_setup:
+	rustup show
 
 build:
 	@$(CARGO) build --verbose
