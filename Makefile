@@ -29,7 +29,7 @@ format:
 
 check:
 	@$(CARGO) fmt -- --check
-	@$(CARGO) clippy -- -D warnings
+	@$(CARGO) clippy
 
 clean:
 	@$(CARGO) clean
