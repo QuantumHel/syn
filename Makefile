@@ -18,6 +18,9 @@ build:
 test:
 	@$(CARGO) test --verbose
 
+format-check:
+	@$(CARGO) fmt -- --check
+
 format:
 	@$(CARGO) fmt
 
