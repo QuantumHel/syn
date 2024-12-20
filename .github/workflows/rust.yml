@@ -13,11 +13,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: List all files
+        run: ls -a
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.12'
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          override: true
       - name: Install dev dependencies
         run: pip install -r requirements.txt
       - name: Run pre-commit hooks
