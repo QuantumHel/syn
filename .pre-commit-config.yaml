@@ -1,7 +1,17 @@
+default_stages: [ pre-commit ]
 repos:
   - repo: local
     hooks:
       - id: makefile-command
-        name: Format
+        name: Rust Format
         entry: make format
         language: system
+      - id: makefile-command
+        name: Rust Check
+        entry: make check
+        language: system
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+      - id: check-merge-conflict
