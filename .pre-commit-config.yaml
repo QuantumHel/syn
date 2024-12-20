@@ -1,0 +1,7 @@
+repos:
+  - repo: local
+    hooks:
+      - id: makefile-command
+        name: Format
+        entry: make format
+        language: system
