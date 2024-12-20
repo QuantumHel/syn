@@ -13,10 +13,10 @@ project_setup:
 	pre-commit install --hook-type pre-commit --hook-type prepare-commit-msg --hook-type commit-msg
 
 build:
-	@$(CARGO) build
+	@$(CARGO) build --verbose
 
 test:
-	@$(CARGO) test
+	@$(CARGO) test --verbose
 
 format:
 	@$(CARGO) fmt
