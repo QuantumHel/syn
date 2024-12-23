@@ -212,7 +212,24 @@ impl CliffordTableau {
 impl PropagateClifford for CliffordTableau {
     fn cx(&mut self, control: IndexType, target: IndexType) -> &mut Self {
         let n = self.size();
-        let [control, target] = self.pauli_columns.get_many_mut([control, target]).unwrap();
+
+        let (control, target) = match control < target {
+            true => {
+                let split = self.pauli_columns.split_at_mut(target);
+                (
+                    split.0.get_mut(control).unwrap(),
+                    split.1.get_mut(0).unwrap(),
+                )
+            }
+            false => {
+                let split = self.pauli_columns.split_at_mut(control);
+                (
+                    split.1.get_mut(0).unwrap(),
+                    split.0.get_mut(target).unwrap(),
+                )
+            }
+        };
+
         let mut scratch = BitVec::repeat(true, 2 * n);
         scratch ^= &target.x;
         scratch ^= &control.z;
