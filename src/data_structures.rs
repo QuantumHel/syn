@@ -1,9 +1,12 @@
-pub mod clifford_tableau;
-pub mod pauli_polynomial;
+use crate::IndexType;
+
+mod clifford_tableau;
+mod pauli_polynomial;
 mod pauli_string;
 
-type IndexType = usize;
-
+pub use clifford_tableau::CliffordTableau;
+pub use pauli_polynomial::PauliPolynomial;
+pub use pauli_string::PauliString;
 pub trait PropagateClifford
 where
     Self: Sized,
@@ -40,5 +43,24 @@ where
         self.h(target);
         self.cx(control, target);
         self.h(target)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum PauliLetter {
+    I,
+    X,
+    Y,
+    Z,
+}
+
+impl PauliLetter {
+    pub fn new(x: bool, z: bool) -> Self {
+        match (x, z) {
+            (false, false) => PauliLetter::I,
+            (true, false) => PauliLetter::X,
+            (true, true) => PauliLetter::Y,
+            (false, true) => PauliLetter::Z,
+        }
     }
 }

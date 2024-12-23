@@ -3,7 +3,7 @@ use std::fmt;
 use std::iter::zip;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
-pub(super) struct PauliString {
+pub struct PauliString {
     pub(super) x: BitVec,
     pub(super) z: BitVec,
 }
@@ -47,8 +47,20 @@ impl PauliString {
         PauliString::new(x, z)
     }
 
+    pub fn x(&self, i: usize) -> bool {
+        self.x[i]
+    }
+
+    pub fn z(&self, i: usize) -> bool {
+        self.z[i]
+    }
+
     pub fn len(&self) -> usize {
         self.x.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.x.is_empty()
     }
 
     pub(super) fn s(&mut self) {
@@ -125,8 +137,20 @@ mod tests {
         let paulivec = PauliString::from_text(pauli_string);
         let x_ref = bitvec![0, 1, 1, 0];
         let z_ref = bitvec![0, 0, 1, 1];
-        assert!(paulivec.x == x_ref);
-        assert!(paulivec.z == z_ref);
+        assert_eq!(paulivec.x, x_ref);
+        assert_eq!(paulivec.z, z_ref);
+    }
+
+    #[test]
+    fn test_xz_access() {
+        let pauli_string = "IXYZ";
+        let paulivec = PauliString::from_text(pauli_string);
+
+        assert!(paulivec.x(1));
+        assert!(!paulivec.z(1));
+
+        assert!(!paulivec.x(3));
+        assert!(paulivec.z(3));
     }
 
     #[test]
