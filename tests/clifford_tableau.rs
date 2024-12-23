@@ -82,7 +82,7 @@ fn setup_sample_inverse_ct() -> CliffordTableau {
 }
 
 #[test]
-fn test_clifford_synthesis_breaking() {
+fn test_clifford_synthesis() {
     let clifford = setup_sample_ct();
     let mut mock = MockCircuit::new();
     CliffordTableauSynthesizer::run_naive(&clifford, &mut mock);
@@ -115,7 +115,7 @@ fn test_clifford_synthesis_simple() {
 }
 
 #[test]
-fn test_custom_clifford_synthesis_breaking() {
+fn test_custom_clifford_synthesis() {
     let clifford = setup_sample_ct();
     let mut mock = MockCircuit::new();
     CliffordTableauSynthesizer::run_custom(&clifford, &mut mock, vec![0, 1, 2], vec![0, 1, 2]);
