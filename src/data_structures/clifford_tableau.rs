@@ -202,21 +202,6 @@ impl CliffordTableau {
             .collect::<Vec<_>>();
         self.pauli_columns = sorted_pauli_columns;
     }
-
-    pub fn cx_other(&mut self, control: IndexType, target: IndexType) -> &mut Self {
-        let n = self.size();
-        let [control, target] = self.pauli_columns.get_many_mut([control, target]).unwrap();
-
-        let mut scratch = BitVec::repeat(true, 2 * n);
-        scratch ^= &target.x;
-        scratch ^= &control.z;
-        scratch &= &control.x;
-        scratch &= &target.z;
-        self.signs ^= scratch;
-
-        cx(control, target);
-        self
-    }
 }
 
 const I: (bool, bool) = (false, false);
