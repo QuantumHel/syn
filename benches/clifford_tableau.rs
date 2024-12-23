@@ -3,6 +3,7 @@ use bitvec::prelude::Lsb0;
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use syn::data_structures::CliffordTableau;
 use syn::data_structures::PauliString;
+use syn::data_structures::PropagateClifford;
 use syn::ir::clifford_tableau::CliffordTableauSynthesizer;
 use syn::ir::CliffordGates;
 use syn::synthesis_methods::custom::Custom;
@@ -124,32 +125,54 @@ fn setup_sample_inverse_ct() -> CliffordTableau {
     CliffordTableau::from_parts(vec![pauli_1, pauli_2, pauli_3, pauli_4], signs, ct_size)
 }
 
-fn naive_ct(clifford: CliffordTableau) {
-    let mut mock = MockCircuit::new();
-    CliffordTableauSynthesizer::run_naive(&clifford, &mut mock);
+// fn setup_sample_inverse_ct() -> CliffordTableau {
+//     let ct_size = 400;
+//     CliffordTableau::new(ct_size);
+// }
+
+// fn naive_ct(clifford: CliffordTableau) {
+//     let mut mock = MockCircuit::new();
+//     CliffordTableauSynthesizer::run_naive(&clifford, &mut mock);
+// }
+
+// fn custom_ct(clifford: CliffordTableau) {
+//     let num_qubits = clifford.size();
+
+//     let mut mock = MockCircuit::new();
+//     CliffordTableauSynthesizer::run_custom(
+//         &clifford,
+//         &mut mock,
+//         (0..num_qubits).collect(),
+//         (0..num_qubits).collect(),
+//     );
+// }
+
+fn apply_old_cx(mut clifford: CliffordTableau) {
+    clifford.cx(0, 1);
 }
 
-fn custom_ct(clifford: CliffordTableau) {
-    let num_qubits = clifford.size();
-
-    let mut mock = MockCircuit::new();
-    CliffordTableauSynthesizer::run_custom(
-        &clifford,
-        &mut mock,
-        (0..num_qubits).collect(),
-        (0..num_qubits).collect(),
-    );
+fn apply_new_cx(mut clifford: CliffordTableau) {
+    clifford.cx_other(0, 1);
 }
 
 pub fn ct_bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("Fibonacci");
-
-    group.bench_function(BenchmarkId::new("Naive", "naive"), |b| {
-        b.iter(|| naive_ct(black_box(setup_sample_inverse_ct())))
-    });
-    group.bench_function(BenchmarkId::new("Custom", "custom"), |b| {
-        b.iter(|| custom_ct(black_box(setup_sample_inverse_ct())))
-    });
+    for i in 3..6usize {
+        group.bench_with_input(BenchmarkId::new("Naive", i), &i, |b, i| {
+            b.iter(|| {
+                apply_old_cx(black_box(CliffordTableau::new(usize::pow(
+                    10usize, *i as u32,
+                ))))
+            })
+        });
+        group.bench_with_input(BenchmarkId::new("Custom", i), &i, |b, i| {
+            b.iter(|| {
+                apply_new_cx(black_box(CliffordTableau::new(usize::pow(
+                    10usize, *i as u32,
+                ))))
+            })
+        });
+    }
 }
 
 criterion_group!(benches, ct_bench);

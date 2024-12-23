@@ -3,8 +3,10 @@ mod common;
 use bitvec::bitvec;
 use bitvec::prelude::Lsb0;
 use common::{MockCircuit, MockCommand};
+use syn::architecture::complete::Complete;
 use syn::data_structures::{CliffordTableau, PauliString, PropagateClifford};
 use syn::ir::clifford_tableau::CliffordTableauSynthesizer;
+use syn::synthesis_methods::architectureaware::PermRowCol;
 use syn::synthesis_methods::{custom::Custom, naive::Naive};
 
 fn parse_commands(size: usize, commands: &[MockCommand]) -> CliffordTableau {
@@ -150,5 +152,19 @@ fn test_custom_clifford_synthesis_simple() {
     let mut mock = MockCircuit::new();
     CliffordTableauSynthesizer::run_custom(&clifford, &mut mock, vec![0, 1, 2], vec![0, 1, 2]);
     let ref_ct = parse_commands(3, mock.commands());
+    assert_eq!(clifford, ref_ct);
+}
+
+#[test]
+fn test_prc_clifford_synthesis_simple() {
+    let mut clifford = CliffordTableau::new(3);
+    clifford.cx(0, 1);
+    clifford.cx(1, 2);
+    let mut mock = MockCircuit::new();
+    let connectivity = Complete::new(3);
+    CliffordTableauSynthesizer::run_prc(&clifford, &mut mock, connectivity, None, None);
+    let ref_ct = parse_commands(3, mock.commands());
+    println!("clifford: {}", clifford);
+    println!("ct: {}", ref_ct);
     assert_eq!(clifford, ref_ct);
 }

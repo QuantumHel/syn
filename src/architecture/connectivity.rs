@@ -17,12 +17,14 @@ pub struct Connectivity {
 
 impl Connectivity {
     pub fn new(num_qubits: usize) -> Self {
-        Connectivity {
+        let mut connect = Connectivity {
             graph: UnGraph::with_capacity(num_qubits, 0),
             non_cutting: Default::default(),
             prev: Default::default(),
             distance: HashMap::new(),
-        }
+        };
+        connect.update();
+        connect
     }
 
     pub fn from_edges(edges: &[(GraphIndex, GraphIndex)]) -> Self {
@@ -30,11 +32,10 @@ impl Connectivity {
         let art_points = articulation_points(&graph);
 
         let non_cutting = (0..graph.node_count())
-            .filter(|node| art_points.contains(&graph.from_index(*node)))
+            .filter(|node| !art_points.contains(&graph.from_index(*node)))
             .collect();
 
         let (distance, prev) = floyd_warshall_path(&graph, |e| *e.weight()).unwrap();
-
         Connectivity {
             graph,
             non_cutting,
@@ -48,7 +49,7 @@ impl Connectivity {
         let art_points = articulation_points(&graph);
 
         let non_cutting = (0..graph.node_count())
-            .filter(|node| art_points.contains(&graph.from_index(*node)))
+            .filter(|node| !art_points.contains(&graph.from_index(*node)))
             .collect();
 
         let (distance, prev) = floyd_warshall_path(&graph, |e| *e.weight()).unwrap();
@@ -61,18 +62,11 @@ impl Connectivity {
         }
     }
 
-    pub fn nodes(&self) -> Vec<GraphIndex> {
-        self.graph
-            .node_references()
-            .map(|node| self.graph.to_index(node.id()))
-            .collect()
-    }
-
     fn update(&mut self) {
         let art_points = articulation_points(&self.graph);
 
         let non_cutting = (0..self.graph.node_count())
-            .filter(|node| art_points.contains(&self.graph.from_index(*node)))
+            .filter(|node| !art_points.contains(&self.graph.from_index(*node)))
             .collect();
 
         let (distance, prev) = floyd_warshall_path(&self.graph, |e| *e.weight()).unwrap();
@@ -80,15 +74,6 @@ impl Connectivity {
         self.non_cutting = non_cutting;
         self.distance = distance;
         self.prev = prev;
-    }
-
-    pub fn remove_node(&mut self, i: GraphIndex) {
-        self.graph.remove_node(self.graph.from_index(i));
-        self.update();
-    }
-
-    pub fn add_node(&mut self) {
-        self.graph.add_node(());
     }
 
     pub fn add_edge(&mut self, i: GraphIndex, j: GraphIndex) {
@@ -123,6 +108,22 @@ impl Connectivity {
 }
 
 impl Architecture for Connectivity {
+    fn nodes(&self) -> Vec<GraphIndex> {
+        self.graph
+            .node_references()
+            .map(|node| self.graph.to_index(node.id()))
+            .collect()
+    }
+
+    fn remove_node(&mut self, i: GraphIndex) {
+        self.graph.remove_node(self.graph.from_index(i));
+        self.update();
+    }
+
+    fn add_node(&mut self, i: GraphIndex) {
+        self.graph.add_node(());
+    }
+
     fn best_path(&self, i: GraphIndex, j: GraphIndex) -> Vec<GraphIndex> {
         assert!(
             i < self.graph.node_count(),
@@ -158,7 +159,7 @@ impl Architecture for Connectivity {
             .collect()
     }
 
-    fn non_cutting(&mut self) -> &Vec<GraphIndex> {
+    fn non_cutting(&self) -> &Vec<GraphIndex> {
         &self.non_cutting
     }
 }
@@ -259,7 +260,7 @@ mod tests {
 
     #[test]
     fn test_non_cutting() {
-        let mut new_architecture = Connectivity::from_edges(&setup_simple());
-        assert_eq!(&Vec::<GraphIndex>::new(), new_architecture.non_cutting());
+        let new_architecture = Connectivity::from_edges(&setup_simple());
+        assert_eq!(new_architecture.non_cutting(), &[0, 1, 2, 3, 4, 5]);
     }
 }

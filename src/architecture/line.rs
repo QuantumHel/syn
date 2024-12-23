@@ -5,34 +5,34 @@ use super::{Architecture, GraphIndex};
 pub struct Line {
     nodes: Vec<GraphIndex>,
     non_cutting: Vec<GraphIndex>,
-    updated: bool,
 }
 
 impl Line {
     pub fn new(num_qubits: usize) -> Self {
-        Line {
+        let mut line = Line {
             nodes: (0..num_qubits).collect(),
             non_cutting: Vec::new(),
-            updated: false,
-        }
+        };
+        line.update();
+        line
     }
 
-    pub fn remove(&mut self, i: GraphIndex) {
-        assert!(
-            self.nodes.contains(&i),
-            "architecture does not contain node {i}"
-        );
-        self.updated = false;
-        self.nodes.retain(|x| *x != i);
-    }
-
-    /// Ensures that strict ordering is always enforced
-    pub fn insert(&mut self, i: GraphIndex) {
-        match self.nodes.binary_search(&i) {
-            Ok(_) => panic!("architecture already contains node {i}"),
-            Err(pos) => self.nodes.insert(pos, i),
+    pub fn update(&mut self) {
+        let mut non_cutting = Vec::new();
+        non_cutting.push(self.nodes[0]);
+        for nodes in self.nodes.windows(3) {
+            if let &[node1, node2, node3] = nodes {
+                // Since strict ordering is enforced during insertion and creation, adding 1 to smaller node should not cause overflow.
+                if node1 + 1 != node2 || node2 + 1 != node3 {
+                    non_cutting.push(node2);
+                }
+            }
         }
-        self.updated = false;
+
+        if self.nodes.len() > 1 {
+            non_cutting.push(*self.nodes.last().unwrap());
+        }
+        self.non_cutting = non_cutting;
     }
 }
 
@@ -96,26 +96,30 @@ impl Architecture for Line {
         neighbors
     }
 
-    fn non_cutting(&mut self) -> &Vec<GraphIndex> {
-        if !self.updated {
-            let mut non_cutting = Vec::new();
-            non_cutting.push(self.nodes[0]);
-            for nodes in self.nodes.windows(3) {
-                if let &[node1, node2, node3] = nodes {
-                    // Since strict ordering is enforced during insertion and creation, adding 1 to smaller node should not cause overflow.
-                    if node1 + 1 != node2 || node2 + 1 != node3 {
-                        non_cutting.push(node2);
-                    }
-                }
-            }
-
-            if self.nodes.len() > 1 {
-                non_cutting.push(*self.nodes.last().unwrap());
-            }
-            self.non_cutting = non_cutting;
-            self.updated = true;
-        }
+    fn non_cutting(&self) -> &Vec<GraphIndex> {
         &self.non_cutting
+    }
+
+    fn remove_node(&mut self, i: GraphIndex) {
+        assert!(
+            self.nodes.contains(&i),
+            "architecture does not contain node {i}"
+        );
+        self.nodes.retain(|x| *x != i);
+        self.update();
+    }
+
+    /// Ensures that strict ordering is always enforced
+    fn add_node(&mut self, i: GraphIndex) {
+        match self.nodes.binary_search(&i) {
+            Ok(_) => panic!("architecture already contains node {i}"),
+            Err(pos) => self.nodes.insert(pos, i),
+        }
+        self.update();
+    }
+
+    fn nodes(&self) -> Vec<GraphIndex> {
+        self.nodes.clone()
     }
 }
 
@@ -135,7 +139,7 @@ mod tests {
     #[test]
     fn test_insert() {
         let mut new_architecture = Line::new(5);
-        new_architecture.insert(5);
+        new_architecture.add_node(5);
         assert_eq!(new_architecture.nodes, vec![0, 1, 2, 3, 4, 5]);
     }
 
@@ -143,23 +147,23 @@ mod tests {
     #[should_panic = "architecture already contains node 1"]
     fn test_bad_insert() {
         let mut new_architecture = Line::new(5);
-        new_architecture.insert(1);
+        new_architecture.add_node(1);
     }
 
     #[test]
     fn test_remove() {
         let mut new_architecture = Line::new(5);
-        new_architecture.remove(3);
+        new_architecture.remove_node(3);
         assert_eq!(new_architecture.nodes, vec![0, 1, 2, 4]);
     }
 
     #[test]
     fn test_remove_remove_insert() {
         let mut new_architecture = Line::new(7);
-        new_architecture.remove(3);
-        new_architecture.remove(4);
-        new_architecture.remove(5);
-        new_architecture.insert(4);
+        new_architecture.remove_node(3);
+        new_architecture.remove_node(4);
+        new_architecture.remove_node(5);
+        new_architecture.add_node(4);
         assert_eq!(new_architecture.nodes, vec![0, 1, 2, 4, 6]);
     }
 
@@ -167,7 +171,7 @@ mod tests {
     #[should_panic = "architecture does not contain node 4"]
     fn test_bad_remove() {
         let mut new_architecture = Line::new(3);
-        new_architecture.remove(4);
+        new_architecture.remove_node(4);
     }
 
     #[test]
@@ -217,15 +221,15 @@ mod tests {
 
     #[test]
     fn test_non_cutting() {
-        let mut new_architecture = Line::new(5);
+        let new_architecture = Line::new(5);
         assert_eq!(&vec![0, 4], new_architecture.non_cutting());
     }
 
     #[test]
     fn test_non_cutting_complex() {
         let mut new_architecture = Line::new(7);
-        new_architecture.remove(1);
-        new_architecture.remove(5);
+        new_architecture.remove_node(1);
+        new_architecture.remove_node(5);
         assert_eq!(&vec![0, 2, 4, 6], new_architecture.non_cutting());
     }
 
@@ -233,9 +237,9 @@ mod tests {
     fn test_non_cutting_cache() {
         let mut new_architecture = Line::new(7);
         assert_eq!(&vec![0, 6], new_architecture.non_cutting());
-        new_architecture.remove(1);
+        new_architecture.remove_node(1);
         assert_eq!(&vec![0, 2, 6], new_architecture.non_cutting());
-        new_architecture.remove(5);
+        new_architecture.remove_node(5);
         assert_eq!(&vec![0, 2, 4, 6], new_architecture.non_cutting());
     }
 }

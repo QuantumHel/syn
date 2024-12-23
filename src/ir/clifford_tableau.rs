@@ -1,11 +1,12 @@
-use core::num;
-use std::iter::{self, zip};
+use std::iter::zip;
 
 use itertools::{iproduct, Itertools};
+use petgraph::algo::connected_components;
 
 use crate::{
+    architecture::{connectivity::Connectivity, Architecture},
     data_structures::{CliffordTableau, PauliLetter, PauliString, PropagateClifford},
-    synthesis_methods::{custom::Custom, naive::Naive},
+    synthesis_methods::{architectureaware::PermRowCol, custom::Custom, naive::Naive},
 };
 
 use super::CliffordGates;
@@ -46,10 +47,7 @@ fn is_not_z(pauli_letter: PauliLetter) -> bool {
     pauli_letter != PauliLetter::Z
 }
 
-pub struct CliffordTableauSynthesizer {
-    custom_pivots: Option<Vec<usize>>,
-}
-
+pub struct CliffordTableauSynthesizer;
 impl<G> Naive<&CliffordTableau, G> for CliffordTableauSynthesizer
 where
     G: CliffordGates,
@@ -130,6 +128,97 @@ where
 
         clean_signs(repr, &mut ct, &final_permutation);
     }
+}
+
+impl<G, C> PermRowCol<CliffordTableau, G, C> for CliffordTableauSynthesizer
+where
+    G: CliffordGates,
+    C: Architecture,
+{
+    fn run_prc(
+        clifford_tableau: &CliffordTableau,
+        repr: &mut G,
+        mut connectivity: C,
+        pick_row: Option<fn(&C, &[usize], &CliffordTableau) -> usize>,
+        pick_column: Option<fn(&C, usize, &[usize], &CliffordTableau) -> usize>,
+    ) {
+        let mut ct = clifford_tableau.adjoint();
+
+        let num_qubits = ct.size();
+
+        let mut remaining_columns = (0..num_qubits).collect::<Vec<_>>();
+        let mut remaining_rows = (0..num_qubits).collect::<Vec<_>>();
+
+        // let mut qubit_mapping = (0..num_qubits).collect::<Vec<_>>();
+        // let mut permutation = (0..num_qubits).collect::<Vec<_>>();
+
+        // Identify row that causes the least amount of fill-in
+        let pick_pivot_row: fn(&C, &[usize], &CliffordTableau) -> usize =
+            if let Some(pivot_row) = pick_row {
+                pivot_row
+            } else {
+                default_pick_row
+            };
+        // Identify column that is easiest to clean up
+        let pick_pivot_col: fn(&C, usize, &[usize], &CliffordTableau) -> usize =
+            if let Some(pivot_col) = pick_column {
+                pivot_col
+            } else {
+                default_pick_column
+            };
+
+        let mut column_ordering = Vec::new();
+        let mut row_ordering = Vec::new();
+        while !connectivity.nodes().is_empty() {
+            let pivot_row = pick_pivot_row(&connectivity, &remaining_rows, &ct);
+            let pivot_column = pick_pivot_col(&connectivity, pivot_row, &remaining_columns, &ct);
+            column_ordering.push(pivot_column);
+            row_ordering.push(pivot_row);
+            // let non_cutting = connectivity.non_cutting();
+
+            // if !non_cutting.contains(&pivot_column) {
+            //     // Pick nearest non-cutting node -> How do we optimize this? Could we randomize this as well?
+            //     let non_cutting_node = non_cutting
+            //         .iter()
+            //         .map(|node| connectivity.distance(*node, pivot_column))
+            //         .min()
+            //         .unwrap();
+            //     (qubit_mapping[pivot_column], qubit_mapping[non_cutting_node]) =
+            //         (qubit_mapping[non_cutting_node], qubit_mapping[pivot_column]);
+            // }
+            connectivity.remove_node(pivot_column);
+            remaining_columns.retain(|&x| x != pivot_column);
+            remaining_rows.retain(|&x| x != pivot_row);
+            {
+                clean_x_pivot(repr, &mut ct, pivot_column, pivot_row);
+
+                // Use the pivot to remove all other terms in the X observable.
+                clean_x_observables(repr, &mut ct, &remaining_rows, pivot_column, pivot_row);
+
+                clean_z_pivot(repr, &mut ct, pivot_column, pivot_row);
+
+                // Use the pivot to remove all other terms in the Z observable.
+                clean_z_observables(repr, &mut ct, &remaining_rows, pivot_column, pivot_row);
+            }
+        }
+
+        let column_permutation = zip((0..num_qubits).collect::<Vec<_>>(), column_ordering)
+            .sorted_by_key(|a| a.1)
+            .map(|a| a.0)
+            .collect::<Vec<_>>();
+
+        let row_permutation = zip((0..num_qubits).collect::<Vec<_>>(), row_ordering)
+            .sorted_by_key(|a| a.1)
+            .map(|a| a.0)
+            .collect::<Vec<_>>();
+        println!("column_permutation: {:?}", column_permutation);
+        println!("row_permutation: {:?}", row_permutation);
+        println!("ct after: {}", ct);
+        clean_signs(repr, &mut ct, &row_permutation);
+    }
+
+    // for (&pivot_column, &pivot_row) in zip(&custom_columns, &custom_rows) {
+    //     // Cleanup pivot column
 }
 
 fn clean_pivot<G>(repr: &mut G, ct: &mut CliffordTableau, pivot_column: usize, pivot_row: usize)
@@ -328,4 +417,128 @@ fn check_across_columns(
         }
     }
     affected_cols
+}
+
+/// Pick a non-cutting vertex in connectivity that requires the fewest operations to remove from the graph
+/// Ensures that picked row is valid for Gaussian Elimination.
+fn default_pick_column<C>(
+    connectivity: &C,
+    pivot_row: usize,
+    remaining_cols: &[usize],
+    clifford_tableau: &CliffordTableau,
+) -> usize
+where
+    C: Architecture,
+{
+    let mut scores = Vec::with_capacity(remaining_cols.len());
+
+    for &col in connectivity.non_cutting() {
+        // If both stabilizer and destabilizer is I for this column, skip.
+        if check_pauli(clifford_tableau, pivot_row, col, is_i)
+            && check_pauli(
+                clifford_tableau,
+                pivot_row,
+                col + clifford_tableau.size(),
+                is_i,
+            )
+        {
+            continue;
+        }
+        let mut score = 0;
+        for row in connectivity.nodes() {
+            let node_distance = connectivity.distance(col, row);
+            if check_pauli(clifford_tableau, row, col, is_not_i) {
+                score += node_distance;
+            }
+            if check_pauli(
+                clifford_tableau,
+                row,
+                col + clifford_tableau.size(),
+                is_not_i,
+            ) {
+                score += node_distance;
+            }
+        }
+        scores.push((col, score));
+    }
+    scores.iter().min_by_key(|a| a.1).unwrap().0
+}
+
+/// Pick row for cancellation that results in the least fill-in
+fn default_pick_row<C>(
+    connectivity: &C,
+    remaining_rows: &[usize],
+    clifford_tableau: &CliffordTableau,
+) -> usize
+where
+    C: Architecture,
+{
+    let mut scores = Vec::with_capacity(remaining_rows.len());
+    for &row in remaining_rows {
+        let mut score = 0;
+        for col in connectivity.nodes() {
+            if check_pauli(clifford_tableau, row, col, is_not_i) {
+                score += 1
+            }
+
+            if check_pauli(
+                clifford_tableau,
+                row,
+                col + clifford_tableau.size(),
+                is_not_i,
+            ) {
+                score += 1
+            }
+        }
+        scores.push((row, score));
+    }
+    scores.iter().min_by_key(|a| a.1).unwrap().0
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        architecture::connectivity::Connectivity,
+        data_structures::{CliffordTableau, PropagateClifford},
+        ir::clifford_tableau::default_pick_column,
+    };
+
+    use super::default_pick_row;
+
+    #[test]
+    fn test_pick_column() {
+        let num_qubits = 5;
+        let weighted_edges = [(0, 1, 1), (1, 2, 1), (2, 3, 1), (3, 4, 1), (2, 4, 1)];
+        let connectivity = Connectivity::from_weighted_edges(&weighted_edges);
+
+        let mut clifford_tableau = CliffordTableau::new(num_qubits);
+        clifford_tableau.cx(0, 1);
+        clifford_tableau.cx(2, 3);
+        clifford_tableau.cx(3, 4);
+        clifford_tableau.cx(1, 2);
+        let remaining_columns = [0, 1, 2, 3, 4];
+        assert_eq!(
+            default_pick_column(&connectivity, 1, &remaining_columns, &clifford_tableau),
+            0
+        );
+    }
+
+    #[test]
+    fn test_pick_row() {
+        let num_qubits = 5;
+        let weighted_edges = [(0, 1, 1), (1, 2, 1), (2, 3, 1), (3, 4, 1), (2, 4, 1)];
+        let connectivity = Connectivity::from_weighted_edges(&weighted_edges);
+
+        let mut clifford_tableau = CliffordTableau::new(num_qubits);
+        clifford_tableau.cx(0, 1);
+        clifford_tableau.cx(2, 3);
+        clifford_tableau.cx(3, 4);
+        clifford_tableau.cx(1, 2);
+        let remaining_rows = [0, 1, 2, 3, 4];
+
+        assert_eq!(
+            default_pick_row(&connectivity, &remaining_rows, &clifford_tableau),
+            0
+        );
+    }
 }
