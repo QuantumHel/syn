@@ -8,7 +8,6 @@ python_setup:
 	pyenv version
 
 python_project_setup:
-	pip-compile --allow-unsafe --no-header --no-annotate --output-file=./requirements.txt requirements.in
 	pip install -r requirements.txt
 	pre-commit install --hook-type pre-commit --hook-type prepare-commit-msg --hook-type commit-msg
 
