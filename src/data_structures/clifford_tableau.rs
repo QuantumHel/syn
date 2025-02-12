@@ -27,7 +27,8 @@ impl CliffordTableau {
         }
     }
 
-    pub fn from_parts(pauli_columns: Vec<PauliString>, signs: BitVec, size: usize) -> Self {
+    pub fn from_parts(pauli_columns: Vec<PauliString>, signs: BitVec) -> Self {
+        let size = pauli_columns[0].len() / 2;
         CliffordTableau {
             pauli_columns,
             signs,
