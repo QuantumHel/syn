@@ -122,6 +122,7 @@ impl<T: EdgeType> Connectivity<T>{
 
     pub fn remove_edge(&mut self, i: GraphIndex, j:GraphIndex){
         self.graph.remove_edge(self.graph.find_edge(self.graph.from_index(i), self.graph.from_index(j)).unwrap());
+        self.update();
     }
 
     pub fn add_edge(&mut self, i: GraphIndex, j: GraphIndex) {
