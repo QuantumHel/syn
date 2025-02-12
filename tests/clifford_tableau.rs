@@ -62,6 +62,43 @@ fn setup_2_qubit_clifford() -> CliffordTableau {
     let signs = bitvec![0, 0, 0, 0];
     CliffordTableau::from_parts(vec![pauli_1, pauli_2], signs)
 }
+
+#[test]
+fn test_id_synthesis() {
+    let clifford = setup_2_qubit_clifford();
+    let mut mock = MockCircuit::new();
+    CliffordTableauSynthesizer::run_naive(&clifford, &mut mock);
+    assert_eq!(mock.commands(), &vec![]);
+}
+
+#[test]
+fn test_s_synthesis() {
+    let mut clifford = setup_2_qubit_clifford();
+    clifford.s(1);
+    let mut mock = MockCircuit::new();
+    CliffordTableauSynthesizer::run_naive(&clifford, &mut mock);
+    
+    assert_eq!(mock.commands(), &vec![MockCommand::S(1)]);
+}
+
+#[test]
+fn test_cnot_synthesis() {
+    let mut clifford = setup_2_qubit_clifford();
+    clifford.cx(0, 1);
+    let mut mock = MockCircuit::new();
+    CliffordTableauSynthesizer::run_naive(&clifford, &mut mock);
+    
+    assert_eq!(mock.commands(), &vec![MockCommand::CX(0, 1)]);
+}
+
+#[test]
+fn test_cnot_reverse_synthesis() {
+    let mut clifford = setup_2_qubit_clifford();
+    clifford.cx(1, 0);
+    let mut mock = MockCircuit::new();
+    CliffordTableauSynthesizer::run_naive(&clifford, &mut mock);
+    
+    assert_eq!(mock.commands(), &vec![MockCommand::CX(1, 0)]);
 }
 
 #[test]

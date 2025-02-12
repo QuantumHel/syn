@@ -1180,6 +1180,16 @@ mod tests {
     }
 
     #[test]
+    fn test_clifford_tableau_simple_inverse() {
+        let mut ct = CliffordTableau::new(2);
+        ct.x(0);
+        ct.x(0);
+
+        let identity = CliffordTableau::new(2);
+        assert_eq!(identity, ct);
+    }
+
+    #[test]
     fn test_clifford_tableau_inverse_complex() {
         let ct = setup_sample_inverse_ct();
         let adjoint_ct = ct.adjoint();
