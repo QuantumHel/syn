@@ -95,7 +95,6 @@ impl<T: EdgeType> Connectivity<T>{
 
     fn update(&mut self) {
         let art_points = articulation_points(&self.graph);
-        println!("Articulation points: {:?}", art_points.iter().map(|i| self.graph.to_index(*i)).collect::<Vec<usize>>());
 
         let non_cutting = self.nodes().iter()
             .filter_map(|node| match art_points.contains(&self.graph.from_index(*node)) {
@@ -105,8 +104,6 @@ impl<T: EdgeType> Connectivity<T>{
             .collect(); // For some reason, using filter here makes |node: &&usize| which collect does not like.
 
         let (distance, prev) = floyd_warshall_path(&self.graph, |e| *e.weight()).unwrap();
-        println!("prev: {:?}", prev);
-        println!("non cutting: {:?}", non_cutting);
         self.non_cutting = non_cutting;
         self.distance = distance;
         self.prev = prev;
