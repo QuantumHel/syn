@@ -1,32 +1,39 @@
 use petgraph::{
-    algo::{articulation_points::articulation_points, floyd_warshall::floyd_warshall_path},
-    graph::{NodeIndex, NodeReferences, UnGraph},
-    visit::{IntoNodeReferences, NodeIndexable, NodeRef},
+    algo::{articulation_points::articulation_points, floyd_warshall::floyd_warshall_path}, 
+    graph::{Graph, NodeIndex, NodeReferences}, 
+    visit::{IntoNodeReferences, NodeIndexable, NodeRef}, 
+    Directed, EdgeType, Undirected,
 };
 use std::collections::{HashMap, HashSet};
 
 use super::{Architecture, EdgeWeight, GraphIndex, NodeWeight};
 
 #[derive(Debug)]
-pub struct Connectivity {
-    graph: UnGraph<NodeWeight, EdgeWeight, GraphIndex>,
+pub struct Connectivity<T: EdgeType = Undirected> {
+    graph: Graph<NodeWeight, EdgeWeight, T, GraphIndex>,
     non_cutting: Vec<GraphIndex>,
     prev: Vec<Vec<Option<GraphIndex>>>,
     distance: HashMap<(NodeIndex<GraphIndex>, NodeIndex<GraphIndex>), usize>,
+
 }
 
-impl Connectivity {
-    pub fn new(num_qubits: usize) -> Self {
+type DirectedConnectivity = Connectivity<Directed>;
+type UndirectedConnectivity = Connectivity<Undirected>;
+
+impl<T: EdgeType> Connectivity<T>{
+
+    pub fn new() -> Self {
         Connectivity {
-            graph: UnGraph::with_capacity(num_qubits, 0),
+            graph: Graph::with_capacity(1, 0),
             non_cutting: Default::default(),
             prev: Default::default(),
             distance: HashMap::new(),
+
         }
     }
 
     pub fn from_edges(edges: &[(GraphIndex, GraphIndex)]) -> Self {
-        let graph = UnGraph::from_edges(edges);
+        let graph = Graph::from_edges(edges);
         let art_points = articulation_points(&graph);
 
         let non_cutting = (0..graph.node_count())
@@ -44,7 +51,7 @@ impl Connectivity {
     }
 
     pub fn from_weighted_edges(edges: &[(GraphIndex, GraphIndex, EdgeWeight)]) -> Self {
-        let graph = UnGraph::from_edges(edges);
+        let graph = Graph::from_edges(edges);
         let art_points = articulation_points(&graph);
 
         let non_cutting = (0..graph.node_count())
@@ -165,7 +172,7 @@ impl Architecture for Connectivity {
 
 #[cfg(test)]
 mod tests {
-    use crate::architecture::{Architecture, EdgeWeight, GraphIndex};
+    use crate::architecture::{connectivity::{DirectedConnectivity, UndirectedConnectivity}, Architecture, EdgeWeight, GraphIndex};
 
     use super::Connectivity;
     fn setup_weighted() -> Vec<(GraphIndex, GraphIndex, EdgeWeight)> {
@@ -198,14 +205,18 @@ mod tests {
 
     #[test]
     fn test_simple_constuctor() {
-        let new_architecture = Connectivity::from_edges(&setup_simple());
-        assert_eq!(new_architecture.nodes(), vec![0, 1, 2, 3, 4, 5]);
+        let new_diarchitecture: DirectedConnectivity = Connectivity::from_edges(&setup_simple());
+        assert_eq!(new_diarchitecture.nodes(), vec![0, 1, 2, 3, 4, 5]);
+        let new_unarchitecture: UndirectedConnectivity = Connectivity::from_edges(&setup_simple());
+        assert_eq!(new_unarchitecture.nodes(), vec![0, 1, 2, 3, 4, 5]);
     }
 
     #[test]
     fn test_weighted_constructor() {
-        let new_architecture = Connectivity::from_weighted_edges(&setup_weighted());
-        assert_eq!(new_architecture.nodes(), vec![0, 1, 2, 3, 4, 5]);
+        let new_diarchitecture: DirectedConnectivity = Connectivity::from_weighted_edges(&setup_weighted());
+        assert_eq!(new_diarchitecture.nodes(), vec![0, 1, 2, 3, 4, 5]);
+        let new_unarchitecture: UndirectedConnectivity = Connectivity::from_weighted_edges(&setup_weighted());
+        assert_eq!(new_unarchitecture.nodes(), vec![0, 1, 2, 3, 4, 5]);
     }
 
     #[test]
