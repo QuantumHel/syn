@@ -58,9 +58,9 @@ where
 
         let clifford_tableau = match self.pauli_strategy {
             PauliPolynomialSynthStrategy::Naive => {
-                let mut pauli_synthesizer =
-                    NaivePauliPolynomialSynthesizer::new(pauli_polynomials, clifford_tableau);
-                pauli_synthesizer.synthesize(repr)
+                let mut pauli_synthesizer = NaivePauliPolynomialSynthesizer::default();
+                pauli_synthesizer.set_clifford_tableau(clifford_tableau);
+                pauli_synthesizer.synthesize(pauli_polynomials, repr)
             }
         };
 

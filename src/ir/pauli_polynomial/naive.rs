@@ -10,22 +10,16 @@ use bitvec::{bitvec, order::Lsb0};
 use itertools::Itertools;
 
 use super::PauliPolynomialSynthesizer;
+
+#[derive(Default)]
 pub struct NaivePauliPolynomialSynthesizer {
-    pauli_polynomials: VecDeque<PauliPolynomial>,
     clifford_tableau: CliffordTableau,
 }
 
 impl NaivePauliPolynomialSynthesizer {
-    pub fn new(
-        pauli_polynomials: VecDeque<PauliPolynomial>,
-        clifford_tableau: CliffordTableau,
-    ) -> Self {
-        assert!(!pauli_polynomials.is_empty());
-        assert!(pauli_polynomials[0].size() == clifford_tableau.size());
-        Self {
-            pauli_polynomials,
-            clifford_tableau,
-        }
+    pub fn set_clifford_tableau(&mut self, clifford_tableau: CliffordTableau) -> &mut Self {
+        self.clifford_tableau = clifford_tableau;
+        self
     }
 }
 
@@ -55,8 +49,11 @@ impl<G> PauliPolynomialSynthesizer<G> for NaivePauliPolynomialSynthesizer
 where
     G: CliffordGates + Gates,
 {
-    fn synthesize(&mut self, repr: &mut G) -> CliffordTableau {
-        let pauli_polynomials = &mut self.pauli_polynomials;
+    fn synthesize(
+        &mut self,
+        mut pauli_polynomials: VecDeque<PauliPolynomial>,
+        repr: &mut G,
+    ) -> CliffordTableau {
         let mut clifford_tableau = std::mem::take(&mut self.clifford_tableau);
         while !pauli_polynomials.is_empty() {
             let pauli_polynomial = pauli_polynomials.pop_front().unwrap();
