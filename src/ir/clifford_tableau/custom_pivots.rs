@@ -14,23 +14,21 @@ use crate::{
 
 use super::CliffordTableauSynthesizer;
 
+#[derive(Default)]
 pub struct CustomPivotCliffordSynthesizer {
-    clifford_tableau: CliffordTableau,
     custom_rows: Vec<usize>,
     custom_columns: Vec<usize>,
 }
 
 impl CustomPivotCliffordSynthesizer {
-    pub fn new(
-        clifford_tableau: CliffordTableau,
-        custom_rows: Vec<usize>,
-        custom_columns: Vec<usize>,
-    ) -> Self {
-        Self {
-            clifford_tableau,
-            custom_rows,
-            custom_columns,
-        }
+    pub fn set_custom_columns(&mut self, custom_columns: Vec<usize>) -> &mut Self {
+        self.custom_columns = custom_columns;
+        self
+    }
+
+    pub fn set_custom_rows(&mut self, custom_rows: Vec<usize>) -> &mut Self {
+        self.custom_rows = custom_rows;
+        self
     }
 }
 
@@ -38,14 +36,13 @@ impl<G> CliffordTableauSynthesizer<G> for CustomPivotCliffordSynthesizer
 where
     G: CliffordGates,
 {
-    fn synthesize(&mut self, repr: &mut G) {
-        self.clifford_tableau = self.clifford_tableau.adjoint();
-        CliffordTableauSynthesizer::<G>::synthesize_adjoint(self, repr)
+    fn synthesize(&mut self, mut clifford_tableau: CliffordTableau, repr: &mut G) {
+        clifford_tableau = clifford_tableau.adjoint();
+        CliffordTableauSynthesizer::<G>::synthesize_adjoint(self, clifford_tableau, repr)
     }
 
-    fn synthesize_adjoint(&mut self, repr: &mut G) {
-        let num_qubits = self.clifford_tableau.size();
-        let ct = &mut self.clifford_tableau;
+    fn synthesize_adjoint(&mut self, mut clifford_tableau: CliffordTableau, repr: &mut G) {
+        let num_qubits = clifford_tableau.size();
 
         let mut remaining_columns = (0..num_qubits).collect::<Vec<_>>();
         let mut remaining_rows = (0..num_qubits).collect::<Vec<_>>();
@@ -69,15 +66,27 @@ where
             remaining_columns.retain(|&x| x != pivot_column);
             remaining_rows.retain(|&x| x != pivot_row);
             {
-                clean_x_pivot(repr, ct, pivot_column, pivot_row);
+                clean_x_pivot(repr, &mut clifford_tableau, pivot_column, pivot_row);
 
                 // Use the pivot to remove all other terms in the X observable.
-                clean_x_observables(repr, ct, &remaining_rows, pivot_column, pivot_row);
+                clean_x_observables(
+                    repr,
+                    &mut clifford_tableau,
+                    &remaining_rows,
+                    pivot_column,
+                    pivot_row,
+                );
 
-                clean_z_pivot(repr, ct, pivot_column, pivot_row);
+                clean_z_pivot(repr, &mut clifford_tableau, pivot_column, pivot_row);
 
                 // Use the pivot to remove all other terms in the Z observable.
-                clean_z_observables(repr, ct, &remaining_rows, pivot_column, pivot_row);
+                clean_z_observables(
+                    repr,
+                    &mut clifford_tableau,
+                    &remaining_rows,
+                    pivot_column,
+                    pivot_row,
+                );
             }
         }
         let final_permutation = zip(custom_columns.clone(), custom_rows.clone())
@@ -85,57 +94,6 @@ where
             .map(|a| a.0)
             .collect::<Vec<_>>();
 
-        clean_signs(repr, ct, &final_permutation);
+        clean_signs(repr, &mut clifford_tableau, &final_permutation);
     }
 }
-
-// impl<G> Custom<&CliffordTableau, G> for CliffordTableauSynthesizer
-// where
-//     G: CliffordGates,
-// {
-//     fn run_custom(
-//         clifford_tableau: &CliffordTableau,
-//         repr: &mut G,
-//         custom_columns: Vec<usize>,
-//         custom_rows: Vec<usize>,
-//     ) {
-//         let mut ct = clifford_tableau.adjoint();
-//         let num_qubits = ct.size();
-//         let mut remaining_columns = (0..num_qubits).collect::<Vec<_>>();
-//         let mut remaining_rows = (0..num_qubits).collect::<Vec<_>>();
-
-//         assert_eq!(
-//             custom_columns.iter().copied().sorted().collect::<Vec<_>>(),
-//             remaining_columns
-//         );
-
-//         assert_eq!(
-//             custom_rows.iter().copied().sorted().collect::<Vec<_>>(),
-//             remaining_rows
-//         );
-
-//         for (&pivot_column, &pivot_row) in zip(&custom_columns, &custom_rows) {
-//             // Cleanup pivot column
-
-//             remaining_columns.retain(|&x| x != pivot_column);
-//             remaining_rows.retain(|&x| x != pivot_row);
-//             {
-//                 clean_x_pivot(repr, &mut ct, pivot_column, pivot_row);
-
-//                 // Use the pivot to remove all other terms in the X observable.
-//                 clean_x_observables(repr, &mut ct, &remaining_rows, pivot_column, pivot_row);
-
-//                 clean_z_pivot(repr, &mut ct, pivot_column, pivot_row);
-
-//                 // Use the pivot to remove all other terms in the Z observable.
-//                 clean_z_observables(repr, &mut ct, &remaining_rows, pivot_column, pivot_row);
-//             }
-//         }
-//         let final_permutation = zip(custom_columns.clone(), custom_rows.clone())
-//             .sorted_by_key(|a| a.1)
-//             .map(|a| a.0)
-//             .collect::<Vec<_>>();
-
-//         clean_signs(repr, &mut ct, &final_permutation);
-//     }
-// }
