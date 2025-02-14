@@ -1,5 +1,7 @@
 mod common;
 
+use std::collections::VecDeque;
+
 use common::{parse_clifford_commands, MockCircuit, MockCommand};
 use syn::data_structures::{CliffordTableau, PauliPolynomial};
 use syn::ir::clifford_tableau::naive::NaiveCliffordSynthesizer;
@@ -13,7 +15,7 @@ fn setup_simple_pe() -> PauliExponential {
 
     let pauli_polynomial = PauliPolynomial::from_hamiltonian(ham);
     let clifford_tableau = CliffordTableau::new(4);
-    PauliExponential::new(pauli_polynomial, clifford_tableau)
+    PauliExponential::new(VecDeque::from([pauli_polynomial]), clifford_tableau)
 }
 
 fn setup_complex_pe() -> PauliExponential {
@@ -21,7 +23,7 @@ fn setup_complex_pe() -> PauliExponential {
 
     let pauli_polynomial = PauliPolynomial::from_hamiltonian(ham);
     let clifford_tableau = CliffordTableau::new(4);
-    PauliExponential::new(pauli_polynomial, clifford_tableau)
+    PauliExponential::new(VecDeque::from([pauli_polynomial]), clifford_tableau)
 }
 
 #[test]

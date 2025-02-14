@@ -38,14 +38,14 @@ where
 {
     fn synthesize(&mut self, repr: &mut G) {
         let PauliExponential {
-            pauli_polynomial,
+            pauli_polynomials,
             clifford_tableau,
         } = std::mem::take(&mut self.pauli_exponential);
 
         let clifford_tableau = match self.pauli_strategy {
             PauliPolynomialSynthStrategy::Naive => {
                 let mut pauli_synthesizer =
-                    NaivePauliPolynomialSynthesizer::new(pauli_polynomial, clifford_tableau);
+                    NaivePauliPolynomialSynthesizer::new(pauli_polynomials, clifford_tableau);
                 pauli_synthesizer.synthesize(repr)
             }
         };

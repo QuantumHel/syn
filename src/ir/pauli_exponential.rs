@@ -1,17 +1,22 @@
+use std::collections::VecDeque;
+
 use crate::data_structures::{CliffordTableau, PauliPolynomial};
 
 pub mod naive;
 
 #[derive(Default)]
 pub struct PauliExponential {
-    pauli_polynomial: PauliPolynomial,
+    pauli_polynomials: VecDeque<PauliPolynomial>,
     clifford_tableau: CliffordTableau,
 }
 
 impl PauliExponential {
-    pub fn new(pauli_polynomial: PauliPolynomial, clifford_tableau: CliffordTableau) -> Self {
+    pub fn new(
+        pauli_polynomials: VecDeque<PauliPolynomial>,
+        clifford_tableau: CliffordTableau,
+    ) -> Self {
         PauliExponential {
-            pauli_polynomial,
+            pauli_polynomials,
             clifford_tableau,
         }
     }
