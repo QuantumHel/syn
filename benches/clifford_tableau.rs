@@ -5,8 +5,8 @@ use syn::data_structures::CliffordTableau;
 use syn::data_structures::PauliString;
 use syn::ir::clifford_tableau::custom_pivots::CustomPivotCliffordSynthesizer;
 use syn::ir::clifford_tableau::naive::NaiveCliffordSynthesizer;
-use syn::ir::clifford_tableau::CliffordTableauSynthesizer;
 use syn::ir::CliffordGates;
+use syn::ir::Synthesizer;
 
 #[derive(Debug, Default)]
 pub struct MockCircuit {
