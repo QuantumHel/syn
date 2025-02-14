@@ -12,23 +12,37 @@ use crate::ir::{
 
 use super::{PauliExponential, PauliExponentialSynthesizer};
 
+#[derive(Default)]
 pub struct NaivePauliExponentialSynthesizer {
-    pauli_exponential: PauliExponential,
     pauli_strategy: PauliPolynomialSynthStrategy,
     clifford_strategy: CliffordTableauSynthStrategy,
 }
 
 impl NaivePauliExponentialSynthesizer {
-    pub fn new(
-        pauli_exponential: PauliExponential,
+    pub fn from_strategy(
         pauli_strategy: PauliPolynomialSynthStrategy,
         clifford_strategy: CliffordTableauSynthStrategy,
     ) -> Self {
         Self {
-            pauli_exponential,
             pauli_strategy,
             clifford_strategy,
         }
+    }
+
+    pub fn set_pauli_strategy(
+        &mut self,
+        pauli_strategy: PauliPolynomialSynthStrategy,
+    ) -> &mut Self {
+        self.pauli_strategy = pauli_strategy;
+        self
+    }
+
+    pub fn set_clifford_strategy(
+        &mut self,
+        clifford_strategy: CliffordTableauSynthStrategy,
+    ) -> &mut Self {
+        self.clifford_strategy = clifford_strategy;
+        self
     }
 }
 
@@ -36,11 +50,11 @@ impl<G> PauliExponentialSynthesizer<G> for NaivePauliExponentialSynthesizer
 where
     G: CliffordGates + Gates,
 {
-    fn synthesize(&mut self, repr: &mut G) {
+    fn synthesize(&mut self, pauli_exponential: PauliExponential, repr: &mut G) {
         let PauliExponential {
             pauli_polynomials,
             clifford_tableau,
-        } = std::mem::take(&mut self.pauli_exponential);
+        } = pauli_exponential;
 
         let clifford_tableau = match self.pauli_strategy {
             PauliPolynomialSynthStrategy::Naive => {
@@ -52,16 +66,15 @@ where
 
         match &self.clifford_strategy {
             CliffordTableauSynthStrategy::Naive => {
-                let mut clifford_synthesizer = NaiveCliffordSynthesizer::new(clifford_tableau);
-                clifford_synthesizer.synthesize(repr);
+                let mut clifford_synthesizer = NaiveCliffordSynthesizer {};
+                clifford_synthesizer.synthesize(clifford_tableau, repr);
             }
             CliffordTableauSynthStrategy::Custom(custom_rows, custom_columns) => {
-                let mut clifford_synthesizer = CustomPivotCliffordSynthesizer::new(
-                    clifford_tableau,
-                    custom_rows.to_owned(),
-                    custom_columns.to_owned(),
-                );
-                clifford_synthesizer.synthesize(repr);
+                let mut clifford_synthesizer = CustomPivotCliffordSynthesizer::default();
+                clifford_synthesizer
+                    .set_custom_columns(custom_columns.to_owned())
+                    .set_custom_rows(custom_rows.to_owned());
+                clifford_synthesizer.synthesize(clifford_tableau, repr);
             }
         };
     }
