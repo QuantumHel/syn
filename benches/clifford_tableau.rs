@@ -126,8 +126,8 @@ fn setup_sample_inverse_ct() -> CliffordTableau {
 
 fn naive_ct(clifford: CliffordTableau) {
     let mut mock = MockCircuit::new();
-    let mut synthesizer = NaiveCliffordSynthesizer::new(clifford);
-    synthesizer.synthesize(&mut mock);
+    let mut synthesizer = NaiveCliffordSynthesizer::default();
+    synthesizer.synthesize(clifford, &mut mock);
 }
 
 fn custom_ct(clifford: CliffordTableau) {
@@ -135,13 +135,12 @@ fn custom_ct(clifford: CliffordTableau) {
 
     let mut mock = MockCircuit::new();
 
-    let mut synthesizer = CustomPivotCliffordSynthesizer::new(
-        clifford,
-        (0..num_qubits).collect(),
-        (0..num_qubits).collect(),
-    );
+    let mut synthesizer = CustomPivotCliffordSynthesizer::default();
+    synthesizer
+        .set_custom_columns((0..num_qubits).collect())
+        .set_custom_rows((0..num_qubits).collect());
 
-    synthesizer.synthesize(&mut mock);
+    synthesizer.synthesize(clifford, &mut mock);
 }
 
 pub fn ct_bench(c: &mut Criterion) {
