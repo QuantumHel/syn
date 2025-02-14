@@ -230,7 +230,7 @@ mod tests {
 
     #[test]
     fn test_pauli_string_masked_s() {
-        let mut paulivec = PauliString::from_text("IXYZIXYZ");
+        let paulivec = PauliString::from_text("IXYZIXYZ");
         let mask = bits![usize, Lsb0; 0, 0, 0, 0, 1, 1, 1, 1];
         paulivec.masked_s(mask);
         let paulivec_ref = PauliString::from_text("IXYZIYXZ");
@@ -241,7 +241,7 @@ mod tests {
 
     #[test]
     fn test_pauli_string_masked_v() {
-        let mut paulivec = PauliString::from_text("IXYZIXYZ");
+        let paulivec = PauliString::from_text("IXYZIXYZ");
         let mask = bits![usize, Lsb0; 0, 0, 0, 0, 1, 1, 1, 1];
         paulivec.masked_v(mask);
         let paulivec_ref = PauliString::from_text("IXYZIXZY");
@@ -251,7 +251,7 @@ mod tests {
 
     #[test]
     fn test_pauli_string_masked_h() {
-        let mut paulivec = PauliString::from_text("IXYZIXYZ");
+        let paulivec = PauliString::from_text("IXYZIXYZ");
         let mask = bits![usize, Lsb0; 0, 0, 0, 0, 1, 1, 1, 1];
         paulivec.masked_h(mask);
         let paulivec_ref = PauliString::from_text("IXYZIZYX");
@@ -276,10 +276,10 @@ mod tests {
 
     #[test]
     fn test_pauli_string_masked_cx() {
-        let mut control = PauliString::from_text("IIIIXXXXYYYYZZZZIIIIXXXXYYYYZZZZ");
-        let mut target = PauliString::from_text("IXYZIXYZIXYZIXYZIXYZIXYZIXYZIXYZ");
+        let control = PauliString::from_text("IIIIXXXXYYYYZZZZIIIIXXXXYYYYZZZZ");
+        let target = PauliString::from_text("IXYZIXYZIXYZIXYZIXYZIXYZIXYZIXYZ");
         let mask = bits![usize, Lsb0; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
-        masked_cx(&mut control, &mut target, mask);
+        masked_cx(&control, &target, mask);
         let control_ref = PauliString::from_text("IIIIXXXXYYYYZZZZIIZZXXYYYYXXZZII");
         let target_ref = PauliString::from_text("IXYZIXYZIXYZIXYZIXYZXIZYXIZYIXYZ");
 
