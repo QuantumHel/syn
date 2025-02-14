@@ -3,10 +3,10 @@ use bitvec::prelude::Lsb0;
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use syn::data_structures::CliffordTableau;
 use syn::data_structures::PauliString;
+use syn::ir::clifford_tableau::custom_pivots::CustomPivotCliffordSynthesizer;
+use syn::ir::clifford_tableau::naive::NaiveCliffordSynthesizer;
 use syn::ir::clifford_tableau::CliffordTableauSynthesizer;
 use syn::ir::CliffordGates;
-use syn::synthesis_methods::custom::Custom;
-use syn::synthesis_methods::naive::Naive;
 
 #[derive(Debug, Default)]
 pub struct MockCircuit {
@@ -83,7 +83,7 @@ impl CliffordGates for MockCircuit {
 fn setup_sample_ct() -> CliffordTableau {
     // Stab: ZZZ, -YIY, XIX
     // Destab: -IXI, XXI, IYY
-    let ct_size = 3;
+
     // qubit 1x: ZYI
     // qubit 1z: IZZ
     let pauli_1 = PauliString::from_text("ZYIIZZ");
@@ -97,13 +97,13 @@ fn setup_sample_ct() -> CliffordTableau {
     let pauli_3 = PauliString::from_text("ZYYIIZ");
 
     let signs = bitvec![0, 1, 0, 1, 0, 0];
-    CliffordTableau::from_parts(vec![pauli_1, pauli_2, pauli_3], signs, ct_size)
+    CliffordTableau::from_parts(vec![pauli_1, pauli_2, pauli_3], signs)
 }
 
 fn setup_sample_inverse_ct() -> CliffordTableau {
     // Stab: -ZIYZ, -ZZYZ, -XZXI, IZXX
     // Destab: -YYIZ, -YYXZ, ZIXX, -XZXZ
-    let ct_size = 4;
+
     // qubit 1x: ZZXI
     // qubit 1z: YYZX
     let pauli_1 = PauliString::from_text("ZZXIYYZX");
@@ -121,24 +121,27 @@ fn setup_sample_inverse_ct() -> CliffordTableau {
     let pauli_4 = PauliString::from_text("ZZIXZZXZ");
 
     let signs = bitvec![1, 1, 1, 0, 1, 1, 0, 1];
-    CliffordTableau::from_parts(vec![pauli_1, pauli_2, pauli_3, pauli_4], signs, ct_size)
+    CliffordTableau::from_parts(vec![pauli_1, pauli_2, pauli_3, pauli_4], signs)
 }
 
 fn naive_ct(clifford: CliffordTableau) {
     let mut mock = MockCircuit::new();
-    CliffordTableauSynthesizer::run_naive(&clifford, &mut mock);
+    let mut synthesizer = NaiveCliffordSynthesizer::new(clifford);
+    synthesizer.synthesize(&mut mock);
 }
 
 fn custom_ct(clifford: CliffordTableau) {
     let num_qubits = clifford.size();
 
     let mut mock = MockCircuit::new();
-    CliffordTableauSynthesizer::run_custom(
-        &clifford,
-        &mut mock,
+
+    let mut synthesizer = CustomPivotCliffordSynthesizer::new(
+        clifford,
         (0..num_qubits).collect(),
         (0..num_qubits).collect(),
     );
+
+    synthesizer.synthesize(&mut mock);
 }
 
 pub fn ct_bench(c: &mut Criterion) {
@@ -149,6 +152,13 @@ pub fn ct_bench(c: &mut Criterion) {
     });
     group.bench_function(BenchmarkId::new("Custom", "custom"), |b| {
         b.iter(|| custom_ct(black_box(setup_sample_inverse_ct())))
+    });
+
+    group.bench_function(BenchmarkId::new("SimpleNaive", "naive"), |b| {
+        b.iter(|| naive_ct(black_box(setup_sample_ct())))
+    });
+    group.bench_function(BenchmarkId::new("SimpleCustom", "custom"), |b| {
+        b.iter(|| custom_ct(black_box(setup_sample_ct())))
     });
 }
 
