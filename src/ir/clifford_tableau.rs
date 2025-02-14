@@ -1,7 +1,6 @@
-use core::num;
-use std::iter::{self, zip};
+use std::iter::zip;
 
-use itertools::{iproduct, Itertools};
+use itertools::Itertools;
 
 use crate::{
     data_structures::{CliffordTableau, PauliLetter, PauliString, PropagateClifford},
