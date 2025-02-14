@@ -47,12 +47,12 @@ where
 
         assert_eq!(
             custom_columns.iter().copied().sorted().collect::<Vec<_>>(),
-            remaining_columns
+            remaining_columns, "custom_columns is not a valid permutation, use `set_custom_columns` to define custom column pivots"
         );
 
         assert_eq!(
             custom_rows.iter().copied().sorted().collect::<Vec<_>>(),
-            remaining_rows
+            remaining_rows, "custom_rows is not a valid permutation, use `set_custom_rows` to define custom row pivots"
         );
 
         for (&pivot_column, &pivot_row) in zip(custom_columns, custom_rows) {
