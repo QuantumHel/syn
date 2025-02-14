@@ -1,6 +1,7 @@
 use crate::IndexType;
 
 pub mod clifford_tableau;
+pub mod pauli_polynomial;
 pub mod pauli_exponential;
 
 pub trait CliffordGates {

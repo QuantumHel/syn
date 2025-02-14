@@ -7,7 +7,7 @@ use super::{pauli_string::PauliString, IndexType, MaskedPropagateClifford, Propa
 // todo: Make this into a union / type Angle
 type Angle = f64;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct PauliPolynomial {
     chains: Vec<PauliString>,
     angles: RefCell<Vec<Angle>>,

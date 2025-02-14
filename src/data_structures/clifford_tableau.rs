@@ -9,7 +9,7 @@ use super::{
     IndexType, PropagateClifford,
 };
 
-#[derive(PartialEq, Eq, Debug, Clone)]
+#[derive(PartialEq, Eq, Debug, Clone, Default)]
 pub struct CliffordTableau {
     // We keep track of the pauli letters per qubit not per stabilizer
     pauli_columns: Vec<PauliString>,
