@@ -30,12 +30,11 @@ fn setup_complex_pe() -> PauliExponential {
 fn test_naive_pauli_exponential_synthesis() {
     let pe = setup_simple_pe();
     let mut mock = MockCircuit::new();
-    let mut synthesizer = NaivePauliExponentialSynthesizer::new(
-        pe,
+    let mut synthesizer = NaivePauliExponentialSynthesizer::from_strategy(
         PauliPolynomialSynthStrategy::Naive,
         CliffordTableauSynthStrategy::Naive,
     );
-    synthesizer.synthesize(&mut mock);
+    synthesizer.synthesize(pe, &mut mock);
 
     let ref_commands = [
         MockCommand::CX(1, 2),
@@ -53,13 +52,11 @@ fn test_naive_pauli_exponential_complex() {
     let pe = setup_complex_pe();
     let mut mock = MockCircuit::new();
 
-    let mut synthesizer = NaivePauliExponentialSynthesizer::new(
-        pe,
+    let mut synthesizer = NaivePauliExponentialSynthesizer::from_strategy(
         PauliPolynomialSynthStrategy::Naive,
         CliffordTableauSynthStrategy::Naive,
     );
-
-    synthesizer.synthesize(&mut mock);
+    synthesizer.synthesize(pe, &mut mock);
 
     let input = [
         MockCommand::H(1),
@@ -79,8 +76,9 @@ fn test_naive_pauli_exponential_complex() {
     let ref_ct = parse_clifford_commands(4, &input);
     let mut mock_ct = MockCircuit::new();
 
-    let mut cliff_synthesizer = NaiveCliffordSynthesizer::new(ref_ct.clone());
-    cliff_synthesizer.synthesize(&mut mock_ct);
+    let mut cliff_synthesizer = NaiveCliffordSynthesizer::default();
+
+    cliff_synthesizer.synthesize(ref_ct.clone(), &mut mock_ct);
 
     let mock_ct_ref_commands = [
         MockCommand::S(2),

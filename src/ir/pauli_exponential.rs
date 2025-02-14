@@ -23,5 +23,5 @@ impl PauliExponential {
 }
 
 pub trait PauliExponentialSynthesizer<G> {
-    fn synthesize(&mut self, external_repr: &mut G);
+    fn synthesize(&mut self, pauli_exponential: PauliExponential, external_repr: &mut G);
 }
