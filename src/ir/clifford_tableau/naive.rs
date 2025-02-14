@@ -15,11 +15,6 @@ impl<G> CliffordTableauSynthesizer<G> for NaiveCliffordSynthesizer
 where
     G: CliffordGates,
 {
-    fn synthesize(&mut self, mut clifford_tableau: CliffordTableau, repr: &mut G) {
-        clifford_tableau = clifford_tableau.adjoint();
-        CliffordTableauSynthesizer::<G>::synthesize_adjoint(self, clifford_tableau, repr)
-    }
-
     fn synthesize_adjoint(&mut self, mut clifford_tableau: CliffordTableau, repr: &mut G) {
         let num_qubits = clifford_tableau.size();
 
