@@ -4,9 +4,8 @@ use bitvec::bitvec;
 use bitvec::prelude::Lsb0;
 use common::{parse_clifford_commands, MockCircuit, MockCommand};
 use syn::data_structures::{CliffordTableau, PauliString, PropagateClifford};
-use syn::ir::clifford_tableau::custom_pivots::CustomPivotCliffordSynthesizer;
-use syn::ir::clifford_tableau::naive::NaiveCliffordSynthesizer;
-use syn::ir::clifford_tableau::CliffordTableauSynthesizer;
+use syn::ir::clifford_tableau::{CustomPivotCliffordSynthesizer, NaiveCliffordSynthesizer};
+use syn::ir::Synthesizer;
 
 fn setup_sample_ct() -> CliffordTableau {
     // Stab: ZZZ, -YIY, XIX

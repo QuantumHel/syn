@@ -4,11 +4,11 @@ use std::collections::VecDeque;
 
 use common::{parse_clifford_commands, MockCircuit, MockCommand};
 use syn::data_structures::{CliffordTableau, PauliPolynomial};
-use syn::ir::clifford_tableau::naive::NaiveCliffordSynthesizer;
-use syn::ir::clifford_tableau::{CliffordTableauSynthStrategy, CliffordTableauSynthesizer};
-use syn::ir::pauli_exponential::naive::NaivePauliExponentialSynthesizer;
-use syn::ir::pauli_exponential::{PauliExponential, PauliExponentialSynthesizer};
+use syn::ir::clifford_tableau::{CliffordTableauSynthStrategy, NaiveCliffordSynthesizer};
+use syn::ir::pauli_exponential::PauliExponential;
+use syn::ir::pauli_exponential::PauliExponentialSynthesizer;
 use syn::ir::pauli_polynomial::PauliPolynomialSynthStrategy;
+use syn::ir::Synthesizer;
 
 fn setup_simple_pe() -> PauliExponential {
     let ham = vec![("IZZZ", 0.3)];
@@ -30,7 +30,7 @@ fn setup_complex_pe() -> PauliExponential {
 fn test_naive_pauli_exponential_synthesis() {
     let pe = setup_simple_pe();
     let mut mock = MockCircuit::new();
-    let mut synthesizer = NaivePauliExponentialSynthesizer::from_strategy(
+    let mut synthesizer = PauliExponentialSynthesizer::from_strategy(
         PauliPolynomialSynthStrategy::Naive,
         CliffordTableauSynthStrategy::Naive,
     );
@@ -52,7 +52,7 @@ fn test_naive_pauli_exponential_complex() {
     let pe = setup_complex_pe();
     let mut mock = MockCircuit::new();
 
-    let mut synthesizer = NaivePauliExponentialSynthesizer::from_strategy(
+    let mut synthesizer = PauliExponentialSynthesizer::from_strategy(
         PauliPolynomialSynthStrategy::Naive,
         CliffordTableauSynthStrategy::Naive,
     );
