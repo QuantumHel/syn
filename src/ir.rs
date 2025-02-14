@@ -22,3 +22,8 @@ pub trait Gates {
     fn ry(&mut self, target: IndexType, angle: f64);
     fn rz(&mut self, target: IndexType, angle: f64);
 }
+
+pub trait Synthesizer<F, G, R> {
+    fn synthesize(&mut self, ir: F, repr: &mut G) -> R;
+    fn synthesize_adjoint(&mut self, ir: F, external_repr: &mut G) -> R;
+}

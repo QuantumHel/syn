@@ -1,20 +1,24 @@
-use crate::{data_structures::CliffordTableau, ir::CliffordGates};
+use crate::{
+    data_structures::CliffordTableau,
+    ir::{CliffordGates, Synthesizer},
+};
 
-use super::{
-    helper::{
-        clean_pivot, clean_signs, clean_x_observables, clean_z_observables, naive_pivot_search,
-        swap,
-    },
-    CliffordTableauSynthesizer,
+use super::helper::{
+    clean_pivot, clean_signs, clean_x_observables, clean_z_observables, naive_pivot_search, swap,
 };
 
 #[derive(Default)]
 pub struct NaiveCliffordSynthesizer {}
 
-impl<G> CliffordTableauSynthesizer<G> for NaiveCliffordSynthesizer
+impl<G> Synthesizer<CliffordTableau, G, ()> for NaiveCliffordSynthesizer
 where
     G: CliffordGates,
 {
+    fn synthesize(&mut self, mut clifford_tableau: CliffordTableau, repr: &mut G) {
+        clifford_tableau = clifford_tableau.adjoint();
+        self.synthesize_adjoint(clifford_tableau, repr);
+    }
+
     fn synthesize_adjoint(&mut self, mut clifford_tableau: CliffordTableau, repr: &mut G) {
         let num_qubits = clifford_tableau.size();
 

@@ -4,12 +4,10 @@ use crate::{
     data_structures::{
         CliffordTableau, MaskedPropagateClifford, PauliLetter, PauliPolynomial, PropagateClifford,
     },
-    ir::{CliffordGates, Gates},
+    ir::{CliffordGates, Gates, Synthesizer},
 };
 use bitvec::{bitvec, order::Lsb0};
 use itertools::Itertools;
-
-use super::PauliPolynomialSynthesizer;
 
 #[derive(Default)]
 pub struct NaivePauliPolynomialSynthesizer {
@@ -45,7 +43,8 @@ impl MaskedPropagateClifford for VecDeque<PauliPolynomial> {
     }
 }
 
-impl<G> PauliPolynomialSynthesizer<G> for NaivePauliPolynomialSynthesizer
+impl<G> Synthesizer<VecDeque<PauliPolynomial>, G, CliffordTableau>
+    for NaivePauliPolynomialSynthesizer
 where
     G: CliffordGates + Gates,
 {
@@ -98,5 +97,9 @@ where
         }
 
         clifford_tableau
+    }
+
+    fn synthesize_adjoint(&mut self, _: VecDeque<PauliPolynomial>, _: &mut G) -> CliffordTableau {
+        unimplemented!("Not required for Pauli Polynomials");
     }
 }

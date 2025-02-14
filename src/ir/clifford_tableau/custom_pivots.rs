@@ -8,11 +8,9 @@ use crate::{
         clifford_tableau::helper::{
             clean_signs, clean_x_observables, clean_x_pivot, clean_z_observables, clean_z_pivot,
         },
-        CliffordGates,
+        CliffordGates, Synthesizer,
     },
 };
-
-use super::CliffordTableauSynthesizer;
 
 #[derive(Default)]
 pub struct CustomPivotCliffordSynthesizer {
@@ -32,10 +30,15 @@ impl CustomPivotCliffordSynthesizer {
     }
 }
 
-impl<G> CliffordTableauSynthesizer<G> for CustomPivotCliffordSynthesizer
+impl<G> Synthesizer<CliffordTableau, G, ()> for CustomPivotCliffordSynthesizer
 where
     G: CliffordGates,
 {
+    fn synthesize(&mut self, mut clifford_tableau: CliffordTableau, repr: &mut G) {
+        clifford_tableau = clifford_tableau.adjoint();
+        self.synthesize_adjoint(clifford_tableau, repr);
+    }
+
     fn synthesize_adjoint(&mut self, mut clifford_tableau: CliffordTableau, repr: &mut G) {
         let num_qubits = clifford_tableau.size();
 
