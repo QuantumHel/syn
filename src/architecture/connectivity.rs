@@ -331,6 +331,11 @@ mod tests {
             &vec![0, 1, 2, 3, 4, 5],
             undirected_architecture.non_cutting()
         );
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_non_cutting_directed() {
         // Below failure is caused by a bug in petgraph articulation points for directed graphs: 0 is not an articulation point.
         let mut directed_architecture = DirectedConnectivity::from_edges(&setup_simple());
         assert_eq!(&vec![0, 1, 2, 3, 4, 5], directed_architecture.non_cutting());
