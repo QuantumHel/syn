@@ -9,7 +9,7 @@ fn get_pauli(pauli_string: &PauliString, row: usize) -> PauliLetter {
     PauliLetter::new(pauli_string.x(row), pauli_string.z(row))
 }
 
-fn _is_i(pauli_letter: PauliLetter) -> bool {
+fn is_i(pauli_letter: PauliLetter) -> bool {
     pauli_letter == PauliLetter::I
 }
 
@@ -29,7 +29,7 @@ fn is_y(pauli_letter: PauliLetter) -> bool {
     pauli_letter == PauliLetter::Y
 }
 
-fn _is_not_y(pauli_letter: PauliLetter) -> bool {
+fn is_not_y(pauli_letter: PauliLetter) -> bool {
     pauli_letter != PauliLetter::Y
 }
 
