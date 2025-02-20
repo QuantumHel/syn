@@ -94,8 +94,6 @@ impl PauliString {
         let tmp = self.z.borrow().clone();
         *self.z.borrow_mut() = self.x.borrow().clone();
         *self.x.borrow_mut() = tmp;
-        // *self.x.borrow_mut() = tmp;
-        // (*self.x.borrow_mut(), *self.z.borrow_mut()) = (self.z.borrow(), self.x.borrow());
     }
 
     pub(crate) fn masked_h(&self, mask: &BitSlice) {
