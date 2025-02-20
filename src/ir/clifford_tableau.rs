@@ -6,7 +6,7 @@ pub mod naive;
 pub use custom_pivots::CustomPivotCliffordSynthesizer;
 pub use naive::NaiveCliffordSynthesizer;
 
-#[derive(Default, PartialEq, Eq)]
+#[derive(Default)]
 pub enum CliffordTableauSynthStrategy {
     #[default]
     Naive,
