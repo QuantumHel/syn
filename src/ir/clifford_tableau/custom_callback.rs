@@ -5,26 +5,21 @@ use itertools::Itertools;
 use crate::{
     data_structures::CliffordTableau,
     ir::{
-        clifford_tableau::helper::{
-            clean_signs, clean_x_columns, clean_x_pivot, clean_z_columns, clean_z_pivot,
-        },
-        CliffordGates,
+        clifford_tableau::helper::{clean_signs, clean_x_pivot, clean_z_pivot},
+        CliffordGates, Synthesizer,
     },
 };
 
-use super::{
-    helper::{clean_x_observables, clean_z_observables},
-    CliffordTableauSynthesizer,
-};
+use super::helper::{clean_x_observables, clean_z_observables};
 
 pub struct CustomCallbackCliffordSynthesizer {
-    custom_callback: fn(&[usize], &[usize]) -> (usize, usize),
+    custom_callback: fn(&[usize], &[usize], &CliffordTableau) -> (usize, usize),
 }
 
 impl Default for CustomCallbackCliffordSynthesizer {
     fn default() -> Self {
         Self {
-            custom_callback: |c: &[usize], r: &[usize]| (c[0], r[0]),
+            custom_callback: |c: &[usize], r: &[usize], _ct: &CliffordTableau| (c[0], r[0]),
         }
     }
 }
@@ -32,17 +27,22 @@ impl Default for CustomCallbackCliffordSynthesizer {
 impl CustomCallbackCliffordSynthesizer {
     pub fn set_custom_callback(
         &mut self,
-        callback: fn(&[usize], &[usize]) -> (usize, usize),
+        callback: fn(&[usize], &[usize], &CliffordTableau) -> (usize, usize),
     ) -> &mut Self {
         self.custom_callback = callback;
         self
     }
 }
 
-impl<G> CliffordTableauSynthesizer<G> for CustomCallbackCliffordSynthesizer
+impl<G> Synthesizer<CliffordTableau, G, ()> for CustomCallbackCliffordSynthesizer
 where
     G: CliffordGates,
 {
+    fn synthesize(&mut self, mut clifford_tableau: CliffordTableau, repr: &mut G) {
+        clifford_tableau = clifford_tableau.adjoint();
+        self.synthesize_adjoint(clifford_tableau, repr);
+    }
+
     fn synthesize_adjoint(&mut self, mut ct: CliffordTableau, repr: &mut G) {
         let num_qubits = ct.size();
 
@@ -55,7 +55,7 @@ where
         // for (&pivot_column, &pivot_row) in zip(custom_columns, custom_rows) {
         while !remaining_columns.is_empty() {
             let (pivot_column, pivot_row) =
-                (self.custom_callback)(&remaining_columns, &remaining_rows);
+                (self.custom_callback)(&remaining_columns, &remaining_rows, &ct);
             // Cleanup pivot column
             custom_columns.push(pivot_column);
             custom_rows.push(pivot_row);
@@ -64,12 +64,10 @@ where
             remaining_rows.retain(|&x| x != pivot_row);
             {
                 clean_x_pivot(repr, &mut ct, pivot_column, pivot_row);
-                clean_x_columns(repr, &mut ct, &remaining_rows, pivot_column);
                 // Use the pivot to remove all other terms in the X observable.
                 clean_x_observables(repr, &mut ct, &remaining_rows, pivot_column, pivot_row);
 
                 clean_z_pivot(repr, &mut ct, pivot_column, pivot_row);
-                clean_z_columns(repr, &mut ct, &remaining_rows, pivot_column);
                 // Use the pivot to remove all other terms in the Z observable.
                 clean_z_observables(repr, &mut ct, &remaining_rows, pivot_column, pivot_row);
             }
@@ -80,14 +78,5 @@ where
             .collect::<Vec<_>>();
 
         clean_signs(repr, &mut ct, &final_permutation);
-    }
-
-    fn synthesize_adjoint_architecture_aware(
-        &mut self,
-        clifford_tableau: CliffordTableau,
-        architecture: impl crate::architecture::Architecture,
-        external_repr: &mut G,
-    ) {
-        unimplemented!()
     }
 }
