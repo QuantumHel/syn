@@ -1,0 +1,24 @@
+[project]
+name = "synpy"
+version = "0.1.0"
+
+dynamic = ["dependencies"]
+
+[tool.setuptools.packages.find]
+exclude = ["*"]
+
+[tool.mypy]
+python_version = "3.12"
+disallow_untyped_defs = true
+check_untyped_defs = true
+
+
+[tool.ruff]
+line-length = 150
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W"]
+
+[tool.ruff.format]
+quote-style = "double"

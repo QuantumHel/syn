@@ -11,6 +11,13 @@ python_project_setup:
 	pip install -r requirements.txt
 	pre-commit install --hook-type pre-commit --hook-type prepare-commit-msg --hook-type commit-msg
 
+python_upgrade_dependencies:
+	pip-compile --upgrade requirements.in
+	pip-compile --upgrade --constraint requirements.txt pysyn/requirements.in
+
+python.dev:
+	SKIP=makefile-command pre-commit run -a
+
 rust_project_setup:
 	rustup show
 
