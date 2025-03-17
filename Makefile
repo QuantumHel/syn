@@ -13,7 +13,6 @@ python_project_setup:
 
 python_upgrade_dependencies:
 	pip-compile --upgrade requirements.in
-	pip-compile --upgrade --constraint requirements.txt pysyn/requirements.in
 
 python.dev:
 	SKIP=makefile-command pre-commit run -a

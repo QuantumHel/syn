@@ -9,4 +9,4 @@ crate-type = ["cdylib"]
 
 [dependencies]
 pyo3 = "0.23.3"
-syn = { path = "../../" }
+syn = { path = "../" }

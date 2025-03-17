@@ -1,4 +1,4 @@
-from synpy_core.synpy_rust import PyCommand
+from synpy.synpy_rust import PyCommand
 
 
 def tuple_to_pycommand(command_tuple: tuple) -> PyCommand:

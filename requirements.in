@@ -1,3 +1,2 @@
--r pysyn/requirements.in
 pre-commit
 pip-tools

@@ -1,8 +1,0 @@
-maturin~=1.8
-mypy
-ruff
-numpy
-scipy
-pytest
-qiskit
-pauliopt @ git+https://github.com/hashberg-io/pauliopt.git
