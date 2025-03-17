@@ -9,6 +9,7 @@ python_setup:
 
 python_project_setup:
 	pip install -r requirements.txt
+	pip install "synpy[all]"
 	pre-commit install --hook-type pre-commit --hook-type prepare-commit-msg --hook-type commit-msg
 
 python_upgrade_dependencies:
@@ -16,6 +17,9 @@ python_upgrade_dependencies:
 
 python.dev:
 	SKIP=makefile-command pre-commit run -a
+
+python_sec:
+	bandit -r synpy --exclude synpy/integration_tests
 
 rust_project_setup:
 	rustup show

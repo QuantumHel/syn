@@ -17,6 +17,9 @@ include = [{ path = "path/**/*", format = "sdist" }]
 pauliopt = [
     "pauliopt @ git+https://github.com/hashberg-io/pauliopt.git#main"
 ]
+all = [
+    "pauliopt @ git+https://github.com/hashberg-io/pauliopt.git#main"
+]
 
 [tool.mypy]
 python_version = "3.12"

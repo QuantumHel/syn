@@ -46,9 +46,9 @@ class PauliOptSynthesizer:
             elif gate == "Rz":
                 circuit.rz(t[2], t[1])
             elif gate == "CX":
-                circuit.cx(t[1], t[2])
+                circuit.cx(t[2], t[1])
             elif gate == "CZ":
-                circuit.cz(t[1], t[2])
+                circuit.cz(t[2], t[1])
             else:
                 raise ValueError("Unhandled gate type: " + gate)
 
