@@ -18,6 +18,9 @@ python_upgrade_dependencies:
 python.dev:
 	SKIP=makefile-command pre-commit run -a
 
+python_sec:
+	bandit -r synpy --exclude synpy/integration_tests
+
 rust_project_setup:
 	rustup show
 

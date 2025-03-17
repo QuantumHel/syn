@@ -1,0 +1,32 @@
+name: CI
+
+on: [ push, pull_request ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          # We also need to mock installing our library
+          pip install synpy[all]
+
+      - name: Run pre-commit hooks
+        run: pre-commit run --all-files
+
+      - name: Run security checks
+        run: |
+          make python_sec
+
+      - name: Run tests
+        run: pytest synpy/integration_tests
