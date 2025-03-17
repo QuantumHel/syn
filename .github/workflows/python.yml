@@ -21,16 +21,18 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt
-          # We also need to mock installing our library
-          pip install synpy[all]
+          make python_project_setup
+          # We need to separately mock install our python library
+          cd synpy
+          pip install .
+          pip install "synpy[all]"
+          cd ..
 
       - name: Run pre-commit hooks
-        run: pre-commit run --all-files
+        run: pre-commit run -a
 
       - name: Run security checks
-        run: |
-          make python_sec
+        run: make python_sec
 
       - name: Run tests
         run: pytest synpy/integration_tests
