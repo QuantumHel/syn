@@ -9,6 +9,7 @@ python_setup:
 
 python_project_setup:
 	pip install -r requirements.txt
+	pip install "synpy[all]"
 	pre-commit install --hook-type pre-commit --hook-type prepare-commit-msg --hook-type commit-msg
 
 python_upgrade_dependencies:
