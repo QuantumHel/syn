@@ -61,7 +61,8 @@ where
             let mut mask = bitvec![usize, Lsb0; 1; gadget_length];
             for col in 0..num_gadgets {
                 let mut affected_qubits = Vec::new();
-                for (i, row) in pauli_polynomial.chains().iter().enumerate() {
+
+                for (i, row) in pauli_polynomial.chains().iter().enumerate().rev() {
                     match row.pauli(col) {
                         PauliLetter::I => {}
                         PauliLetter::X => {
@@ -73,10 +74,10 @@ where
                         }
                         PauliLetter::Y => {
                             affected_qubits.push(i);
-                            pauli_polynomial.masked_s(i, &mask);
-                            pauli_polynomials.masked_s(i, &mask);
-                            clifford_tableau.s(i);
-                            repr.s(i);
+                            pauli_polynomial.masked_v(i, &mask);
+                            pauli_polynomials.masked_v(i, &mask);
+                            clifford_tableau.v(i);
+                            repr.v(i);
                         }
                         PauliLetter::Z => {
                             affected_qubits.push(i);
