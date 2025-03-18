@@ -70,11 +70,8 @@ class TestBasicSyn:
     @pytest.mark.parametrize("nr_gadgets", [3])
     def test_naive_synthesis(self, nr_qubits: int, nr_gadgets: int) -> None:
         pauli_polynomial = generate_random_pauli_polynomial(nr_qubits, nr_gadgets)
-
         qc = pauli_polynomial.copy().to_qiskit()
 
         qc_syn = PauliOptSynthesizer().synthesize(pauli_polynomial).to_qiskit()
-        print()
-        print(qc)
-        print(qc_syn)
+
         assert verify_equality(qc, qc_syn)
