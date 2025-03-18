@@ -85,14 +85,14 @@ where
         match &self.clifford_strategy {
             CliffordTableauSynthStrategy::Naive => {
                 let mut clifford_synthesizer = NaiveCliffordSynthesizer {};
-                clifford_synthesizer.synthesize(clifford_tableau, repr);
+                clifford_synthesizer.synthesize_adjoint(clifford_tableau, repr);
             }
             CliffordTableauSynthStrategy::Custom(custom_rows, custom_columns) => {
                 let mut clifford_synthesizer = CustomPivotCliffordSynthesizer::default();
                 clifford_synthesizer
                     .set_custom_columns(custom_columns.to_owned())
                     .set_custom_rows(custom_rows.to_owned());
-                clifford_synthesizer.synthesize(clifford_tableau, repr);
+                clifford_synthesizer.synthesize_adjoint(clifford_tableau, repr);
             }
         };
     }
