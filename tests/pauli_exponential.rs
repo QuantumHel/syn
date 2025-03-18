@@ -26,6 +26,18 @@ fn setup_complex_pe() -> PauliExponential {
     PauliExponential::new(VecDeque::from([pauli_polynomial]), clifford_tableau)
 }
 
+fn setup_custom_pe() -> PauliExponential {
+    let ham = vec![
+        ("IIX", std::f64::consts::PI),
+        ("XIX", std::f64::consts::PI / 2.),
+        ("IYX", std::f64::consts::PI / 8.),
+    ];
+
+    let pauli_polynomial = PauliPolynomial::from_hamiltonian(ham);
+    let clifford_tableau = CliffordTableau::new(3);
+    PauliExponential::new(VecDeque::from([pauli_polynomial]), clifford_tableau)
+}
+
 #[test]
 fn test_naive_pauli_exponential_synthesis() {
     let pe = setup_simple_pe();
