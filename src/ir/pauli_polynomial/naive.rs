@@ -62,7 +62,7 @@ where
             for col in 0..num_gadgets {
                 let mut affected_qubits = Vec::new();
 
-                for (i, row) in pauli_polynomial.chains().iter().enumerate().rev() {
+                for (i, row) in pauli_polynomial.chains().iter().enumerate() {
                     match row.pauli(col) {
                         PauliLetter::I => {}
                         PauliLetter::X => {
