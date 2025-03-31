@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 bitvec = "1.0.1"
 itertools = "0.13.0"
-petgraph = { git = "https://github.com/daehiff/petgraph", branch = "art-points", version = "0.6.5" }
+petgraph = { git = "https://github.com/petgraph/petgraph.git", rev = "74339abdfd665ac7c44d84b48dc22a77625267e8", features = ["stable_graph"]}
 typenum = "1.17.0"
 
 [dev-dependencies]

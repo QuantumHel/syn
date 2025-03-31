@@ -1,4 +1,4 @@
-use super::{Architecture, GraphIndex};
+use super::{Architecture, GraphIndex, LadderError};
 
 /// Describes a line architecture. This ensures that consecutive numbers are adjacent. Allows for disjoint breaking of architecture in case this is required.
 #[derive(Debug)]
@@ -116,6 +116,14 @@ impl Architecture for Line {
             self.updated = true;
         }
         &self.non_cutting
+    }
+
+    fn get_cx_ladder(
+        &self,
+        nodes: &[usize],
+        root: &GraphIndex,
+    ) -> Result<Vec<(usize, usize)>, LadderError> {
+        todo!()
     }
 }
 

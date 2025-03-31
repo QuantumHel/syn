@@ -1,18 +1,24 @@
+use super::{Architecture, EdgeWeight, GraphIndex, LadderError, NodeWeight};
+use petgraph::algo::floyd_warshall::floyd_warshall_path;
+use petgraph::algo::steiner_tree::steiner_tree;
+use petgraph::prelude::EdgeRef;
+use petgraph::visit::{Bfs, Dfs, GraphBase, IntoNeighbors, VisitMap, Visitable, Walker};
 use petgraph::{
-    algo::{articulation_points::articulation_points, floyd_warshall_path},
+    algo::articulation_points::articulation_points,
     graph::{NodeIndex, UnGraph},
     visit::{IntoNodeReferences, NodeIndexable, NodeRef},
+    Graph, Undirected,
 };
+use std::borrow::Borrow;
 use std::collections::HashMap;
-
-use super::{Architecture, EdgeWeight, GraphIndex, NodeWeight};
+use std::ops::Index;
 
 #[derive(Debug)]
 pub struct Connectivity {
     graph: UnGraph<NodeWeight, EdgeWeight, GraphIndex>,
     non_cutting: Vec<GraphIndex>,
     prev: Vec<Vec<Option<GraphIndex>>>,
-    distance: HashMap<(NodeIndex<GraphIndex>, NodeIndex<GraphIndex>), usize>,
+    distance: HashMap<(NodeIndex<GraphIndex>, NodeIndex<GraphIndex>), EdgeWeight>,
 }
 
 impl Connectivity {
@@ -35,6 +41,7 @@ impl Connectivity {
 
         let (distance, prev) = floyd_warshall_path(&graph, |e| *e.weight()).unwrap();
 
+        let distance = distance.iter().map(|(k, v)| (*k, *v as usize)).collect();
         Connectivity {
             graph,
             non_cutting,
@@ -52,7 +59,7 @@ impl Connectivity {
             .collect();
 
         let (distance, prev) = floyd_warshall_path(&graph, |e| *e.weight()).unwrap();
-
+        let distance = distance.iter().map(|(k, v)| (*k, *v as usize)).collect();
         Connectivity {
             graph,
             non_cutting,
@@ -76,7 +83,9 @@ impl Connectivity {
             .collect();
 
         let (distance, prev) = floyd_warshall_path(&self.graph, |e| *e.weight()).unwrap();
-        println!("prev: {:?}", prev);
+
+        let distance = distance.iter().map(|(k, v)| (*k, *v as usize)).collect();
+
         self.non_cutting = non_cutting;
         self.distance = distance;
         self.prev = prev;
@@ -122,6 +131,31 @@ impl Connectivity {
     }
 }
 
+/// Small helper since we have different and incompatible assumptions as Petgraph
+/// TODO fix this in petgraph
+fn convert_graph<N: Clone, E: Clone>(
+    old_graph: &Graph<N, E, Undirected, usize>,
+) -> Graph<N, E, Undirected, u32> {
+    let mut new_graph = Graph::<N, E, Undirected, u32>::new_undirected();
+    // Map from old node indices to new node indices.
+    let mut index_map: HashMap<NodeIndex<usize>, NodeIndex<u32>> = HashMap::new();
+
+    // Add nodes from the old graph to the new graph.
+    for old_node in old_graph.node_indices() {
+        let new_node = new_graph.add_node(old_graph[old_node].clone());
+        index_map.insert(old_node, new_node);
+    }
+
+    // Add edges, converting the node indices using our mapping.
+    for edge in old_graph.edge_references() {
+        let new_source = index_map[&edge.source()];
+        let new_target = index_map[&edge.target()];
+        new_graph.add_edge(new_source, new_target, edge.weight().clone());
+    }
+
+    new_graph
+}
+
 impl Architecture for Connectivity {
     fn best_path(&self, i: GraphIndex, j: GraphIndex) -> Vec<GraphIndex> {
         assert!(
@@ -144,7 +178,7 @@ impl Architecture for Connectivity {
             j < self.graph.node_count(),
             "architecture does not contain node {j}"
         );
-        self.distance[&(self.graph.from_index(i), self.graph.from_index(j))]
+        self.distance[&(self.graph.from_index(i), self.graph.from_index(j))] as usize
     }
 
     fn neighbors(&self, i: GraphIndex) -> Vec<usize> {
@@ -161,11 +195,53 @@ impl Architecture for Connectivity {
     fn non_cutting(&mut self) -> &Vec<GraphIndex> {
         &self.non_cutting
     }
+
+    fn get_cx_ladder(
+        &self,
+        nodes: &[GraphIndex],
+        root: &GraphIndex,
+    ) -> Result<Vec<(usize, usize)>, LadderError> {
+        // TODO fix me we currently have to convert the graph
+        let terminals: Result<Vec<_>, LadderError> = self
+            .graph
+            .node_indices()
+            .filter(|node_index| nodes.contains(&self.graph.to_index(*node_index)))
+            .map(|node_index| {
+                let idx = node_index.index() as u32;
+                idx.try_into()
+                    .map(NodeIndex::new)
+                    .map_err(|_| LadderError::ConversionError)
+            })
+            .collect();
+        let terminals = terminals?;
+
+        let tree = steiner_tree(&convert_graph(&self.graph), &terminals);
+
+        let root_node = tree
+            .node_indices()
+            .find(|item| item.index() == *root as usize)
+            .ok_or(LadderError::RootNotFound)?;
+
+        let mut bfs = Bfs::new(&tree, root_node);
+        let mut edge_list = Vec::new();
+        let mut visited = tree.visit_map();
+        visited.visit(root_node);
+
+        while let Some(node) = bfs.next(&tree) {
+            for neighbor in tree.neighbors(node) {
+                if !visited.is_visited(&neighbor) {
+                    visited.visit(neighbor);
+                    edge_list.push((node.index(), neighbor.index()));
+                }
+            }
+        }
+        Ok(edge_list)
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::architecture::{Architecture, EdgeWeight, GraphIndex};
+    use crate::architecture::{Architecture, EdgeWeight, GraphIndex, LadderError};
 
     use super::Connectivity;
     fn setup_weighted() -> Vec<(GraphIndex, GraphIndex, EdgeWeight)> {
@@ -197,9 +273,74 @@ mod tests {
     }
 
     #[test]
-    fn test_simple_constuctor() {
+    fn test_weight_is_considered() {
+        let new_architecture = Connectivity::from_weighted_edges(&setup_weighted());
+        assert_eq!(
+            new_architecture
+                .get_cx_ladder(&vec![1, 2, 3, 4], &2)
+                .unwrap()
+                .sort(),
+            vec![(2, 1), (2, 3), (3, 4)].sort()
+        );
+    }
+
+    #[test]
+    fn test_root_is_not_present() {
+        let new_architecture = Connectivity::from_edges(&setup_simple());
+        assert_eq!(
+            new_architecture
+                .get_cx_ladder(&vec![1, 2, 3, 4], &42)
+                .expect_err("Should return a Error that the root was not found"),
+            LadderError::RootNotFound
+        );
+    }
+
+    #[test]
+    fn test_simple_constructor() {
         let new_architecture = Connectivity::from_edges(&setup_simple());
         assert_eq!(new_architecture.nodes(), vec![0, 1, 2, 3, 4, 5]);
+    }
+
+    #[test]
+    fn test_cx_ladder_line_setup() {
+        let new_architecture = Connectivity::from_edges(&setup_simple());
+        assert_eq!(
+            new_architecture
+                .get_cx_ladder(&vec![0, 1, 2, 3], &0)
+                .unwrap(),
+            vec![(0, 1), (1, 2), (2, 3)]
+        );
+    }
+
+    #[test]
+    fn test_cx_ladder_extended_triangle() {
+        let new_architecture = Connectivity::from_edges(&setup_simple());
+        assert_eq!(
+            new_architecture
+                .get_cx_ladder(&vec![0, 1, 2, 4, 5], &1)
+                .unwrap()
+                .sort(),
+            vec![(0, 1), (1, 5), (1, 2), (2, 4)].sort()
+        );
+    }
+
+    #[test]
+    fn test_cx_ladder_small_triangle() {
+        let new_architecture = Connectivity::from_edges(&setup_simple());
+        assert_eq!(
+            new_architecture
+                .get_cx_ladder(&vec![2, 3, 4], &2)
+                .unwrap()
+                .sort(),
+            vec![(2, 4), (2, 3)].sort()
+        );
+        assert_eq!(
+            new_architecture
+                .get_cx_ladder(&vec![2, 3, 4], &4)
+                .unwrap()
+                .sort(),
+            vec![(4, 2), (4, 3)].sort()
+        );
     }
 
     #[test]
@@ -259,6 +400,12 @@ mod tests {
 
     #[test]
     fn test_non_cutting() {
+        let mut new_architecture = Connectivity::from_edges(&setup_simple());
+        assert_eq!(&Vec::<GraphIndex>::new(), new_architecture.non_cutting());
+    }
+
+    #[test]
+    fn test_steiner_tree() {
         let mut new_architecture = Connectivity::from_edges(&setup_simple());
         assert_eq!(&Vec::<GraphIndex>::new(), new_architecture.non_cutting());
     }

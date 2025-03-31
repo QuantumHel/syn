@@ -1,4 +1,4 @@
-use super::{Architecture, GraphIndex};
+use super::{Architecture, GraphIndex, LadderError};
 
 #[derive(Debug)]
 pub struct Complete {
@@ -64,6 +64,14 @@ impl Architecture for Complete {
 
     fn non_cutting(&mut self) -> &Vec<GraphIndex> {
         &self.nodes
+    }
+
+    fn get_cx_ladder(
+        &self,
+        nodes: &[usize],
+        root: &GraphIndex,
+    ) -> Result<Vec<(usize, usize)>, LadderError> {
+        todo!()
     }
 }
 
