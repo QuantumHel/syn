@@ -1,3 +1,4 @@
+use crate::connectivity::connectivity_benchmark;
 use bitvec::bitvec;
 use bitvec::prelude::Lsb0;
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
@@ -7,6 +8,8 @@ use syn::ir::clifford_tableau::CliffordTableauSynthesizer;
 use syn::ir::CliffordGates;
 use syn::synthesis_methods::custom::Custom;
 use syn::synthesis_methods::naive::Naive;
+
+mod connectivity;
 
 #[derive(Debug, Default)]
 pub struct MockCircuit {
@@ -153,4 +156,4 @@ pub fn ct_bench(c: &mut Criterion) {
 }
 
 criterion_group!(benches, ct_bench);
-criterion_main!(benches);
+criterion_main!(benches, connectivity_benchmark);

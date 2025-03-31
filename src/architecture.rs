@@ -7,7 +7,7 @@ type EdgeWeight = usize;
 type NodeWeight = ();
 
 #[derive(Debug, PartialEq)]
-enum LadderError {
+pub enum LadderError {
     ConversionError,
     RootNotFound,
 }
