@@ -1,18 +1,33 @@
-use super::{Architecture, EdgeWeight, GraphIndex, NodeWeight};
+use super::{Architecture, EdgeWeight, GraphIndex, LadderError, NodeWeight};
 use petgraph::algo::floyd_warshall::floyd_warshall_path;
+use petgraph::algo::steiner_tree::steiner_tree;
+use petgraph::prelude::EdgeRef;
+use petgraph::visit::{Bfs, Dfs, GraphBase, IntoNeighbors, VisitMap, Visitable, Walker};
 use petgraph::{
     algo::articulation_points::articulation_points,
     graph::{NodeIndex, UnGraph},
     visit::{IntoNodeReferences, NodeIndexable, NodeRef},
 };
+use std::borrow::Borrow;
 use std::collections::HashMap;
+use std::ops::Index;
+
+/// Get all the vertices in a graph that are non-cutting (won't make the graph disconnected)
+fn get_non_cutting_vertices(
+    graph: &UnGraph<NodeWeight, EdgeWeight, GraphIndex>,
+) -> Vec<GraphIndex> {
+    let art_points = articulation_points(&graph);
+    (0..graph.node_count())
+        .filter(|node| !art_points.contains(&graph.from_index(*node)))
+        .collect()
+}
 
 #[derive(Debug)]
 pub struct Connectivity {
     graph: UnGraph<NodeWeight, EdgeWeight, GraphIndex>,
     non_cutting: Vec<GraphIndex>,
     prev: Vec<Vec<Option<GraphIndex>>>,
-    distance: HashMap<(NodeIndex<GraphIndex>, NodeIndex<GraphIndex>), usize>,
+    distance: HashMap<(NodeIndex<GraphIndex>, NodeIndex<GraphIndex>), EdgeWeight>,
 }
 
 impl Connectivity {
@@ -25,34 +40,51 @@ impl Connectivity {
         }
     }
 
+    pub fn line(nr_qubits: usize) -> Self {
+        let edges: Vec<(usize, usize)> = (0..nr_qubits - 1).map(|i| (i, i + 1)).collect();
+        Connectivity::from_edges(&edges)
+    }
+
+    pub fn grid(num_rows: usize, num_cols: usize) -> Self {
+        let mut edges = Vec::new();
+
+        for r in 0..num_rows {
+            for c in 0..num_cols {
+                if r < num_rows - 1 {
+                    edges.push((num_cols * r + c, num_cols * (r + 1) + c));
+                }
+                if c < num_cols - 1 {
+                    edges.push((num_cols * r + c, num_cols * r + (c + 1)));
+                }
+            }
+        }
+        Connectivity::from_edges(&edges)
+    }
+
+    pub fn complete(num_qubits: usize) -> Self {
+        let mut edges = Vec::new();
+        for i in 0..num_qubits {
+            for j in (i + 1)..num_qubits {
+                edges.push((i, j));
+            }
+        }
+        Connectivity::from_edges(&edges)
+    }
+
     pub fn from_edges(edges: &[(GraphIndex, GraphIndex)]) -> Self {
         let graph = UnGraph::from_edges(edges);
-        let art_points = articulation_points(&graph);
-
-        let non_cutting = (0..graph.node_count())
-            .filter(|node| art_points.contains(&graph.from_index(*node)))
-            .collect();
-
-        let (distance, prev) = floyd_warshall_path(&graph, |e| *e.weight()).unwrap();
-
-        Connectivity {
-            graph,
-            non_cutting,
-            prev,
-            distance,
-        }
+        Connectivity::from_graph(graph)
     }
 
     pub fn from_weighted_edges(edges: &[(GraphIndex, GraphIndex, EdgeWeight)]) -> Self {
         let graph = UnGraph::from_edges(edges);
-        let art_points = articulation_points(&graph);
+        Connectivity::from_graph(graph)
+    }
 
-        let non_cutting = (0..graph.node_count())
-            .filter(|node| art_points.contains(&graph.from_index(*node)))
-            .collect();
-
+    pub fn from_graph(graph: UnGraph<NodeWeight, EdgeWeight, GraphIndex>) -> Self {
+        let non_cutting = get_non_cutting_vertices(&graph);
         let (distance, prev) = floyd_warshall_path(&graph, |e| *e.weight()).unwrap();
-
+        let distance = distance.iter().map(|(k, v)| (*k, *v as usize)).collect();
         Connectivity {
             graph,
             non_cutting,
@@ -68,15 +100,27 @@ impl Connectivity {
             .collect()
     }
 
-    fn update(&mut self) {
-        let art_points = articulation_points(&self.graph);
-
-        let non_cutting = (0..self.graph.node_count())
-            .filter(|node| art_points.contains(&self.graph.from_index(*node)))
+    pub fn edges(&self) -> Vec<(GraphIndex, GraphIndex)> {
+        let graph_edges: Vec<(GraphIndex, GraphIndex)> = self
+            .graph
+            .edge_references()
+            .map(|node| {
+                (
+                    self.graph.to_index(node.source()),
+                    self.graph.to_index(node.target()),
+                )
+            })
             .collect();
+        graph_edges
+    }
+
+    fn update(&mut self) {
+        let non_cutting = get_non_cutting_vertices(&self.graph);
 
         let (distance, prev) = floyd_warshall_path(&self.graph, |e| *e.weight()).unwrap();
-        println!("prev: {:?}", prev);
+
+        let distance = distance.iter().map(|(k, v)| (*k, *v as usize)).collect();
+
         self.non_cutting = non_cutting;
         self.distance = distance;
         self.prev = prev;
@@ -144,7 +188,7 @@ impl Architecture for Connectivity {
             j < self.graph.node_count(),
             "architecture does not contain node {j}"
         );
-        self.distance[&(self.graph.from_index(i), self.graph.from_index(j))]
+        self.distance[&(self.graph.from_index(i), self.graph.from_index(j))] as usize
     }
 
     fn neighbors(&self, i: GraphIndex) -> Vec<usize> {
@@ -161,11 +205,45 @@ impl Architecture for Connectivity {
     fn non_cutting(&mut self) -> &Vec<GraphIndex> {
         &self.non_cutting
     }
+
+    fn get_cx_ladder(
+        &self,
+        nodes: &[GraphIndex],
+        root: &GraphIndex,
+    ) -> Result<Vec<(usize, usize)>, LadderError> {
+        let terminals: Vec<_> = self
+            .graph
+            .node_indices()
+            .filter(|node_index| nodes.contains(&node_index.index()))
+            .collect();
+
+        let tree = steiner_tree(&self.graph, &terminals);
+
+        let root_node = tree
+            .node_indices()
+            .find(|item| item.index() == *root as usize)
+            .ok_or(LadderError::RootNotFound)?;
+
+        let mut bfs = Bfs::new(&tree, root_node);
+        let mut edge_list = Vec::new();
+        let mut visited = tree.visit_map();
+        visited.visit(root_node);
+
+        while let Some(node) = bfs.next(&tree) {
+            for neighbor in tree.neighbors(node) {
+                if !visited.is_visited(&neighbor) {
+                    visited.visit(neighbor);
+                    edge_list.push((node.index(), neighbor.index()));
+                }
+            }
+        }
+        Ok(edge_list)
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::architecture::{Architecture, EdgeWeight, GraphIndex};
+    use crate::architecture::{Architecture, EdgeWeight, GraphIndex, LadderError};
 
     use super::Connectivity;
     fn setup_weighted() -> Vec<(GraphIndex, GraphIndex, EdgeWeight)> {
@@ -197,9 +275,107 @@ mod tests {
     }
 
     #[test]
-    fn test_simple_constuctor() {
+    fn test_line_creation() {
+        let mut line_architecture = Connectivity::line(5);
+        assert_eq!(
+            line_architecture.edges(),
+            vec![(0, 1), (1, 2), (2, 3), (3, 4)]
+        );
+    }
+
+    #[test]
+    fn test_grid_creation() {
+        let mut line_architecture = Connectivity::grid(3, 3);
+        let mut edges = line_architecture.edges();
+        edges.sort();
+        assert_eq!(
+            edges,
+            vec![
+                (0, 1),
+                (0, 3),
+                (1, 2),
+                (1, 4),
+                (2, 5),
+                (3, 4),
+                (3, 6),
+                (4, 5),
+                (4, 7),
+                (5, 8),
+                (6, 7),
+                (7, 8)
+            ]
+        );
+    }
+
+    #[test]
+    fn test_weight_is_considered() {
+        let new_architecture = Connectivity::from_weighted_edges(&setup_weighted());
+        assert_eq!(
+            new_architecture
+                .get_cx_ladder(&vec![1, 2, 3, 4], &2)
+                .unwrap()
+                .len(),
+            3
+        );
+    }
+
+    #[test]
+    fn test_root_is_not_present() {
+        let new_architecture = Connectivity::from_edges(&setup_simple());
+        assert_eq!(
+            new_architecture
+                .get_cx_ladder(&vec![1, 2, 3, 4], &42)
+                .expect_err("Should return a Error that the root was not found"),
+            LadderError::RootNotFound
+        );
+    }
+
+    #[test]
+    fn test_simple_constructor() {
         let new_architecture = Connectivity::from_edges(&setup_simple());
         assert_eq!(new_architecture.nodes(), vec![0, 1, 2, 3, 4, 5]);
+    }
+
+    #[test]
+    fn test_cx_ladder_line_setup() {
+        let new_architecture = Connectivity::from_edges(&setup_simple());
+        assert_eq!(
+            new_architecture
+                .get_cx_ladder(&vec![0, 1, 2, 3], &0)
+                .unwrap(),
+            vec![(0, 1), (1, 2), (2, 3)]
+        );
+    }
+
+    #[test]
+    fn test_cx_ladder_extended_triangle() {
+        let new_architecture = Connectivity::from_edges(&setup_simple());
+        assert_eq!(
+            new_architecture
+                .get_cx_ladder(&vec![0, 1, 2, 4, 5], &1)
+                .unwrap()
+                .len(),
+            4
+        );
+    }
+
+    #[test]
+    fn test_cx_ladder_small_triangle() {
+        let new_architecture = Connectivity::from_edges(&setup_simple());
+        assert_eq!(
+            new_architecture
+                .get_cx_ladder(&vec![2, 3, 4], &2)
+                .unwrap()
+                .len(),
+            2
+        );
+        assert_eq!(
+            new_architecture
+                .get_cx_ladder(&vec![2, 3, 4], &4)
+                .unwrap()
+                .len(),
+            2
+        );
     }
 
     #[test]
@@ -260,6 +436,18 @@ mod tests {
     #[test]
     fn test_non_cutting() {
         let mut new_architecture = Connectivity::from_edges(&setup_simple());
-        assert_eq!(&Vec::<GraphIndex>::new(), new_architecture.non_cutting());
+        assert_eq!(&new_architecture.nodes(), new_architecture.non_cutting());
+    }
+
+    #[test]
+    fn test_non_cutting_line() {
+        let mut line_architecture = Connectivity::line(5);
+        assert_eq!(*line_architecture.non_cutting(), vec![0, 4]);
+    }
+
+    #[test]
+    fn test_non_cutting_complete() {
+        let mut line_architecture = Connectivity::complete(5);
+        assert_eq!(*line_architecture.non_cutting(), vec![0, 1, 2, 3, 4]);
     }
 }
