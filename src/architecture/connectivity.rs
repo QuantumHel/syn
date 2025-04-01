@@ -13,6 +13,42 @@ use std::borrow::Borrow;
 use std::collections::HashMap;
 use std::ops::Index;
 
+/// Small helper since we have different and incompatible assumptions as Petgraph
+/// TODO fix this in petgraph
+fn convert_graph<N: Clone, E: Clone>(
+    old_graph: &Graph<N, E, Undirected, usize>,
+) -> Graph<N, E, Undirected, u32> {
+    let mut new_graph = Graph::<N, E, Undirected, u32>::new_undirected();
+    // Map from old node indices to new node indices.
+    let mut index_map: HashMap<NodeIndex<usize>, NodeIndex<u32>> = HashMap::new();
+
+    // Add nodes from the old graph to the new graph.
+    for old_node in old_graph.node_indices() {
+        let new_node = new_graph.add_node(old_graph[old_node].clone());
+        index_map.insert(old_node, new_node);
+    }
+
+    // Add edges, converting the node indices using our mapping.
+    for edge in old_graph.edge_references() {
+        let new_source = index_map[&edge.source()];
+        let new_target = index_map[&edge.target()];
+        new_graph.add_edge(new_source, new_target, edge.weight().clone());
+    }
+
+    new_graph
+}
+
+/// Get all the vertices in a graph that are non-cutting (won't make the graph disconnected)
+fn get_non_cutting_vertices(
+    graph: &UnGraph<NodeWeight, EdgeWeight, GraphIndex>,
+) -> Vec<GraphIndex> {
+    let art_points = articulation_points(&graph);
+    println!("{:?}", art_points);
+    (0..graph.node_count())
+        .filter(|node| !art_points.contains(&graph.from_index(*node)))
+        .collect()
+}
+
 #[derive(Debug)]
 pub struct Connectivity {
     graph: UnGraph<NodeWeight, EdgeWeight, GraphIndex>,
@@ -31,33 +67,50 @@ impl Connectivity {
         }
     }
 
+    pub fn line(nr_qubits: usize) -> Self {
+        let edges: Vec<(usize, usize)> = (0..nr_qubits - 1).map(|i| (i, i + 1)).collect();
+        println!("{:?}", edges);
+        Connectivity::from_edges(&edges)
+    }
+
+    pub fn grid(num_rows: usize, num_cols: usize) -> Self {
+        let mut edges = Vec::new();
+
+        for r in 0..num_rows {
+            for c in 0..num_cols {
+                if r < num_rows - 1 {
+                    edges.push((num_cols * r + c, num_cols * (r + 1) + c));
+                }
+                if c < num_cols - 1 {
+                    edges.push((num_cols * r + c, num_cols * r + (c + 1)));
+                }
+            }
+        }
+        Connectivity::from_edges(&edges)
+    }
+
+    pub fn complete(num_qubits: usize) -> Self {
+        let mut edges = Vec::new();
+        for i in 0..num_qubits {
+            for j in (i + 1)..num_qubits {
+                edges.push((i, j));
+            }
+        }
+        Connectivity::from_edges(&edges)
+    }
+
     pub fn from_edges(edges: &[(GraphIndex, GraphIndex)]) -> Self {
         let graph = UnGraph::from_edges(edges);
-        let art_points = articulation_points(&graph);
-
-        let non_cutting = (0..graph.node_count())
-            .filter(|node| art_points.contains(&graph.from_index(*node)))
-            .collect();
-
-        let (distance, prev) = floyd_warshall_path(&graph, |e| *e.weight()).unwrap();
-
-        let distance = distance.iter().map(|(k, v)| (*k, *v as usize)).collect();
-        Connectivity {
-            graph,
-            non_cutting,
-            prev,
-            distance,
-        }
+        Connectivity::from_graph(graph)
     }
 
     pub fn from_weighted_edges(edges: &[(GraphIndex, GraphIndex, EdgeWeight)]) -> Self {
         let graph = UnGraph::from_edges(edges);
-        let art_points = articulation_points(&graph);
+        Connectivity::from_graph(graph)
+    }
 
-        let non_cutting = (0..graph.node_count())
-            .filter(|node| art_points.contains(&graph.from_index(*node)))
-            .collect();
-
+    pub fn from_graph(graph: UnGraph<NodeWeight, EdgeWeight, GraphIndex>) -> Self {
+        let non_cutting = get_non_cutting_vertices(&graph);
         let (distance, prev) = floyd_warshall_path(&graph, |e| *e.weight()).unwrap();
         let distance = distance.iter().map(|(k, v)| (*k, *v as usize)).collect();
         Connectivity {
@@ -75,12 +128,22 @@ impl Connectivity {
             .collect()
     }
 
-    fn update(&mut self) {
-        let art_points = articulation_points(&self.graph);
-
-        let non_cutting = (0..self.graph.node_count())
-            .filter(|node| art_points.contains(&self.graph.from_index(*node)))
+    pub fn edges(&self) -> Vec<(GraphIndex, GraphIndex)> {
+        let graph_edges: Vec<(GraphIndex, GraphIndex)> = self
+            .graph
+            .edge_references()
+            .map(|node| {
+                (
+                    self.graph.to_index(node.source()),
+                    self.graph.to_index(node.target()),
+                )
+            })
             .collect();
+        graph_edges
+    }
+
+    fn update(&mut self) {
+        let non_cutting = get_non_cutting_vertices(&self.graph);
 
         let (distance, prev) = floyd_warshall_path(&self.graph, |e| *e.weight()).unwrap();
 
@@ -129,31 +192,6 @@ impl Connectivity {
         path.reverse();
         path
     }
-}
-
-/// Small helper since we have different and incompatible assumptions as Petgraph
-/// TODO fix this in petgraph
-fn convert_graph<N: Clone, E: Clone>(
-    old_graph: &Graph<N, E, Undirected, usize>,
-) -> Graph<N, E, Undirected, u32> {
-    let mut new_graph = Graph::<N, E, Undirected, u32>::new_undirected();
-    // Map from old node indices to new node indices.
-    let mut index_map: HashMap<NodeIndex<usize>, NodeIndex<u32>> = HashMap::new();
-
-    // Add nodes from the old graph to the new graph.
-    for old_node in old_graph.node_indices() {
-        let new_node = new_graph.add_node(old_graph[old_node].clone());
-        index_map.insert(old_node, new_node);
-    }
-
-    // Add edges, converting the node indices using our mapping.
-    for edge in old_graph.edge_references() {
-        let new_source = index_map[&edge.source()];
-        let new_target = index_map[&edge.target()];
-        new_graph.add_edge(new_source, new_target, edge.weight().clone());
-    }
-
-    new_graph
 }
 
 impl Architecture for Connectivity {
@@ -270,6 +308,39 @@ mod tests {
             (3, 5),
             (4, 5),
         ]
+    }
+
+    #[test]
+    fn test_line_creation() {
+        let mut line_architecture = Connectivity::line(5);
+        assert_eq!(
+            line_architecture.edges(),
+            vec![(0, 1), (1, 2), (2, 3), (3, 4)]
+        );
+    }
+
+    #[test]
+    fn test_grid_creation() {
+        let mut line_architecture = Connectivity::grid(3, 3);
+        let mut edges = line_architecture.edges();
+        edges.sort();
+        assert_eq!(
+            edges,
+            vec![
+                (0, 1),
+                (0, 3),
+                (1, 2),
+                (1, 4),
+                (2, 5),
+                (3, 4),
+                (3, 6),
+                (4, 5),
+                (4, 7),
+                (5, 8),
+                (6, 7),
+                (7, 8)
+            ]
+        );
     }
 
     #[test]
@@ -401,12 +472,12 @@ mod tests {
     #[test]
     fn test_non_cutting() {
         let mut new_architecture = Connectivity::from_edges(&setup_simple());
-        assert_eq!(&Vec::<GraphIndex>::new(), new_architecture.non_cutting());
+        assert_eq!(&new_architecture.nodes(), new_architecture.non_cutting());
     }
 
     #[test]
-    fn test_steiner_tree() {
-        let mut new_architecture = Connectivity::from_edges(&setup_simple());
-        assert_eq!(&Vec::<GraphIndex>::new(), new_architecture.non_cutting());
+    fn test_non_cutting_line() {
+        let mut line_architecture = Connectivity::line(5);
+        assert_eq!(*line_architecture.non_cutting(), vec![0, 4]);
     }
 }

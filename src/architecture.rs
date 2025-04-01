@@ -1,6 +1,4 @@
-pub mod complete;
 pub mod connectivity;
-pub mod line;
 
 type GraphIndex = usize;
 type EdgeWeight = usize;
