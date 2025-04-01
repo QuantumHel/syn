@@ -7,43 +7,16 @@ use petgraph::{
     algo::articulation_points::articulation_points,
     graph::{NodeIndex, UnGraph},
     visit::{IntoNodeReferences, NodeIndexable, NodeRef},
-    Graph, Undirected,
 };
 use std::borrow::Borrow;
 use std::collections::HashMap;
 use std::ops::Index;
-
-/// Small helper since we have different and incompatible assumptions as Petgraph
-/// TODO fix this in petgraph
-fn convert_graph<N: Clone, E: Clone>(
-    old_graph: &Graph<N, E, Undirected, usize>,
-) -> Graph<N, E, Undirected, u32> {
-    let mut new_graph = Graph::<N, E, Undirected, u32>::new_undirected();
-    // Map from old node indices to new node indices.
-    let mut index_map: HashMap<NodeIndex<usize>, NodeIndex<u32>> = HashMap::new();
-
-    // Add nodes from the old graph to the new graph.
-    for old_node in old_graph.node_indices() {
-        let new_node = new_graph.add_node(old_graph[old_node].clone());
-        index_map.insert(old_node, new_node);
-    }
-
-    // Add edges, converting the node indices using our mapping.
-    for edge in old_graph.edge_references() {
-        let new_source = index_map[&edge.source()];
-        let new_target = index_map[&edge.target()];
-        new_graph.add_edge(new_source, new_target, edge.weight().clone());
-    }
-
-    new_graph
-}
 
 /// Get all the vertices in a graph that are non-cutting (won't make the graph disconnected)
 fn get_non_cutting_vertices(
     graph: &UnGraph<NodeWeight, EdgeWeight, GraphIndex>,
 ) -> Vec<GraphIndex> {
     let art_points = articulation_points(&graph);
-    println!("{:?}", art_points);
     (0..graph.node_count())
         .filter(|node| !art_points.contains(&graph.from_index(*node)))
         .collect()
@@ -253,7 +226,7 @@ impl Architecture for Connectivity {
             .collect();
         let terminals = terminals?;
 
-        let tree = steiner_tree(&convert_graph(&self.graph), &terminals);
+        let tree = steiner_tree(&self.graph, &terminals);
 
         let root_node = tree
             .node_indices()
