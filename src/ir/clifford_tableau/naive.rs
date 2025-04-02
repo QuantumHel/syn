@@ -10,7 +10,7 @@ use super::helper::{
 #[derive(Default)]
 pub struct NaiveCliffordSynthesizer {}
 
-impl<G> Synthesizer<CliffordTableau, G, ()> for NaiveCliffordSynthesizer
+impl<G> Synthesizer<CliffordTableau, G> for NaiveCliffordSynthesizer
 where
     G: CliffordGates,
 {

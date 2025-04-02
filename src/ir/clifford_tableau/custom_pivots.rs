@@ -30,7 +30,7 @@ impl CustomPivotCliffordSynthesizer {
     }
 }
 
-impl<G> Synthesizer<CliffordTableau, G, ()> for CustomPivotCliffordSynthesizer
+impl<G> Synthesizer<CliffordTableau, G> for CustomPivotCliffordSynthesizer
 where
     G: CliffordGates,
 {

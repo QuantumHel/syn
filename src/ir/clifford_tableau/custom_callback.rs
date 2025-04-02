@@ -34,7 +34,7 @@ impl CustomCallbackCliffordSynthesizer {
     }
 }
 
-impl<G> Synthesizer<CliffordTableau, G, ()> for CustomCallbackCliffordSynthesizer
+impl<G> Synthesizer<CliffordTableau, G> for CustomCallbackCliffordSynthesizer
 where
     G: CliffordGates,
 {

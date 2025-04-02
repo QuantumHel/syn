@@ -64,7 +64,7 @@ impl PauliExponentialSynthesizer {
     }
 }
 
-impl<G> Synthesizer<PauliExponential, G, ()> for PauliExponentialSynthesizer
+impl<G> Synthesizer<PauliExponential, G> for PauliExponentialSynthesizer
 where
     G: CliffordGates + Gates,
 {
