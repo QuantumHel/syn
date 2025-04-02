@@ -356,7 +356,7 @@ checksum = "b410bbe7e14ab526a0e86877eb47c6996a2bd7746f027ba551028c925390e4e9"
 [[package]]
 name = "petgraph"
 version = "0.7.1"
-source = "git+https://github.com/daehiff/petgraph.git?rev=4b700d7e188f973770a61a492892d61372ea7f9e#4b700d7e188f973770a61a492892d61372ea7f9e"
+source = "git+https://github.com/petgraph/petgraph.git?rev=3145fa87fa398fd49cef44b2429d93a4fd2160bc#3145fa87fa398fd49cef44b2429d93a4fd2160bc"
 dependencies = [
  "fixedbitset",
  "hashbrown",

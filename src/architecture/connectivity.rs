@@ -212,19 +212,11 @@ impl Architecture for Connectivity {
         nodes: &[GraphIndex],
         root: &GraphIndex,
     ) -> Result<Vec<(usize, usize)>, LadderError> {
-        // TODO fix me we currently have to convert the graph
-        let terminals: Result<Vec<_>, LadderError> = self
+        let terminals: Vec<_> = self
             .graph
             .node_indices()
-            .filter(|node_index| nodes.contains(&self.graph.to_index(*node_index)))
-            .map(|node_index| {
-                let idx = node_index.index() as u32;
-                idx.try_into()
-                    .map(NodeIndex::new)
-                    .map_err(|_| LadderError::ConversionError)
-            })
+            .filter(|node_index| nodes.contains(&node_index.index()))
             .collect();
-        let terminals = terminals?;
 
         let tree = steiner_tree(&self.graph, &terminals);
 
