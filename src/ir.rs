@@ -1,4 +1,4 @@
-use crate::IndexType;
+use crate::{data_structures::HasAdjoint, IndexType};
 
 pub mod clifford_tableau;
 pub mod pauli_exponential;
@@ -23,7 +23,10 @@ pub trait Gates {
     fn rz(&mut self, target: IndexType, angle: f64);
 }
 
-pub trait HasAdjoint<From, To, Returns = ()> {
+pub trait AdjointSynthesizer<From, To, Returns = ()>
+where
+    From: HasAdjoint,
+{
     fn synthesize_adjoint(&mut self, ir: From, external_repr: &mut To) -> Returns;
 }
 

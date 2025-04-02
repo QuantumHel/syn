@@ -4,6 +4,7 @@ use std::fmt;
 use std::iter::{self, zip};
 use std::ops::Mul;
 
+use super::HasAdjoint;
 use super::{
     pauli_string::{cx, PauliString},
     IndexType, PropagateClifford,
@@ -163,7 +164,25 @@ impl CliffordTableau {
         }
     }
 
-    pub fn adjoint(&self) -> Self {
+    pub fn permute(&mut self, permutation_vector: Vec<usize>) {
+        assert_eq!(
+            permutation_vector
+                .iter()
+                .copied()
+                .sorted()
+                .collect::<Vec<_>>(),
+            (0..self.size()).collect::<Vec<_>>()
+        );
+        let sorted_pauli_columns = zip(self.pauli_columns.clone(), permutation_vector)
+            .sorted_by_key(|a| a.1)
+            .map(|a| a.0)
+            .collect::<Vec<_>>();
+        self.pauli_columns = sorted_pauli_columns;
+    }
+}
+
+impl HasAdjoint for CliffordTableau {
+    fn adjoint(&self) -> Self {
         // Algorithm taken from https://algassert.com/post/2002
         let size = self.size();
         // Create new CliffordTableau entries
@@ -192,22 +211,6 @@ impl CliffordTableau {
 
         adjoint_table.signs ^= (adjoint_table.compose(self)).signs;
         adjoint_table
-    }
-
-    pub fn permute(&mut self, permutation_vector: Vec<usize>) {
-        assert_eq!(
-            permutation_vector
-                .iter()
-                .copied()
-                .sorted()
-                .collect::<Vec<_>>(),
-            (0..self.size()).collect::<Vec<_>>()
-        );
-        let sorted_pauli_columns = zip(self.pauli_columns.clone(), permutation_vector)
-            .sorted_by_key(|a| a.1)
-            .map(|a| a.0)
-            .collect::<Vec<_>>();
-        self.pauli_columns = sorted_pauli_columns;
     }
 }
 

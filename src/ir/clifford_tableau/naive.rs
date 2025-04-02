@@ -1,6 +1,6 @@
 use crate::{
     data_structures::CliffordTableau,
-    ir::{CliffordGates, HasAdjoint},
+    ir::{AdjointSynthesizer, CliffordGates, HasAdjoint},
 };
 
 use super::helper::{
@@ -10,7 +10,7 @@ use super::helper::{
 #[derive(Default)]
 pub struct NaiveCliffordSynthesizer {}
 
-impl<G> HasAdjoint<CliffordTableau, G> for NaiveCliffordSynthesizer
+impl<G> AdjointSynthesizer<CliffordTableau, G> for NaiveCliffordSynthesizer
 where
     G: CliffordGates,
 {

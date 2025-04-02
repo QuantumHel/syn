@@ -8,6 +8,10 @@ use bitvec::vec::BitVec;
 pub use clifford_tableau::CliffordTableau;
 pub use pauli_polynomial::PauliPolynomial;
 pub use pauli_string::PauliString;
+
+pub trait HasAdjoint {
+    fn adjoint(&self) -> Self;
+}
 pub trait PropagateClifford
 where
     Self: Sized,

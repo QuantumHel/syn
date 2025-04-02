@@ -8,7 +8,7 @@ pub use naive::NaiveCliffordSynthesizer;
 
 use crate::data_structures::CliffordTableau;
 
-use super::{HasAdjoint, Synthesizer};
+use super::{AdjointSynthesizer, Synthesizer};
 
 #[derive(Default)]
 pub enum CliffordTableauSynthStrategy {
@@ -17,10 +17,8 @@ pub enum CliffordTableauSynthStrategy {
     Custom(Vec<usize>, Vec<usize>),
 }
 
-impl<T: HasAdjoint<CliffordTableau, To, Return>, To, Return>
-    Synthesizer<CliffordTableau, To, Return> for T
-{
-    fn synthesize(&mut self, ir: CliffordTableau, repr: &mut To) -> Return {
+impl<T: AdjointSynthesizer<CliffordTableau, To>, To> Synthesizer<CliffordTableau, To> for T {
+    fn synthesize(&mut self, ir: CliffordTableau, repr: &mut To) {
         self.synthesize_adjoint(ir, repr)
     }
 }

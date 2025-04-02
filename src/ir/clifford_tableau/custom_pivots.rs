@@ -8,7 +8,7 @@ use crate::{
         clifford_tableau::helper::{
             clean_signs, clean_x_observables, clean_x_pivot, clean_z_observables, clean_z_pivot,
         },
-        CliffordGates, HasAdjoint,
+        AdjointSynthesizer, CliffordGates, HasAdjoint,
     },
 };
 
@@ -30,7 +30,7 @@ impl CustomPivotCliffordSynthesizer {
     }
 }
 
-impl<G> HasAdjoint<CliffordTableau, G> for CustomPivotCliffordSynthesizer
+impl<G> AdjointSynthesizer<CliffordTableau, G> for CustomPivotCliffordSynthesizer
 where
     G: CliffordGates,
 {

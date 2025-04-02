@@ -3,10 +3,10 @@ use std::iter::zip;
 use itertools::Itertools;
 
 use crate::{
-    data_structures::CliffordTableau,
+    data_structures::{CliffordTableau, HasAdjoint},
     ir::{
         clifford_tableau::helper::{clean_signs, clean_x_pivot, clean_z_pivot},
-        CliffordGates, HasAdjoint,
+        AdjointSynthesizer, CliffordGates,
     },
 };
 
@@ -34,7 +34,7 @@ impl CustomCallbackCliffordSynthesizer {
     }
 }
 
-impl<G> HasAdjoint<CliffordTableau, G> for CustomCallbackCliffordSynthesizer
+impl<G> AdjointSynthesizer<CliffordTableau, G> for CustomCallbackCliffordSynthesizer
 where
     G: CliffordGates,
 {
