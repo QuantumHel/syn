@@ -6,7 +6,7 @@ use crate::{
     data_structures::CliffordTableau,
     ir::{
         clifford_tableau::helper::{clean_signs, clean_x_pivot, clean_z_pivot},
-        CliffordGates, Synthesizer,
+        CliffordGates, HasAdjoint,
     },
 };
 
@@ -34,16 +34,12 @@ impl CustomCallbackCliffordSynthesizer {
     }
 }
 
-impl<G> Synthesizer<CliffordTableau, G> for CustomCallbackCliffordSynthesizer
+impl<G> HasAdjoint<CliffordTableau, G> for CustomCallbackCliffordSynthesizer
 where
     G: CliffordGates,
 {
-    fn synthesize(&mut self, mut clifford_tableau: CliffordTableau, repr: &mut G) {
-        clifford_tableau = clifford_tableau.adjoint();
-        self.synthesize_adjoint(clifford_tableau, repr);
-    }
-
-    fn synthesize_adjoint(&mut self, mut ct: CliffordTableau, repr: &mut G) {
+    fn synthesize_adjoint(&mut self, ct: CliffordTableau, repr: &mut G) {
+        let mut ct = ct.adjoint();
         let num_qubits = ct.size();
 
         let mut remaining_columns = (0..num_qubits).collect::<Vec<_>>();

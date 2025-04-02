@@ -8,7 +8,7 @@ use crate::{
         clifford_tableau::helper::{
             clean_signs, clean_x_observables, clean_x_pivot, clean_z_observables, clean_z_pivot,
         },
-        CliffordGates, Synthesizer,
+        CliffordGates, HasAdjoint,
     },
 };
 
@@ -30,16 +30,12 @@ impl CustomPivotCliffordSynthesizer {
     }
 }
 
-impl<G> Synthesizer<CliffordTableau, G> for CustomPivotCliffordSynthesizer
+impl<G> HasAdjoint<CliffordTableau, G> for CustomPivotCliffordSynthesizer
 where
     G: CliffordGates,
 {
-    fn synthesize(&mut self, mut clifford_tableau: CliffordTableau, repr: &mut G) {
-        clifford_tableau = clifford_tableau.adjoint();
-        self.synthesize_adjoint(clifford_tableau, repr);
-    }
-
-    fn synthesize_adjoint(&mut self, mut clifford_tableau: CliffordTableau, repr: &mut G) {
+    fn synthesize_adjoint(&mut self, clifford_tableau: CliffordTableau, repr: &mut G) {
+        let mut clifford_tableau = clifford_tableau.adjoint();
         let num_qubits = clifford_tableau.size();
 
         let mut remaining_columns = (0..num_qubits).collect::<Vec<_>>();
@@ -49,14 +45,14 @@ where
         let custom_rows = &self.custom_rows;
 
         assert_eq!(
-            custom_columns.iter().copied().sorted().collect::<Vec<_>>(),
-            remaining_columns, "custom_columns is not a valid permutation, use `set_custom_columns` to define custom column pivots"
-        );
+                custom_columns.iter().copied().sorted().collect::<Vec<_>>(),
+                remaining_columns, "custom_columns is not a valid permutation, use `set_custom_columns` to define custom column pivots"
+            );
 
         assert_eq!(
-            custom_rows.iter().copied().sorted().collect::<Vec<_>>(),
-            remaining_rows, "custom_rows is not a valid permutation, use `set_custom_rows` to define custom row pivots"
-        );
+                custom_rows.iter().copied().sorted().collect::<Vec<_>>(),
+                remaining_rows, "custom_rows is not a valid permutation, use `set_custom_rows` to define custom row pivots"
+            );
 
         for (&pivot_column, &pivot_row) in zip(custom_columns, custom_rows) {
             // Cleanup pivot column

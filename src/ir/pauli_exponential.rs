@@ -96,8 +96,4 @@ where
             }
         };
     }
-
-    fn synthesize_adjoint(&mut self, _: PauliExponential, _: &mut G) {
-        unimplemented!("Not required for PauliExponential")
-    }
 }

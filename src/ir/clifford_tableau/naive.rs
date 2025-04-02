@@ -1,6 +1,6 @@
 use crate::{
     data_structures::CliffordTableau,
-    ir::{CliffordGates, Synthesizer},
+    ir::{CliffordGates, HasAdjoint},
 };
 
 use super::helper::{
@@ -10,16 +10,12 @@ use super::helper::{
 #[derive(Default)]
 pub struct NaiveCliffordSynthesizer {}
 
-impl<G> Synthesizer<CliffordTableau, G> for NaiveCliffordSynthesizer
+impl<G> HasAdjoint<CliffordTableau, G> for NaiveCliffordSynthesizer
 where
     G: CliffordGates,
 {
-    fn synthesize(&mut self, mut clifford_tableau: CliffordTableau, repr: &mut G) {
-        clifford_tableau = clifford_tableau.adjoint();
-        self.synthesize_adjoint(clifford_tableau, repr);
-    }
-
-    fn synthesize_adjoint(&mut self, mut clifford_tableau: CliffordTableau, repr: &mut G) {
+    fn synthesize_adjoint(&mut self, clifford_tableau: CliffordTableau, repr: &mut G) {
+        let mut clifford_tableau = clifford_tableau.adjoint();
         let num_qubits = clifford_tableau.size();
 
         for row in 0..num_qubits {

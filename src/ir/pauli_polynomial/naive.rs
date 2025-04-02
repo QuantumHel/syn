@@ -98,8 +98,4 @@ where
 
         clifford_tableau
     }
-
-    fn synthesize_adjoint(&mut self, _: VecDeque<PauliPolynomial>, _: &mut G) -> CliffordTableau {
-        unimplemented!("Not required for Pauli Polynomials");
-    }
 }

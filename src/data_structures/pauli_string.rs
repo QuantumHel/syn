@@ -90,12 +90,14 @@ impl PauliString {
         *self.x.borrow_mut() ^= &mask;
     }
 
+    #[allow(dead_code)]
     pub(crate) fn h(&self) {
         let tmp = self.z.borrow().clone();
         *self.z.borrow_mut() = self.x.borrow().clone();
         *self.x.borrow_mut() = tmp;
     }
 
+    #[allow(dead_code)]
     pub(crate) fn masked_h(&self, mask: &BitSlice) {
         let mut mask = mask.to_owned();
         *self.x.borrow_mut() ^= self.z.borrow().as_bitslice();

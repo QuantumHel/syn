@@ -23,7 +23,10 @@ pub trait Gates {
     fn rz(&mut self, target: IndexType, angle: f64);
 }
 
+pub trait HasAdjoint<From, To, Returns = ()> {
+    fn synthesize_adjoint(&mut self, ir: From, external_repr: &mut To) -> Returns;
+}
+
 pub trait Synthesizer<From, To, Returns = ()> {
     fn synthesize(&mut self, ir: From, repr: &mut To) -> Returns;
-    fn synthesize_adjoint(&mut self, ir: From, external_repr: &mut To) -> Returns;
 }
