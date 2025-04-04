@@ -1,3 +1,4 @@
+mod helper;
 pub mod naive;
 
 pub use naive::NaivePauliPolynomialSynthesizer;

@@ -184,7 +184,6 @@ fn test_custom_clifford_synthesis_simple() {
     let mut mock = MockCircuit::new();
 
     let mut synthesizer = CallbackCliffordSynthesizer::custom_pivot(vec![0, 1, 2], vec![0, 1, 2]);
-
     synthesizer.synthesize(clifford_tableau.clone(), &mut mock);
 
     let ref_ct = parse_clifford_commands(3, mock.commands());

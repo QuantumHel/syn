@@ -70,127 +70,157 @@ pub(super) fn clean_pivot<G>(
 
 pub(super) fn clean_x_pivot<G>(
     repr: &mut G,
-    ct: &mut CliffordTableau,
+    clifford_tableau: &mut CliffordTableau,
     pivot_column: usize,
     pivot_row: usize,
 ) where
     G: CliffordGates,
 {
     // These are switched around because of implementation
-    if check_pauli(&*ct, pivot_row, pivot_column, is_y) {
-        ct.s(pivot_row);
+    if check_pauli(&*clifford_tableau, pivot_row, pivot_column, is_y) {
+        clifford_tableau.s(pivot_row);
         repr.s(pivot_row);
     }
 
     // These are switched around because of implementation
-    if check_pauli(&*ct, pivot_row, pivot_column, is_z) {
-        ct.h(pivot_row);
+    if check_pauli(&*clifford_tableau, pivot_row, pivot_column, is_z) {
+        clifford_tableau.h(pivot_row);
         repr.h(pivot_row);
     }
 }
 
 pub(super) fn clean_z_pivot<G>(
     repr: &mut G,
-    ct: &mut CliffordTableau,
+    clifford_tableau: &mut CliffordTableau,
     pivot_column: usize,
     pivot_row: usize,
 ) where
     G: CliffordGates,
 {
-    let num_qubits = ct.size();
+    let num_qubits = clifford_tableau.size();
     // These are switched around because of implementation
-    if check_pauli(&*ct, pivot_row, pivot_column + num_qubits, is_y) {
-        ct.v(pivot_row);
+    if check_pauli(
+        &*clifford_tableau,
+        pivot_row,
+        pivot_column + num_qubits,
+        is_y,
+    ) {
+        clifford_tableau.v(pivot_row);
         repr.v(pivot_row);
     }
 
     // These are switched around because of implementation
-    if check_pauli(&*ct, pivot_row, pivot_column + num_qubits, is_x) {
-        ct.h(pivot_row);
+    if check_pauli(
+        &*clifford_tableau,
+        pivot_row,
+        pivot_column + num_qubits,
+        is_x,
+    ) {
+        clifford_tableau.h(pivot_row);
         repr.h(pivot_row);
     }
 }
 
 pub(super) fn clean_x_observables<G>(
     repr: &mut G,
-    ct: &mut CliffordTableau,
+    clifford_tableau: &mut CliffordTableau,
     remaining_rows: &[usize],
-    pivot_col: usize,
+    pivot_column: usize,
     pivot_row: usize,
 ) where
     G: CliffordGates,
 {
-    let affected_cols = check_across_columns(&*ct, remaining_rows, pivot_col, is_y);
+    let affected_cols =
+        check_across_columns(&*clifford_tableau, remaining_rows, pivot_column, is_y);
 
     for col in affected_cols {
         repr.s(col);
-        ct.s(col);
+        clifford_tableau.s(col);
     }
 
-    let affected_cols = check_across_columns(&*ct, remaining_rows, pivot_col, is_z);
+    let affected_cols =
+        check_across_columns(&*clifford_tableau, remaining_rows, pivot_column, is_z);
 
     for col in affected_cols {
         repr.h(col);
-        ct.h(col);
+        clifford_tableau.h(col);
     }
 
-    let affected_cols = check_across_columns(&*ct, remaining_rows, pivot_col, is_not_i);
+    let affected_cols =
+        check_across_columns(&*clifford_tableau, remaining_rows, pivot_column, is_not_i);
 
     for col in affected_cols {
         repr.cx(pivot_row, col);
-        ct.cx(pivot_row, col);
+        clifford_tableau.cx(pivot_row, col);
     }
 }
 
 pub(super) fn clean_z_observables<G>(
     repr: &mut G,
-    ct: &mut CliffordTableau,
+    clifford_tableau: &mut CliffordTableau,
     remaining_rows: &[usize],
-    pivot_col: usize,
+    pivot_column: usize,
     pivot_row: usize,
 ) where
     G: CliffordGates,
 {
-    let num_qubits = ct.size();
-    let affected_cols = check_across_columns(&*ct, remaining_rows, pivot_col + num_qubits, is_y);
+    let num_qubits = clifford_tableau.size();
+    let affected_cols = check_across_columns(
+        &*clifford_tableau,
+        remaining_rows,
+        pivot_column + num_qubits,
+        is_y,
+    );
     for col in affected_cols {
         repr.v(col);
-        ct.v(col);
+        clifford_tableau.v(col);
     }
 
-    let affected_cols = check_across_columns(&*ct, remaining_rows, pivot_col + num_qubits, is_x);
+    let affected_cols = check_across_columns(
+        &*clifford_tableau,
+        remaining_rows,
+        pivot_column + num_qubits,
+        is_x,
+    );
     for col in affected_cols {
         repr.h(col);
-        ct.h(col);
+        clifford_tableau.h(col);
     }
 
-    let affected_cols =
-        check_across_columns(&*ct, remaining_rows, pivot_col + num_qubits, is_not_i);
+    let affected_cols = check_across_columns(
+        &*clifford_tableau,
+        remaining_rows,
+        pivot_column + num_qubits,
+        is_not_i,
+    );
     for col in affected_cols {
         repr.cx(col, pivot_row);
-        ct.cx(col, pivot_row);
+        clifford_tableau.cx(col, pivot_row);
     }
 }
 
-pub(super) fn clean_signs<G>(repr: &mut G, ct: &mut CliffordTableau, row_permutation: &[usize])
-where
+pub(super) fn clean_signs<G>(
+    repr: &mut G,
+    clifford_tableau: &mut CliffordTableau,
+    row_permutation: &[usize],
+) where
     G: CliffordGates,
 {
-    let z_signs = ct.z_signs();
+    let z_signs = clifford_tableau.z_signs();
 
     for (sign, row) in zip(z_signs, row_permutation) {
         if sign {
             repr.x(*row);
-            ct.x(*row);
+            clifford_tableau.x(*row);
         }
     }
 
-    let x_signs = ct.x_signs();
+    let x_signs = clifford_tableau.x_signs();
 
     for (sign, row) in zip(x_signs, row_permutation) {
         if sign {
             repr.z(*row);
-            ct.z(*row);
+            clifford_tableau.z(*row);
         }
     }
 }

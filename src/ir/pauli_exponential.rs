@@ -83,7 +83,7 @@ where
 
         match &self.clifford_strategy {
             CliffordTableauSynthStrategy::Naive => {
-                let mut clifford_synthesizer = NaiveCliffordSynthesizer {};
+                let mut clifford_synthesizer = NaiveCliffordSynthesizer::default();
                 clifford_synthesizer.synthesize(clifford_tableau, repr);
             }
             CliffordTableauSynthStrategy::Custom(custom_rows, custom_columns) => {

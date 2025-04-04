@@ -1,13 +1,12 @@
 use std::collections::VecDeque;
 
 use crate::{
-    data_structures::{
-        CliffordTableau, MaskedPropagateClifford, PauliLetter, PauliPolynomial, PropagateClifford,
-    },
+    data_structures::{CliffordTableau, MaskedPropagateClifford, PauliPolynomial},
     ir::{CliffordGates, Gates, Synthesizer},
 };
 use bitvec::{bitvec, order::Lsb0};
-use itertools::Itertools;
+
+use super::helper::naive_pauli_polynomial_update;
 
 #[derive(Default)]
 pub struct NaivePauliPolynomialSynthesizer {
@@ -58,42 +57,15 @@ where
             let pauli_polynomial = pauli_polynomials.pop_front().unwrap();
             let num_gadgets = pauli_polynomial.length();
             let gadget_length = pauli_polynomial.length();
-            let mut mask = bitvec![usize, Lsb0; 1; gadget_length];
-            for col in 0..num_gadgets {
-                let mut affected_qubits = Vec::new();
-                for (i, row) in pauli_polynomial.chains().iter().enumerate() {
-                    match row.pauli(col) {
-                        PauliLetter::I => {}
-                        PauliLetter::X => {
-                            affected_qubits.push(i);
-                            pauli_polynomial.masked_h(i, &mask);
-                            pauli_polynomials.masked_h(i, &mask);
-                            clifford_tableau.h(i);
-                            repr.h(i);
-                        }
-                        PauliLetter::Y => {
-                            affected_qubits.push(i);
-                            pauli_polynomial.masked_s(i, &mask);
-                            pauli_polynomials.masked_s(i, &mask);
-                            clifford_tableau.s(i);
-                            repr.s(i);
-                        }
-                        PauliLetter::Z => {
-                            affected_qubits.push(i);
-                        }
-                    }
-                }
-                if affected_qubits.len() > 1 {
-                    for (&control, &target) in affected_qubits.iter().tuple_windows() {
-                        pauli_polynomial.masked_cx(control, target, &mask);
-                        clifford_tableau.cx(control, target);
-                        repr.cx(control, target);
-                    }
-                }
-                let last_qubit = *affected_qubits.last().unwrap();
-                repr.rz(last_qubit, pauli_polynomial.angle(col));
-                mask.replace(col, false);
-            }
+            let mask = bitvec![usize, Lsb0; 1; gadget_length];
+            naive_pauli_polynomial_update(
+                &pauli_polynomials,
+                repr,
+                &mut clifford_tableau,
+                pauli_polynomial,
+                num_gadgets,
+                mask,
+            );
         }
 
         clifford_tableau
