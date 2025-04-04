@@ -6,8 +6,7 @@ use crate::ir::{CliffordGates, Gates, Synthesizer};
 
 use crate::ir::{
     clifford_tableau::{
-        custom_pivots::CustomPivotCliffordSynthesizer, naive::NaiveCliffordSynthesizer,
-        CliffordTableauSynthStrategy,
+        CallbackCliffordSynthesizer, CliffordTableauSynthStrategy, NaiveCliffordSynthesizer,
     },
     pauli_polynomial::{naive::NaivePauliPolynomialSynthesizer, PauliPolynomialSynthStrategy},
 };
@@ -88,10 +87,10 @@ where
                 clifford_synthesizer.synthesize(clifford_tableau, repr);
             }
             CliffordTableauSynthStrategy::Custom(custom_rows, custom_columns) => {
-                let mut clifford_synthesizer = CustomPivotCliffordSynthesizer::default();
-                clifford_synthesizer
-                    .set_custom_columns(custom_columns.to_owned())
-                    .set_custom_rows(custom_rows.to_owned());
+                let mut clifford_synthesizer = CallbackCliffordSynthesizer::custom_pivot(
+                    custom_columns.to_owned(),
+                    custom_rows.to_owned(),
+                );
                 clifford_synthesizer.synthesize(clifford_tableau, repr);
             }
         };

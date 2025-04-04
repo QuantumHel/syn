@@ -3,8 +3,8 @@ use bitvec::prelude::Lsb0;
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use syn::data_structures::CliffordTableau;
 use syn::data_structures::PauliString;
-use syn::ir::clifford_tableau::custom_pivots::CustomPivotCliffordSynthesizer;
 use syn::ir::clifford_tableau::naive::NaiveCliffordSynthesizer;
+use syn::ir::clifford_tableau::CallbackCliffordSynthesizer;
 use syn::ir::CliffordGates;
 use syn::ir::Synthesizer;
 
@@ -135,10 +135,10 @@ fn custom_ct(clifford: CliffordTableau) {
 
     let mut mock = MockCircuit::new();
 
-    let mut synthesizer = CustomPivotCliffordSynthesizer::default();
-    synthesizer
-        .set_custom_columns((0..num_qubits).collect())
-        .set_custom_rows((0..num_qubits).collect());
+    let mut synthesizer = CallbackCliffordSynthesizer::custom_pivot(
+        (0..num_qubits).collect(),
+        (0..num_qubits).collect(),
+    );
 
     synthesizer.synthesize(clifford, &mut mock);
 }

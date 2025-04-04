@@ -4,7 +4,7 @@ use bitvec::bitvec;
 use bitvec::prelude::Lsb0;
 use common::{parse_clifford_commands, MockCircuit, MockCommand};
 use syn::data_structures::{CliffordTableau, PauliString, PropagateClifford};
-use syn::ir::clifford_tableau::{CustomPivotCliffordSynthesizer, NaiveCliffordSynthesizer};
+use syn::ir::clifford_tableau::{CallbackCliffordSynthesizer, NaiveCliffordSynthesizer};
 use syn::ir::Synthesizer;
 
 fn setup_sample_ct() -> CliffordTableau {
@@ -152,10 +152,7 @@ fn test_custom_clifford_synthesis() {
     let clifford_tableau = setup_sample_ct();
     let mut mock = MockCircuit::new();
 
-    let mut synthesizer = CustomPivotCliffordSynthesizer::default();
-    synthesizer
-        .set_custom_columns(vec![0, 1, 2])
-        .set_custom_rows(vec![0, 1, 2]);
+    let mut synthesizer = CallbackCliffordSynthesizer::custom_pivot(vec![0, 1, 2], vec![0, 1, 2]);
     synthesizer.synthesize(clifford_tableau.clone(), &mut mock);
 
     let ref_ct = parse_clifford_commands(3, mock.commands());
@@ -168,11 +165,8 @@ fn test_custom_clifford_synthesis_large() {
     let clifford_tableau = setup_sample_inverse_ct();
     let mut mock = MockCircuit::new();
 
-    let mut synthesizer = CustomPivotCliffordSynthesizer::default();
-
-    synthesizer
-        .set_custom_columns(vec![0, 1, 2, 3])
-        .set_custom_rows(vec![0, 2, 1, 3]);
+    let mut synthesizer =
+        CallbackCliffordSynthesizer::custom_pivot(vec![0, 1, 2, 3], vec![0, 2, 1, 3]);
 
     synthesizer.synthesize(clifford_tableau.clone(), &mut mock);
 
@@ -189,10 +183,8 @@ fn test_custom_clifford_synthesis_simple() {
     clifford_tableau.cx(1, 2);
     let mut mock = MockCircuit::new();
 
-    let mut synthesizer = CustomPivotCliffordSynthesizer::default();
-    synthesizer
-        .set_custom_columns(vec![0, 1, 2])
-        .set_custom_rows(vec![0, 1, 2]);
+    let mut synthesizer = CallbackCliffordSynthesizer::custom_pivot(vec![0, 1, 2], vec![0, 1, 2]);
+
     synthesizer.synthesize(clifford_tableau.clone(), &mut mock);
 
     let ref_ct = parse_clifford_commands(3, mock.commands());

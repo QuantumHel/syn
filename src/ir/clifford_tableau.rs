@@ -1,12 +1,10 @@
 pub mod custom_callback;
-pub mod custom_pivots;
 mod helper;
 pub mod naive;
 
-pub use custom_pivots::CustomPivotCliffordSynthesizer;
-pub use naive::NaiveCliffordSynthesizer;
-
 use crate::data_structures::CliffordTableau;
+pub use custom_callback::CallbackCliffordSynthesizer;
+pub use naive::NaiveCliffordSynthesizer;
 
 use super::{AdjointSynthesizer, Synthesizer};
 
