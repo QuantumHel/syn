@@ -34,7 +34,7 @@ fn test_naive_pauli_exponential_synthesis() {
 
     let ref_commands = [
         MockCommand::H(1),
-        MockCommand::S(2),
+        MockCommand::V(2),
         MockCommand::CX(1, 2),
         MockCommand::CX(2, 3),
         MockCommand::Rz(3, 0.3),
@@ -42,7 +42,7 @@ fn test_naive_pauli_exponential_synthesis() {
 
     let ref_clifford_commands = [
         MockCommand::H(1),
-        MockCommand::S(2),
+        MockCommand::V(2),
         MockCommand::CX(1, 2),
         MockCommand::CX(2, 3),
     ];

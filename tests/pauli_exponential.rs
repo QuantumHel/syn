@@ -41,6 +41,7 @@ fn test_naive_pauli_exponential_synthesis() {
         MockCommand::CX(2, 3),
         MockCommand::Rz(3, 0.3),
         MockCommand::CX(1, 2),
+        MockCommand::CX(1, 3),
         MockCommand::CX(2, 3),
     ];
 
@@ -60,7 +61,7 @@ fn test_naive_pauli_exponential_complex() {
 
     let input = [
         MockCommand::H(1),
-        MockCommand::S(2),
+        MockCommand::V(2),
         MockCommand::CX(1, 2),
         MockCommand::CX(2, 3),
         MockCommand::H(0),
@@ -81,7 +82,6 @@ fn test_naive_pauli_exponential_complex() {
     cliff_synthesizer.synthesize(ref_ct.clone(), &mut mock_ct);
 
     let mock_ct_ref_commands = [
-        MockCommand::S(2),
         MockCommand::H(1),
         MockCommand::CX(0, 1),
         MockCommand::CX(0, 2),
@@ -91,7 +91,6 @@ fn test_naive_pauli_exponential_complex() {
         MockCommand::CX(2, 0),
         MockCommand::H(1),
         MockCommand::S(1),
-        MockCommand::S(2),
         MockCommand::CX(1, 2),
         MockCommand::CX(3, 2),
         MockCommand::CX(2, 3),
@@ -102,14 +101,14 @@ fn test_naive_pauli_exponential_complex() {
         MockCommand::X(1),
         MockCommand::X(2),
         MockCommand::X(3),
-        MockCommand::Z(3),
+        MockCommand::Z(1),
     ];
 
     assert_eq!(mock_ct.commands(), &mock_ct_ref_commands);
 
     let ref_commands = [
         MockCommand::H(1),
-        MockCommand::S(2),
+        MockCommand::V(2),
         MockCommand::CX(1, 2),
         MockCommand::CX(2, 3),
         MockCommand::Rz(3, 0.3),
@@ -123,28 +122,26 @@ fn test_naive_pauli_exponential_complex() {
         MockCommand::CX(1, 2),
         MockCommand::CX(2, 3),
         MockCommand::Rz(3, -0.12),
-        MockCommand::S(2),
-        MockCommand::H(1),
         MockCommand::CX(0, 1),
         MockCommand::CX(0, 2),
+        MockCommand::CX(0, 3),
         MockCommand::H(1),
         MockCommand::H(2),
+        MockCommand::H(3),
         MockCommand::CX(1, 0),
         MockCommand::CX(2, 0),
+        MockCommand::CX(3, 0),
+        MockCommand::S(1),
         MockCommand::H(1),
         MockCommand::S(1),
-        MockCommand::S(2),
-        MockCommand::CX(1, 2),
+        MockCommand::V(3),
+        MockCommand::CX(2, 1),
+        MockCommand::CX(3, 1),
         MockCommand::CX(3, 2),
         MockCommand::CX(2, 3),
         MockCommand::CX(3, 2),
-        MockCommand::H(2),
         MockCommand::CX(3, 2),
-        MockCommand::S(3),
-        MockCommand::X(1),
         MockCommand::X(2),
-        MockCommand::X(3),
-        MockCommand::Z(3),
     ];
 
     assert_eq!(mock.commands(), &ref_commands);
