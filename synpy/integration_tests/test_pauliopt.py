@@ -66,8 +66,8 @@ def verify_equality(qc_in: QuantumCircuit, qc_out: QuantumCircuit) -> bool:
 
 
 class TestBasicSyn:
-    @pytest.mark.parametrize("nr_qubits", [3])
-    @pytest.mark.parametrize("nr_gadgets", [3])
+    @pytest.mark.parametrize("nr_qubits", [3, 6])
+    @pytest.mark.parametrize("nr_gadgets", [100, 200, 500, 1000])
     def test_naive_synthesis(self, nr_qubits: int, nr_gadgets: int) -> None:
         pauli_polynomial = generate_random_pauli_polynomial(nr_qubits, nr_gadgets)
         qc = pauli_polynomial.copy().to_qiskit()
