@@ -355,8 +355,9 @@ checksum = "b410bbe7e14ab526a0e86877eb47c6996a2bd7746f027ba551028c925390e4e9"
 
 [[package]]
 name = "petgraph"
-version = "0.7.1"
-source = "git+https://github.com/petgraph/petgraph.git?rev=3145fa87fa398fd49cef44b2429d93a4fd2160bc#3145fa87fa398fd49cef44b2429d93a4fd2160bc"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c96dc3f2709da98e228764d8f4c01c39a101dcc441547e8036372ee0522eb108"
 dependencies = [
  "fixedbitset",
  "hashbrown",
