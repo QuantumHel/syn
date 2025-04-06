@@ -355,8 +355,8 @@ mod tests {
             new_architecture
                 .get_cx_ladder(&vec![0, 1, 2, 4, 5], &1)
                 .unwrap()
-                .sort(),
-            vec![(0, 1), (1, 5), (1, 2), (2, 4)].sort()
+                .len(),
+            4
         );
     }
 
@@ -367,15 +367,15 @@ mod tests {
             new_architecture
                 .get_cx_ladder(&vec![2, 3, 4], &2)
                 .unwrap()
-                .sort(),
-            vec![(2, 4), (2, 3)].sort()
+                .len(),
+            2
         );
         assert_eq!(
             new_architecture
                 .get_cx_ladder(&vec![2, 3, 4], &4)
                 .unwrap()
-                .sort(),
-            vec![(4, 2), (4, 3)].sort()
+                .len(),
+            2
         );
     }
 
