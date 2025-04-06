@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use crate::data_structures::{CliffordTableau, PauliPolynomial};
+use crate::data_structures::{CliffordTableau, HasAdjoint, PauliPolynomial};
 
 use crate::ir::{CliffordGates, Gates, Synthesizer};
 
@@ -84,14 +84,14 @@ where
         match &self.clifford_strategy {
             CliffordTableauSynthStrategy::Naive => {
                 let mut clifford_synthesizer = NaiveCliffordSynthesizer::default();
-                clifford_synthesizer.synthesize(clifford_tableau, repr);
+                clifford_synthesizer.synthesize(clifford_tableau.adjoint(), repr);
             }
             CliffordTableauSynthStrategy::Custom(custom_rows, custom_columns) => {
                 let mut clifford_synthesizer = CallbackCliffordSynthesizer::custom_pivot(
                     custom_columns.to_owned(),
                     custom_rows.to_owned(),
                 );
-                clifford_synthesizer.synthesize(clifford_tableau, repr);
+                clifford_synthesizer.synthesize(clifford_tableau.adjoint(), repr);
             }
         };
     }
