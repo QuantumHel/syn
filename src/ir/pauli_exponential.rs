@@ -1,21 +1,98 @@
-use crate::{
-    data_structures::{CliffordTableau, PauliPolynomial},
-    synthesis_methods::naive::Naive,
+use std::collections::VecDeque;
+
+use crate::data_structures::{CliffordTableau, PauliPolynomial};
+
+use crate::ir::{CliffordGates, Gates, Synthesizer};
+
+use crate::ir::{
+    clifford_tableau::{
+        CallbackCliffordSynthesizer, CliffordTableauSynthStrategy, NaiveCliffordSynthesizer,
+    },
+    pauli_polynomial::{naive::NaivePauliPolynomialSynthesizer, PauliPolynomialSynthStrategy},
 };
 
-use super::{CliffordGates, Gates};
-
-struct PauliExponential {
-    pauli_polynomial: PauliPolynomial,
+#[derive(Default)]
+pub struct PauliExponential {
+    pauli_polynomials: VecDeque<PauliPolynomial>,
     clifford_tableau: CliffordTableau,
 }
 
-pub struct PauliExponentialSynthesizer;
-impl<G> Naive<PauliExponential, G> for PauliExponentialSynthesizer
+impl PauliExponential {
+    pub fn new(
+        pauli_polynomials: VecDeque<PauliPolynomial>,
+        clifford_tableau: CliffordTableau,
+    ) -> Self {
+        PauliExponential {
+            pauli_polynomials,
+            clifford_tableau,
+        }
+    }
+}
+
+#[derive(Default)]
+pub struct PauliExponentialSynthesizer {
+    pauli_strategy: PauliPolynomialSynthStrategy,
+    clifford_strategy: CliffordTableauSynthStrategy,
+}
+
+impl PauliExponentialSynthesizer {
+    pub fn from_strategy(
+        pauli_strategy: PauliPolynomialSynthStrategy,
+        clifford_strategy: CliffordTableauSynthStrategy,
+    ) -> Self {
+        Self {
+            pauli_strategy,
+            clifford_strategy,
+        }
+    }
+
+    pub fn set_pauli_strategy(
+        &mut self,
+        pauli_strategy: PauliPolynomialSynthStrategy,
+    ) -> &mut Self {
+        self.pauli_strategy = pauli_strategy;
+        self
+    }
+
+    pub fn set_clifford_strategy(
+        &mut self,
+        clifford_strategy: CliffordTableauSynthStrategy,
+    ) -> &mut Self {
+        self.clifford_strategy = clifford_strategy;
+        self
+    }
+}
+
+impl<G> Synthesizer<PauliExponential, G> for PauliExponentialSynthesizer
 where
     G: CliffordGates + Gates,
 {
-    fn run_naive(program: PauliExponential, external_rep: &mut G) {
-        todo!()
+    fn synthesize(&mut self, pauli_exponential: PauliExponential, repr: &mut G) {
+        let PauliExponential {
+            pauli_polynomials,
+            clifford_tableau,
+        } = pauli_exponential;
+
+        let clifford_tableau = match self.pauli_strategy {
+            PauliPolynomialSynthStrategy::Naive => {
+                let mut pauli_synthesizer = NaivePauliPolynomialSynthesizer::default();
+                pauli_synthesizer.set_clifford_tableau(clifford_tableau);
+                pauli_synthesizer.synthesize(pauli_polynomials, repr)
+            }
+        };
+
+        match &self.clifford_strategy {
+            CliffordTableauSynthStrategy::Naive => {
+                let mut clifford_synthesizer = NaiveCliffordSynthesizer::default();
+                clifford_synthesizer.synthesize(clifford_tableau, repr);
+            }
+            CliffordTableauSynthStrategy::Custom(custom_rows, custom_columns) => {
+                let mut clifford_synthesizer = CallbackCliffordSynthesizer::custom_pivot(
+                    custom_columns.to_owned(),
+                    custom_rows.to_owned(),
+                );
+                clifford_synthesizer.synthesize(clifford_tableau, repr);
+            }
+        };
     }
 }
