@@ -5,7 +5,7 @@ use bitvec::prelude::Lsb0;
 use common::{parse_clifford_commands, MockCircuit, MockCommand};
 use syn::data_structures::{CliffordTableau, PauliString, PropagateClifford};
 use syn::ir::clifford_tableau::{CallbackCliffordSynthesizer, NaiveCliffordSynthesizer};
-use syn::ir::Synthesizer;
+use syn::ir::{AdjointSynthesizer, Synthesizer};
 
 fn setup_sample_ct() -> CliffordTableau {
     // Stab: ZZZ, -YIY, XIX
@@ -81,6 +81,56 @@ fn test_s_synthesis() {
     synthesizer.synthesize(clifford_tableau.clone(), &mut mock);
 
     assert_eq!(mock.commands(), &vec![MockCommand::S(1)]);
+}
+
+#[test]
+fn test_s_adjoint_synthesis() {
+    let mut clifford_tableau = setup_2_qubit_clifford();
+    clifford_tableau.s(1);
+    let mut mock = MockCircuit::new();
+    let mut synthesizer = NaiveCliffordSynthesizer::default();
+    synthesizer.synthesize_adjoint(clifford_tableau.clone(), &mut mock);
+
+    let ref_ct = parse_clifford_commands(2, mock.commands());
+    assert_eq!(clifford_tableau * ref_ct, CliffordTableau::new(2));
+
+    assert_eq!(mock.commands(), &vec![MockCommand::S(1), MockCommand::Z(1)]);
+}
+
+#[test]
+fn test_v_synthesis() {
+    let mut clifford_tableau = setup_2_qubit_clifford();
+    clifford_tableau.v(1);
+    let mut mock = MockCircuit::new();
+    let mut synthesizer = NaiveCliffordSynthesizer::default();
+    synthesizer.synthesize(clifford_tableau.clone(), &mut mock);
+
+    assert_eq!(
+        mock.commands(),
+        &vec![
+            MockCommand::S(1),
+            MockCommand::H(1),
+            MockCommand::S(1),
+            MockCommand::X(1)
+        ]
+    );
+}
+
+#[test]
+fn test_v_adjoint_synthesis() {
+    let mut clifford_tableau = setup_2_qubit_clifford();
+    clifford_tableau.v(1);
+    let mut mock = MockCircuit::new();
+    let mut synthesizer = NaiveCliffordSynthesizer::default();
+    synthesizer.synthesize_adjoint(clifford_tableau.clone(), &mut mock);
+
+    let ref_ct = parse_clifford_commands(2, mock.commands());
+    assert_eq!(clifford_tableau * ref_ct, CliffordTableau::new(2));
+
+    assert_eq!(
+        mock.commands(),
+        &vec![MockCommand::S(1), MockCommand::H(1), MockCommand::S(1),]
+    );
 }
 
 #[test]

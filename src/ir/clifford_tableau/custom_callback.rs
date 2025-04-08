@@ -3,7 +3,7 @@ use std::iter::zip;
 use itertools::Itertools;
 
 use crate::{
-    data_structures::{CliffordTableau, HasAdjoint},
+    data_structures::CliffordTableau,
     ir::{
         clifford_tableau::helper::{clean_signs, clean_x_pivot, clean_z_pivot},
         AdjointSynthesizer, CliffordGates,
@@ -59,8 +59,7 @@ impl<'a, G> AdjointSynthesizer<CliffordTableau, G> for CallbackCliffordSynthesiz
 where
     G: CliffordGates,
 {
-    fn synthesize_adjoint(&mut self, ct: CliffordTableau, repr: &mut G) {
-        let mut clifford_tableau = ct.adjoint();
+    fn synthesize_adjoint(&mut self, mut clifford_tableau: CliffordTableau, repr: &mut G) {
         let num_qubits = clifford_tableau.size();
 
         let mut remaining_columns = (0..num_qubits).collect::<Vec<_>>();

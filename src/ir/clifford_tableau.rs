@@ -2,7 +2,7 @@ pub mod custom_callback;
 mod helper;
 pub mod naive;
 
-use crate::data_structures::CliffordTableau;
+use crate::data_structures::{CliffordTableau, HasAdjoint};
 pub use custom_callback::CallbackCliffordSynthesizer;
 pub use naive::NaiveCliffordSynthesizer;
 
@@ -17,6 +17,7 @@ pub enum CliffordTableauSynthStrategy {
 
 impl<T: AdjointSynthesizer<CliffordTableau, To>, To> Synthesizer<CliffordTableau, To> for T {
     fn synthesize(&mut self, ir: CliffordTableau, repr: &mut To) {
+        let ir = ir.adjoint();
         self.synthesize_adjoint(ir, repr)
     }
 }
