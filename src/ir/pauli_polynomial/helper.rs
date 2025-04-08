@@ -9,7 +9,7 @@ use crate::{
     ir::{CliffordGates, Gates},
 };
 
-pub(super) fn naive_pauli_polynomial_update<G>(
+pub(super) fn push_down_pauli_polynomial_update<G>(
     pauli_polynomials: &VecDeque<PauliPolynomial>,
     repr: &mut G,
     clifford_tableau: &mut CliffordTableau,
