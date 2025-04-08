@@ -58,7 +58,7 @@ where
             let num_gadgets = pauli_polynomial.length();
             let gadget_length = pauli_polynomial.length();
             let mask = bitvec![usize, Lsb0; 1; gadget_length];
-            naive_pauli_polynomial_update(
+            push_down_pauli_polynomial_update(
                 &pauli_polynomials,
                 repr,
                 &mut clifford_tableau,
