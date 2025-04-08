@@ -101,6 +101,7 @@ pub(super) fn push_down_pauli_polynomial_update<G>(
         if affected_qubits.len() > 1 {
             for (&control, &target) in affected_qubits.iter().tuple_windows() {
                 pauli_polynomial.masked_cx(control, target, &mask);
+                pauli_polynomials.cx(control, target);
                 clifford_tableau.cx(control, target);
                 repr.cx(control, target);
             }
