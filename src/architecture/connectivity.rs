@@ -42,7 +42,6 @@ impl Connectivity {
 
     pub fn line(nr_qubits: usize) -> Self {
         let edges: Vec<(usize, usize)> = (0..nr_qubits - 1).map(|i| (i, i + 1)).collect();
-        println!("{:?}", edges);
         Connectivity::from_edges(&edges)
     }
 
