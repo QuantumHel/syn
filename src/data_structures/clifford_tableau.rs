@@ -67,26 +67,26 @@ impl CliffordTableau {
         // Loop re-order to be (k, i, j) as j ordering is contiguous.
         for (k, rhs_pauli_column) in self.pauli_columns.iter().enumerate() {
             for i in 0..size {
-                *(pauli_columns[k].x.borrow_mut()) ^=
-                    BitVec::repeat(rhs_pauli_column.x.borrow()[i], 2 * size)
-                        & lhs.pauli_columns[i].x.borrow().as_bitslice();
-                *(pauli_columns[k].x.borrow_mut()) ^=
-                    BitVec::repeat(rhs_pauli_column.x.borrow()[i + size], 2 * size)
-                        & lhs.pauli_columns[i].z.borrow().as_bitslice();
-                *(pauli_columns[k].z.borrow_mut()) ^=
-                    BitVec::repeat(rhs_pauli_column.z.borrow()[i], 2 * size)
-                        & lhs.pauli_columns[i].x.borrow().as_bitslice();
-                *(pauli_columns[k].z.borrow_mut()) ^=
-                    BitVec::repeat(rhs_pauli_column.z.borrow()[i + size], 2 * size)
-                        & lhs.pauli_columns[i].z.borrow().as_bitslice();
+                *(pauli_columns[k].x.write().unwrap()) ^=
+                    BitVec::repeat(rhs_pauli_column.x.read().unwrap()[i], 2 * size)
+                        & lhs.pauli_columns[i].x.read().unwrap().as_bitslice();
+                *(pauli_columns[k].x.write().unwrap()) ^=
+                    BitVec::repeat(rhs_pauli_column.x.read().unwrap()[i + size], 2 * size)
+                        & lhs.pauli_columns[i].z.read().unwrap().as_bitslice();
+                *(pauli_columns[k].z.write().unwrap()) ^=
+                    BitVec::repeat(rhs_pauli_column.z.read().unwrap()[i], 2 * size)
+                        & lhs.pauli_columns[i].x.read().unwrap().as_bitslice();
+                *(pauli_columns[k].z.write().unwrap()) ^=
+                    BitVec::repeat(rhs_pauli_column.z.read().unwrap()[i + size], 2 * size)
+                        & lhs.pauli_columns[i].z.read().unwrap().as_bitslice();
             }
         }
 
         let mut i_factors = vec![0_usize; 2 * size];
         // Keep track of the inherent i factors of left-hand tableau (where there are Y's in tableau rows)
         for lhs_pauli_column in lhs.pauli_columns.iter() {
-            let local_sign =
-                lhs_pauli_column.x.borrow().clone() & lhs_pauli_column.z.borrow().as_bitslice();
+            let local_sign = lhs_pauli_column.x.read().unwrap().clone()
+                & lhs_pauli_column.z.read().unwrap().as_bitslice();
             for (fact, sign) in zip(i_factors.iter_mut(), local_sign) {
                 *fact += sign as usize;
             }
@@ -142,10 +142,10 @@ impl CliffordTableau {
         // Contribution of combination of signs in rhs basis.
         // Calculate matrix vector M(lhs) * sign(rhs)
         for (j, lhs_pauli_column) in lhs.pauli_columns.iter().enumerate() {
-            new_signs ^=
-                BitVec::repeat(self.signs[j], 2 * size) & lhs_pauli_column.x.borrow().as_bitslice();
+            new_signs ^= BitVec::repeat(self.signs[j], 2 * size)
+                & lhs_pauli_column.x.read().unwrap().as_bitslice();
             new_signs ^= BitVec::repeat(self.signs[j + size], 2 * size)
-                & lhs_pauli_column.z.borrow().as_bitslice();
+                & lhs_pauli_column.z.read().unwrap().as_bitslice();
         }
 
         // Get rid of `i` factors and convert to sign flips
@@ -197,10 +197,10 @@ impl HasAdjoint for CliffordTableau {
                     pauli_column.z(i + size),
                 );
 
-                new_columns[i].x.borrow_mut().replace(j, x1);
-                new_columns[i].z.borrow_mut().replace(j, z1);
-                new_columns[i].x.borrow_mut().replace(j + size, x2);
-                new_columns[i].z.borrow_mut().replace(j + size, z2);
+                new_columns[i].x.write().unwrap().replace(j, x1);
+                new_columns[i].z.write().unwrap().replace(j, z1);
+                new_columns[i].x.write().unwrap().replace(j + size, x2);
+                new_columns[i].z.write().unwrap().replace(j + size, z2);
             }
         });
         let mut adjoint_table = CliffordTableau {
@@ -262,10 +262,10 @@ impl PropagateClifford for CliffordTableau {
         };
 
         let mut scratch = BitVec::repeat(true, 2 * n);
-        scratch ^= target.x.borrow().as_bitslice();
-        scratch ^= control.z.borrow().as_bitslice();
-        scratch &= control.x.borrow().as_bitslice();
-        scratch &= target.z.borrow().as_bitslice();
+        scratch ^= target.x.read().unwrap().as_bitslice();
+        scratch ^= control.z.read().unwrap().as_bitslice();
+        scratch &= control.x.read().unwrap().as_bitslice();
+        scratch &= target.z.read().unwrap().as_bitslice();
         self.signs ^= scratch;
 
         cx(control, target);
