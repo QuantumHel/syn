@@ -6,9 +6,7 @@ use crate::synthesis::synthesize_pauli_exponential;
 use crate::synthesis::{PyCommand, PyPauliString};
 use crate::tableau::PyCliffordTableau;
 use pyo3::prelude::{PyModule, PyModuleMethods};
-use pyo3::{pymodule, wrap_pyfunction, Bound, FromPyObject, PyRef, PyResult, Python};
-use std::ops::Deref;
-use syn::ir::Synthesizer;
+use pyo3::{pymodule, wrap_pyfunction, Bound, PyResult};
 
 #[pymodule]
 #[pyo3(name = "synpy_rust")]

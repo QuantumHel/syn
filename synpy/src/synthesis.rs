@@ -1,7 +1,5 @@
 use std::ops::Deref;
-use pyo3::{pyfunction, Py};
-use crate::PyRef;
-use crate::Python;
+use pyo3::{pyfunction, PyRef, PyResult};
 use pyo3::exceptions::PyException;
 use pyo3::{pyclass, pymethods, PyErr};
 use syn::data_structures::{CliffordTableau, PauliPolynomial};
@@ -11,7 +9,6 @@ use syn::ir::CliffordGates;
 use syn::ir::Gates;
 use syn::ir::pauli_exponential::{PauliExponential, PauliExponentialSynthesizer};
 use syn::ir::pauli_polynomial::PauliPolynomialSynthStrategy;
-use crate::PyResult;
 use crate::validation::validate;
 use syn::ir::Synthesizer;
 
