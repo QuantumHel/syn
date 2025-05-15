@@ -1,11 +1,11 @@
+use super::{Architecture, EdgeWeight, GraphIndex, NodeWeight};
+use petgraph::algo::floyd_warshall::floyd_warshall_path;
 use petgraph::{
-    algo::{articulation_points::articulation_points, floyd_warshall_path},
+    algo::articulation_points::articulation_points,
     graph::{NodeIndex, UnGraph},
     visit::{IntoNodeReferences, NodeIndexable, NodeRef},
 };
 use std::collections::HashMap;
-
-use super::{Architecture, EdgeWeight, GraphIndex, NodeWeight};
 
 #[derive(Debug)]
 pub struct Connectivity {

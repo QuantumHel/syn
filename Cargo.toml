@@ -3,11 +3,13 @@ name = "syn"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+path = "src/lib.rs"
+
 [dependencies]
 bitvec = "1.0.1"
 itertools = "0.13.0"
-petgraph = { git = "https://github.com/daehiff/petgraph", branch = "art-points", version = "0.6.5" }
-typenum = "1.17.0"
+petgraph = { git = "https://github.com/daehiff/petgraph", branch = "add-mst-prim" }
 
 [dev-dependencies]
 criterion = "0.5.1"

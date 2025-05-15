@@ -88,10 +88,10 @@ pub(super) fn push_down_pauli_polynomial_update<G>(
                 }
                 PauliLetter::Y => {
                     affected_qubits.push(i);
-                    pauli_polynomial.masked_s(i, &mask);
-                    pauli_polynomials.s(i);
-                    clifford_tableau.s(i);
-                    repr.s(i);
+                    pauli_polynomial.masked_v(i, &mask);
+                    pauli_polynomials.v(i);
+                    clifford_tableau.v(i);
+                    repr.v(i);
                 }
                 PauliLetter::Z => {
                     affected_qubits.push(i);

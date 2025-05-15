@@ -1,2 +1,5 @@
 pre-commit
 pip-tools
+pytest
+qiskit
+bandit
