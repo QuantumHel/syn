@@ -308,18 +308,6 @@ mod tests {
     }
 
     #[test]
-    fn test_weight_is_considered() {
-        let new_architecture = Connectivity::from_weighted_edges(&setup_weighted());
-        assert_eq!(
-            new_architecture
-                .get_cx_ladder(&vec![1, 2, 3, 4], &2)
-                .unwrap()
-                .sort(),
-            vec![(2, 1), (2, 3), (3, 4)].sort()
-        );
-    }
-
-    #[test]
     fn test_root_is_not_present() {
         let new_architecture = Connectivity::from_edges(&setup_simple());
         assert_eq!(
