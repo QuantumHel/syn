@@ -2,15 +2,13 @@ use super::{Architecture, EdgeWeight, GraphIndex, LadderError, NodeWeight};
 use petgraph::algo::floyd_warshall::floyd_warshall_path;
 use petgraph::algo::steiner_tree::steiner_tree;
 use petgraph::prelude::EdgeRef;
-use petgraph::visit::{Bfs, Dfs, GraphBase, IntoNeighbors, VisitMap, Visitable, Walker};
+use petgraph::visit::{Bfs, VisitMap, Visitable};
 use petgraph::{
     algo::articulation_points::articulation_points,
     graph::{NodeIndex, UnGraph},
     visit::{IntoNodeReferences, NodeIndexable, NodeRef},
 };
-use std::borrow::Borrow;
 use std::collections::HashMap;
-use std::ops::Index;
 
 /// Get all the vertices in a graph that are non-cutting (won't make the graph disconnected)
 fn get_non_cutting_vertices(
@@ -84,7 +82,7 @@ impl Connectivity {
     pub fn from_graph(graph: UnGraph<NodeWeight, EdgeWeight, GraphIndex>) -> Self {
         let non_cutting = get_non_cutting_vertices(&graph);
         let (distance, prev) = floyd_warshall_path(&graph, |e| *e.weight()).unwrap();
-        let distance = distance.iter().map(|(k, v)| (*k, *v as usize)).collect();
+        let distance = distance.iter().map(|(k, v)| (*k, *v)).collect();
         Connectivity {
             graph,
             non_cutting,
@@ -119,7 +117,7 @@ impl Connectivity {
 
         let (distance, prev) = floyd_warshall_path(&self.graph, |e| *e.weight()).unwrap();
 
-        let distance = distance.iter().map(|(k, v)| (*k, *v as usize)).collect();
+        let distance = distance.iter().map(|(k, v)| (*k, *v)).collect();
 
         self.non_cutting = non_cutting;
         self.distance = distance;
@@ -188,7 +186,7 @@ impl Architecture for Connectivity {
             j < self.graph.node_count(),
             "architecture does not contain node {j}"
         );
-        self.distance[&(self.graph.from_index(i), self.graph.from_index(j))] as usize
+        self.distance[&(self.graph.from_index(i), self.graph.from_index(j))]
     }
 
     fn neighbors(&self, i: GraphIndex) -> Vec<usize> {
@@ -276,7 +274,7 @@ mod tests {
 
     #[test]
     fn test_line_creation() {
-        let mut line_architecture = Connectivity::line(5);
+        let line_architecture = Connectivity::line(5);
         assert_eq!(
             line_architecture.edges(),
             vec![(0, 1), (1, 2), (2, 3), (3, 4)]
@@ -285,7 +283,7 @@ mod tests {
 
     #[test]
     fn test_grid_creation() {
-        let mut line_architecture = Connectivity::grid(3, 3);
+        let line_architecture = Connectivity::grid(3, 3);
         let mut edges = line_architecture.edges();
         edges.sort();
         assert_eq!(
@@ -312,7 +310,7 @@ mod tests {
         let new_architecture = Connectivity::from_edges(&setup_simple());
         assert_eq!(
             new_architecture
-                .get_cx_ladder(&vec![1, 2, 3, 4], &42)
+                .get_cx_ladder(&[1, 2, 3, 4], &42)
                 .expect_err("Should return a Error that the root was not found"),
             LadderError::RootNotFound
         );
@@ -328,9 +326,7 @@ mod tests {
     fn test_cx_ladder_line_setup() {
         let new_architecture = Connectivity::from_edges(&setup_simple());
         assert_eq!(
-            new_architecture
-                .get_cx_ladder(&vec![0, 1, 2, 3], &0)
-                .unwrap(),
+            new_architecture.get_cx_ladder(&[0, 1, 2, 3], &0).unwrap(),
             vec![(0, 1), (1, 2), (2, 3)]
         );
     }
@@ -340,7 +336,7 @@ mod tests {
         let new_architecture = Connectivity::from_edges(&setup_simple());
         assert_eq!(
             new_architecture
-                .get_cx_ladder(&vec![0, 1, 2, 4, 5], &1)
+                .get_cx_ladder(&[0, 1, 2, 4, 5], &1)
                 .unwrap()
                 .len(),
             4
@@ -352,14 +348,14 @@ mod tests {
         let new_architecture = Connectivity::from_edges(&setup_simple());
         assert_eq!(
             new_architecture
-                .get_cx_ladder(&vec![2, 3, 4], &2)
+                .get_cx_ladder(&[2, 3, 4], &2)
                 .unwrap()
                 .len(),
             2
         );
         assert_eq!(
             new_architecture
-                .get_cx_ladder(&vec![2, 3, 4], &4)
+                .get_cx_ladder(&[2, 3, 4], &4)
                 .unwrap()
                 .len(),
             2
