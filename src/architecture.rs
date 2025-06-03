@@ -6,7 +6,6 @@ type NodeWeight = ();
 
 #[derive(Debug, PartialEq)]
 pub enum LadderError {
-    ConversionError,
     RootNotFound,
 }
 
