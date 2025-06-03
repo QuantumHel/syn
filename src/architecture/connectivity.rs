@@ -306,6 +306,14 @@ mod tests {
     }
 
     #[test]
+    fn test_complete_creation() {
+        let line_architecture = Connectivity::complete(4);
+        let mut edges = line_architecture.edges();
+        edges.sort();
+        assert_eq!(edges, vec![(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)]);
+    }
+
+    #[test]
     fn test_root_is_not_present() {
         let new_architecture = Connectivity::from_edges(&setup_simple());
         assert_eq!(
