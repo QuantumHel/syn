@@ -30,8 +30,12 @@ pub struct Connectivity {
 
 impl Connectivity {
     pub fn new(num_qubits: usize) -> Self {
+        let mut graph = UnGraph::with_capacity(num_qubits, 0);
+        for (count, weight) in graph.node_weights_mut().enumerate() {
+            *weight = count;
+        }
         Connectivity {
-            graph: UnGraph::with_capacity(num_qubits, 0),
+            graph,
             non_cutting: Default::default(),
             prev: Default::default(),
             distance: HashMap::new(),
@@ -79,10 +83,14 @@ impl Connectivity {
         Connectivity::from_graph(graph)
     }
 
-    pub fn from_graph(graph: UnGraph<NodeWeight, EdgeWeight, GraphIndex>) -> Self {
+    pub fn from_graph(mut graph: UnGraph<NodeWeight, EdgeWeight, GraphIndex>) -> Self {
         let non_cutting = get_non_cutting_vertices(&graph);
         let (distance, prev) = floyd_warshall_path(&graph, |e| *e.weight()).unwrap();
         let distance = distance.iter().map(|(k, v)| (*k, *v)).collect();
+        for (count, weight) in graph.node_weights_mut().enumerate() {
+            *weight = count;
+        }
+
         Connectivity {
             graph,
             non_cutting,
@@ -94,11 +102,32 @@ impl Connectivity {
     pub fn nodes(&self) -> Vec<GraphIndex> {
         self.graph
             .node_references()
-            .map(|node| self.graph.to_index(node.id()))
+            .map(|node| *node.weight())
+            .collect()
+    }
+
+    pub fn node_ids(&self) -> Vec<GraphIndex> {
+        self.graph
+            .node_references()
+            .map(|(node, _)| node.id().index())
             .collect()
     }
 
     pub fn edges(&self) -> Vec<(GraphIndex, GraphIndex)> {
+        let graph_edges: Vec<(GraphIndex, GraphIndex)> = self
+            .graph
+            .edge_references()
+            .map(|edge| {
+                (
+                    *self.graph.node_weight(edge.source().id()).unwrap(),
+                    *self.graph.node_weight(edge.target().id()).unwrap(),
+                )
+            })
+            .collect();
+        graph_edges
+    }
+
+    pub fn edge_ids(&self) -> Vec<(GraphIndex, GraphIndex)> {
         let graph_edges: Vec<(GraphIndex, GraphIndex)> = self
             .graph
             .edge_references()
@@ -129,9 +158,9 @@ impl Connectivity {
         self.update();
     }
 
-    pub fn add_node(&mut self) {
-        self.graph.add_node(());
-    }
+    // pub fn add_node(&mut self) {
+    //     self.graph.add_node(());
+    // }
 
     pub fn add_edge(&mut self, i: GraphIndex, j: GraphIndex) {
         self.graph
@@ -275,16 +304,22 @@ mod tests {
     #[test]
     fn test_line_creation() {
         let line_architecture = Connectivity::line(5);
+
         assert_eq!(
             line_architecture.edges(),
+            vec![(0, 1), (1, 2), (2, 3), (3, 4)]
+        );
+
+        assert_eq!(
+            line_architecture.edge_ids(),
             vec![(0, 1), (1, 2), (2, 3), (3, 4)]
         );
     }
 
     #[test]
     fn test_grid_creation() {
-        let line_architecture = Connectivity::grid(3, 3);
-        let mut edges = line_architecture.edges();
+        let grid_architecture = Connectivity::grid(3, 3);
+        let mut edges = grid_architecture.edges();
         edges.sort();
         assert_eq!(
             edges,
@@ -435,5 +470,167 @@ mod tests {
     fn test_non_cutting_line() {
         let mut line_architecture = Connectivity::line(5);
         assert_eq!(*line_architecture.non_cutting(), vec![0, 4]);
+    }
+
+    #[test]
+    fn test_non_cutting_grid() {
+        let mut line_architecture = Connectivity::grid(3, 3);
+        assert_eq!(
+            *line_architecture.non_cutting(),
+            vec![0, 1, 2, 3, 4, 5, 6, 7, 8]
+        );
+    }
+
+    #[test]
+    fn test_non_cutting_complete() {
+        let mut line_architecture = Connectivity::complete(3);
+        assert_eq!(*line_architecture.non_cutting(), vec![0, 1, 2]);
+    }
+
+    #[test]
+    fn test_remove_node() {
+        let mut architecture = Connectivity::from_edges(&setup_simple());
+        assert_eq!(architecture.nodes(), vec![0, 1, 2, 3, 4, 5]);
+        assert_eq!(architecture.node_ids(), vec![0, 1, 2, 3, 4, 5]);
+
+        assert_eq!(
+            architecture.edges(),
+            vec![
+                (0, 1),
+                (0, 5),
+                (1, 2),
+                (1, 5),
+                (2, 3),
+                (2, 4),
+                (3, 4),
+                (3, 5),
+                (4, 5),
+            ]
+        );
+        assert_eq!(
+            architecture.edge_ids(),
+            vec![
+                (0, 1),
+                (0, 5),
+                (1, 2),
+                (1, 5),
+                (2, 3),
+                (2, 4),
+                (3, 4),
+                (3, 5),
+                (4, 5),
+            ]
+        );
+
+        architecture.remove_node(1);
+
+        assert_eq!(architecture.nodes(), vec![0, 5, 2, 3, 4]);
+        assert_eq!(architecture.node_ids(), vec![0, 1, 2, 3, 4]);
+
+        assert_eq!(
+            architecture.edges(),
+            vec![(3, 4), (0, 5), (3, 5), (4, 5), (2, 3), (2, 4)]
+        );
+        assert_eq!(
+            architecture.edge_ids(),
+            vec![(3, 4), (0, 1), (3, 1), (4, 1), (2, 3), (2, 4)]
+        );
+    }
+
+    #[test]
+    fn test_remove_node_line() {
+        let mut architecture = Connectivity::line(5);
+        assert_eq!(architecture.nodes(), vec![0, 1, 2, 3, 4]);
+        assert_eq!(architecture.node_ids(), vec![0, 1, 2, 3, 4]);
+
+        assert_eq!(architecture.edges(), vec![(0, 1), (1, 2), (2, 3), (3, 4)]);
+        assert_eq!(
+            architecture.edge_ids(),
+            vec![(0, 1), (1, 2), (2, 3), (3, 4)]
+        );
+
+        architecture.remove_node(1);
+
+        assert_eq!(architecture.nodes(), vec![0, 4, 2, 3]);
+        assert_eq!(architecture.node_ids(), vec![0, 1, 2, 3]);
+
+        assert_eq!(architecture.edges(), vec![(2, 3), (3, 4)]);
+        assert_eq!(architecture.edge_ids(), vec![(2, 3), (3, 1)]);
+    }
+
+    #[test]
+    fn test_remove_node_grid() {
+        let mut architecture = Connectivity::grid(3, 3);
+        assert_eq!(architecture.nodes(), vec![0, 1, 2, 3, 4, 5, 6, 7, 8]);
+        assert_eq!(architecture.node_ids(), vec![0, 1, 2, 3, 4, 5, 6, 7, 8]);
+
+        assert_eq!(
+            architecture.edges(),
+            vec![
+                (0, 3),
+                (0, 1),
+                (1, 4),
+                (1, 2),
+                (2, 5),
+                (3, 6),
+                (3, 4),
+                (4, 7),
+                (4, 5),
+                (5, 8),
+                (6, 7),
+                (7, 8)
+            ]
+        );
+        assert_eq!(
+            architecture.edge_ids(),
+            vec![
+                (0, 3),
+                (0, 1),
+                (1, 4),
+                (1, 2),
+                (2, 5),
+                (3, 6),
+                (3, 4),
+                (4, 7),
+                (4, 5),
+                (5, 8),
+                (6, 7),
+                (7, 8)
+            ]
+        );
+
+        architecture.remove_node(1);
+
+        assert_eq!(architecture.nodes(), vec![0, 8, 2, 3, 4, 5, 6, 7]);
+        assert_eq!(architecture.node_ids(), vec![0, 1, 2, 3, 4, 5, 6, 7]);
+
+        assert_eq!(
+            architecture.edges(),
+            vec![
+                (0, 3),
+                (5, 8),
+                (6, 7),
+                (7, 8),
+                (2, 5),
+                (3, 6),
+                (3, 4),
+                (4, 7),
+                (4, 5)
+            ]
+        );
+        assert_eq!(
+            architecture.edge_ids(),
+            vec![
+                (0, 3),
+                (5, 1),
+                (6, 7),
+                (7, 1),
+                (2, 5),
+                (3, 6),
+                (3, 4),
+                (4, 7),
+                (4, 5)
+            ]
+        );
     }
 }

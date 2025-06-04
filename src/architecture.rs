@@ -2,7 +2,7 @@ pub mod connectivity;
 
 type GraphIndex = usize;
 type EdgeWeight = usize;
-type NodeWeight = ();
+type NodeWeight = usize;
 
 #[derive(Debug, PartialEq)]
 pub enum LadderError {
