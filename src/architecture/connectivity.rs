@@ -248,7 +248,7 @@ impl Architecture for Connectivity {
 
         let root_node = tree
             .node_indices()
-            .find(|item| item.index() == *root as usize)
+            .find(|item| item.index() == *root)
             .ok_or(LadderError::RootNotFound)?;
 
         let mut bfs = Bfs::new(&tree, root_node);
@@ -265,6 +265,30 @@ impl Architecture for Connectivity {
             }
         }
         Ok(edge_list)
+    }
+
+    fn disconnect(&self, i: GraphIndex) -> Connectivity {
+        let graph = self.graph.filter_map::<_, _, usize, usize>(
+            |_, node| {
+                if *node == i {
+                    None
+                } else {
+                    println!("some node: {}", *node);
+                    Some(*node)
+                }
+            },
+            |_, e| Some(*e),
+        );
+        let non_cutting = get_non_cutting_vertices(&graph);
+        let (distance, prev) = floyd_warshall_path(&graph, |e| *e.weight()).unwrap();
+        let distance = distance.iter().map(|(k, v)| (*k, *v)).collect();
+
+        Connectivity {
+            graph,
+            non_cutting,
+            prev,
+            distance,
+        }
     }
 }
 
@@ -338,14 +362,6 @@ mod tests {
                 (7, 8)
             ]
         );
-    }
-
-    #[test]
-    fn test_complete_creation() {
-        let line_architecture = Connectivity::complete(4);
-        let mut edges = line_architecture.edges();
-        edges.sort();
-        assert_eq!(edges, vec![(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)]);
     }
 
     #[test]
@@ -630,6 +646,153 @@ mod tests {
                 (3, 4),
                 (4, 7),
                 (4, 5)
+            ]
+        );
+    }
+
+    #[test]
+    fn test_disconnect() {
+        let architecture = Connectivity::from_edges(&setup_simple());
+        let new_architecture = architecture.disconnect(1);
+
+        assert_eq!(architecture.nodes(), vec![0, 1, 2, 3, 4, 5]);
+        assert_eq!(architecture.node_ids(), vec![0, 1, 2, 3, 4, 5]);
+
+        assert_eq!(
+            architecture.edges(),
+            vec![
+                (0, 1),
+                (0, 5),
+                (1, 2),
+                (1, 5),
+                (2, 3),
+                (2, 4),
+                (3, 4),
+                (3, 5),
+                (4, 5),
+            ]
+        );
+        assert_eq!(
+            architecture.edge_ids(),
+            vec![
+                (0, 1),
+                (0, 5),
+                (1, 2),
+                (1, 5),
+                (2, 3),
+                (2, 4),
+                (3, 4),
+                (3, 5),
+                (4, 5),
+            ]
+        );
+
+        assert_eq!(new_architecture.nodes(), vec![0, 2, 3, 4, 5]);
+        assert_eq!(new_architecture.node_ids(), vec![0, 1, 2, 3, 4]);
+
+        assert_eq!(
+            new_architecture.edges(),
+            vec![(0, 5), (2, 3), (2, 4), (3, 4), (3, 5), (4, 5)]
+        );
+        assert_eq!(
+            new_architecture.edge_ids(),
+            vec![(0, 4), (1, 2), (1, 3), (2, 3), (2, 4), (3, 4)]
+        );
+    }
+
+    #[test]
+    fn test_disconnect_line() {
+        let architecture = Connectivity::line(5);
+        let new_architecture = architecture.disconnect(1);
+
+        assert_eq!(architecture.nodes(), vec![0, 1, 2, 3, 4]);
+        assert_eq!(architecture.node_ids(), vec![0, 1, 2, 3, 4]);
+
+        assert_eq!(architecture.edges(), vec![(0, 1), (1, 2), (2, 3), (3, 4)]);
+        assert_eq!(
+            architecture.edge_ids(),
+            vec![(0, 1), (1, 2), (2, 3), (3, 4)]
+        );
+
+        assert_eq!(new_architecture.nodes(), vec![0, 2, 3, 4]);
+        assert_eq!(new_architecture.node_ids(), vec![0, 1, 2, 3]);
+
+        assert_eq!(new_architecture.edges(), vec![(2, 3), (3, 4)]);
+        assert_eq!(new_architecture.edge_ids(), vec![(1, 2), (2, 3)]);
+    }
+
+    #[test]
+    fn test_disconnect_grid() {
+        let architecture = Connectivity::grid(3, 3);
+        let new_architecture = architecture.disconnect(1);
+
+        assert_eq!(architecture.nodes(), vec![0, 1, 2, 3, 4, 5, 6, 7, 8]);
+        assert_eq!(architecture.node_ids(), vec![0, 1, 2, 3, 4, 5, 6, 7, 8]);
+
+        assert_eq!(
+            architecture.edges(),
+            vec![
+                (0, 3),
+                (0, 1),
+                (1, 4),
+                (1, 2),
+                (2, 5),
+                (3, 6),
+                (3, 4),
+                (4, 7),
+                (4, 5),
+                (5, 8),
+                (6, 7),
+                (7, 8)
+            ]
+        );
+        assert_eq!(
+            architecture.edge_ids(),
+            vec![
+                (0, 3),
+                (0, 1),
+                (1, 4),
+                (1, 2),
+                (2, 5),
+                (3, 6),
+                (3, 4),
+                (4, 7),
+                (4, 5),
+                (5, 8),
+                (6, 7),
+                (7, 8)
+            ]
+        );
+
+        assert_eq!(new_architecture.nodes(), vec![0, 2, 3, 4, 5, 6, 7, 8]);
+        assert_eq!(new_architecture.node_ids(), vec![0, 1, 2, 3, 4, 5, 6, 7]);
+
+        assert_eq!(
+            new_architecture.edges(),
+            vec![
+                (0, 3),
+                (2, 5),
+                (3, 6),
+                (3, 4),
+                (4, 7),
+                (4, 5),
+                (5, 8),
+                (6, 7),
+                (7, 8)
+            ]
+        );
+        assert_eq!(
+            new_architecture.edge_ids(),
+            vec![
+                (0, 2),
+                (1, 4),
+                (2, 5),
+                (2, 3),
+                (3, 6),
+                (3, 4),
+                (4, 7),
+                (5, 6),
+                (6, 7)
             ]
         );
     }

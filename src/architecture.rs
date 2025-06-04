@@ -19,4 +19,5 @@ pub trait Architecture {
         nodes: &[GraphIndex],
         root: &GraphIndex,
     ) -> Result<Vec<(usize, usize)>, LadderError>;
+    fn disconnect(&self, i: GraphIndex) -> Self;
 }
