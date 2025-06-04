@@ -158,10 +158,6 @@ impl Connectivity {
         self.update();
     }
 
-    // pub fn add_node(&mut self) {
-    //     self.graph.add_node(());
-    // }
-
     pub fn add_edge(&mut self, i: GraphIndex, j: GraphIndex) {
         self.graph
             .add_edge(self.graph.from_index(i), self.graph.from_index(j), 1);
