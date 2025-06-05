@@ -269,7 +269,6 @@ impl Architecture for Connectivity {
                 if *node == i {
                     None
                 } else {
-                    println!("some node: {}", *node);
                     Some(*node)
                 }
             },
