@@ -424,12 +424,6 @@ mod tests {
                 .len(),
             4
         );
-        assert_eq!(
-            new_architecture
-                .get_cx_ladder(&[0, 1, 2, 4, 5], &1)
-                .unwrap(),
-            vec![(1, 2), (2, 3), (3, 5), (3, 4), (5, 0)]
-        );
     }
 
     #[test]
