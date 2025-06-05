@@ -396,6 +396,23 @@ mod tests {
                 .len(),
             4
         );
+        assert_eq!(
+            new_architecture
+                .get_cx_ladder(&[0, 1, 2, 4, 5], &1)
+                .unwrap(),
+            vec![(1, 2), (2, 3), (3, 5), (3, 4), (5, 0)]
+        );
+    }
+
+    #[test]
+    fn test_cx_ladder_weighted_extended_triangle() {
+        let new_architecture = Connectivity::from_weighted_edges(&setup_weighted());
+        assert_eq!(
+            new_architecture
+                .get_cx_ladder(&[0, 1, 2, 4, 5], &1)
+                .unwrap(),
+            vec![(1, 2), (2, 3), (3, 5), (3, 4), (5, 0)]
+        );
     }
 
     #[test]
@@ -414,6 +431,19 @@ mod tests {
                 .unwrap()
                 .len(),
             2
+        );
+    }
+
+    #[test]
+    fn test_cx_ladder_weighted_small_triangle() {
+        let new_architecture = Connectivity::from_weighted_edges(&setup_weighted());
+        assert_eq!(
+            new_architecture.get_cx_ladder(&[2, 3, 4], &2).unwrap(),
+            vec![(2, 3), (3, 4)]
+        );
+        assert_eq!(
+            new_architecture.get_cx_ladder(&[2, 3, 4], &4).unwrap(),
+            vec![(4, 3), (3, 2)]
         );
     }
 
