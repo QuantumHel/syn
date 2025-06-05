@@ -229,22 +229,35 @@ impl Architecture for Connectivity {
         &self.non_cutting
     }
 
+    /// Obtain cx ladder that is architecture conforming that is rooted at `root`
     fn get_cx_ladder(
         &self,
         nodes: &[GraphIndex],
         root: &GraphIndex,
     ) -> Result<Vec<(usize, usize)>, LadderError> {
+        let mut nodes = nodes.to_vec();
         let terminals: Vec<_> = self
             .graph
-            .node_indices()
-            .filter(|node_index| nodes.contains(&node_index.index()))
+            .node_references()
+            .filter_map(|(node_index, weight)| {
+                if nodes.contains(weight) {
+                    nodes.retain(|&x| x != *weight);
+                    Some(node_index)
+                } else {
+                    None
+                }
+            })
             .collect();
+
+        if !nodes.is_empty() {
+            return Err(LadderError::NodesNotFound(nodes));
+        }
 
         let tree = steiner_tree(&self.graph, &terminals);
 
         let root_node = tree
-            .node_indices()
-            .find(|item| item.index() == *root)
+            .node_references()
+            .find_map(|(item, weight)| if weight == root { Some(item) } else { None })
             .ok_or(LadderError::RootNotFound)?;
 
         let mut bfs = Bfs::new(&tree, root_node);
@@ -256,7 +269,10 @@ impl Architecture for Connectivity {
             for neighbor in tree.neighbors(node) {
                 if !visited.is_visited(&neighbor) {
                     visited.visit(neighbor);
-                    edge_list.push((node.index(), neighbor.index()));
+                    edge_list.push((
+                        *self.graph.node_weight(node).unwrap(),
+                        *self.graph.node_weight(neighbor).unwrap(),
+                    ));
                 }
             }
         }
@@ -367,6 +383,19 @@ mod tests {
                 .get_cx_ladder(&[1, 2, 3, 4], &42)
                 .expect_err("Should return a Error that the root was not found"),
             LadderError::RootNotFound
+        );
+    }
+
+    #[test]
+    fn test_cx_ladder_error() {
+        let new_architecture = Connectivity::from_edges(&setup_simple());
+        assert_eq!(
+            new_architecture
+                .get_cx_ladder(&[6, 1, 2, 3], &0)
+                .expect_err(
+                    "Should return an error that the nodes are not part of the architecture"
+                ),
+            LadderError::NodesNotFound(vec![6])
         );
     }
 
@@ -819,6 +848,29 @@ mod tests {
                 (5, 6),
                 (6, 7)
             ]
+        );
+    }
+
+    #[test]
+    fn test_disconnected_cx_ladder() {
+        let architecture = Connectivity::from_weighted_edges(&setup_weighted());
+        let new_architecture = architecture.disconnect(3);
+
+        assert_eq!(new_architecture.nodes(), vec![0, 1, 2, 4, 5]);
+        assert_eq!(new_architecture.node_ids(), vec![0, 1, 2, 3, 4]);
+
+        assert_eq!(
+            new_architecture.edges(),
+            vec![(0, 1), (0, 5), (1, 2), (1, 5), (2, 4), (4, 5)]
+        );
+        assert_eq!(
+            new_architecture.edge_ids(),
+            vec![(0, 1), (0, 4), (1, 2), (1, 4), (2, 3), (3, 4)]
+        );
+
+        assert_eq!(
+            new_architecture.get_cx_ladder(&[1, 2, 4, 5], &2).unwrap(),
+            vec![(2, 4), (2, 1), (1, 5)]
         );
     }
 }

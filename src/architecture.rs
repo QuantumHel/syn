@@ -7,6 +7,7 @@ type NodeWeight = usize;
 #[derive(Debug, PartialEq)]
 pub enum LadderError {
     RootNotFound,
+    NodesNotFound(Vec<GraphIndex>),
 }
 
 pub trait Architecture {
