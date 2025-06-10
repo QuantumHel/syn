@@ -234,6 +234,7 @@ dependencies = [
 name = "synpy"
 version = "0.1.0"
 dependencies = [
+ "bitvec",
  "pyo3",
  "syn 0.1.0",
 ]

@@ -64,3 +64,20 @@ def pycommand_to_tuple(cmd: PyCommand) -> tuple:
         return "CZ", cmd[0], cmd[1]
     else:
         raise ValueError("Unhandled PyCommand variant: " + str(type(cmd)))
+
+
+def pycommand_to_qasm(n_qubits: int, commands: list[PyCommand]) -> str:
+    out = [
+        "OPENQASM 2.0;",
+        'include "qelib1.inc";',
+        f"qreg q[{n_qubits}];",
+    ]
+
+    for command in commands:
+        op, *args = pycommand_to_tuple(command)
+        op = op.lower()
+        args = [f"q[{arg}]" for arg in args]
+        s = f'{op} {", ".join(args)};'
+        out.append(s)
+
+    return "\n".join(out)
