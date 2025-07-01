@@ -1,11 +1,32 @@
-use bitvec::prelude::BitVec;
+use bitvec::{prelude::BitVec, slice::BitSlice};
 use std::fmt;
 use std::iter::zip;
+use std::sync::RwLock;
 
-#[derive(Clone, PartialEq, Eq, Debug)]
+use super::PauliLetter;
+
+#[derive(Debug)]
 pub struct PauliString {
-    pub(super) x: BitVec,
-    pub(super) z: BitVec,
+    pub(super) x: RwLock<BitVec>,
+    pub(super) z: RwLock<BitVec>,
+}
+
+impl PartialEq for PauliString {
+    fn eq(&self, other: &Self) -> bool {
+        *self.x.read().unwrap() == *other.x.read().unwrap()
+            && *self.z.read().unwrap() == *other.z.read().unwrap()
+    }
+}
+
+impl Eq for PauliString {}
+
+impl Clone for PauliString {
+    fn clone(&self) -> Self {
+        PauliString {
+            x: RwLock::new(self.x.read().unwrap().clone()),
+            z: RwLock::new(self.z.read().unwrap().clone()),
+        }
+    }
 }
 
 impl PauliString {
@@ -13,8 +34,8 @@ impl PauliString {
     pub fn new(pauli_x: BitVec, pauli_z: BitVec) -> Self {
         assert!(pauli_x.len() == pauli_z.len());
         PauliString {
-            x: pauli_x,
-            z: pauli_z,
+            x: RwLock::new(pauli_x),
+            z: RwLock::new(pauli_z),
         }
     }
 
@@ -48,51 +69,96 @@ impl PauliString {
     }
 
     pub fn x(&self, i: usize) -> bool {
-        self.x[i]
+        self.x.read().unwrap()[i]
     }
 
     pub fn z(&self, i: usize) -> bool {
-        self.z[i]
+        self.z.read().unwrap()[i]
+    }
+
+    pub fn pauli(&self, i: usize) -> PauliLetter {
+        PauliLetter::new(self.x.read().unwrap()[i], self.z.read().unwrap()[i])
     }
 
     pub fn len(&self) -> usize {
-        self.x.len()
+        self.x.read().unwrap().len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.x.is_empty()
+        self.x.read().unwrap().is_empty()
     }
 
-    pub(super) fn s(&mut self) {
-        self.z ^= &self.x;
+    pub(crate) fn s(&self) {
+        *self.z.write().unwrap() ^= self.x.read().unwrap().as_bitslice();
     }
 
-    pub(super) fn v(&mut self) {
-        self.x ^= &self.z;
+    pub(crate) fn masked_s(&self, mask: &BitSlice) {
+        let mut mask = mask.to_owned();
+        mask &= self.x.read().unwrap().clone();
+        *self.z.write().unwrap() ^= &mask;
     }
 
-    pub(super) fn h(&mut self) {
-        (self.x, self.z) = (self.z.clone(), self.x.clone());
+    pub(crate) fn v(&self) {
+        *self.x.write().unwrap() ^= self.z.read().unwrap().as_bitslice();
     }
 
-    pub(super) fn y_bitmask(&self) -> BitVec {
-        let mut mask = self.x.clone();
-        mask &= &self.z;
+    pub(crate) fn masked_v(&self, mask: &BitSlice) {
+        let mut mask = mask.to_owned();
+        mask &= self.z.read().unwrap().as_bitslice();
+        *self.x.write().unwrap() ^= &mask;
+    }
+
+    #[allow(dead_code)]
+    pub(crate) fn h(&self) {
+        let tmp = self.z.read().unwrap().clone();
+        *self.z.write().unwrap() = self.x.read().unwrap().clone();
+        *self.x.write().unwrap() = tmp;
+    }
+
+    #[allow(dead_code)]
+    pub(crate) fn masked_h(&self, mask: &BitSlice) {
+        let mut mask = mask.to_owned();
+        *self.x.write().unwrap() ^= self.z.read().unwrap().as_bitslice();
+        mask &= self.x.read().unwrap().as_bitslice();
+        *self.z.write().unwrap() ^= &mask;
+        *self.x.write().unwrap() ^= self.z.read().unwrap().as_bitslice();
+    }
+
+    pub(crate) fn y_bitmask(&self) -> BitVec {
+        let mut mask = self.x.read().unwrap().clone();
+        mask &= self.z.read().unwrap().as_bitslice();
+        mask
+    }
+
+    pub(crate) fn masked_y_bitmask(&self, mask: &BitSlice) -> BitVec {
+        let mut mask = mask.to_owned();
+        mask &= self.x.read().unwrap().as_bitslice();
+        mask &= self.z.read().unwrap().as_bitslice();
         mask
     }
 }
 
-pub(super) fn cx(control: &mut PauliString, target: &mut PauliString) {
+pub(crate) fn cx(control: &PauliString, target: &PauliString) {
     assert!(control.len() == target.len());
-    target.x ^= &control.x;
-    control.z ^= &target.z;
+    *target.x.write().unwrap() ^= control.x.read().unwrap().as_bitslice();
+    *control.z.write().unwrap() ^= target.z.read().unwrap().as_bitslice();
+}
+
+pub(crate) fn masked_cx(control: &PauliString, target: &PauliString, mask: &BitSlice) {
+    assert!(control.len() == target.len());
+    let mut x_mask = mask.to_owned();
+    let mut z_mask = mask.to_owned();
+    x_mask &= control.x.read().unwrap().as_bitslice();
+    z_mask &= target.z.read().unwrap().as_bitslice();
+    *target.x.write().unwrap() ^= &x_mask;
+    *control.z.write().unwrap() ^= &z_mask;
 }
 
 impl fmt::Display for PauliString {
     // This trait requires `fmt` with this exact signature.
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut pauli_str = String::new();
-        for (x, z) in zip(self.x.iter(), self.z.iter()) {
+        for (x, z) in zip(self.x.read().unwrap().iter(), self.z.read().unwrap().iter()) {
             match (*x, *z) {
                 (false, false) => pauli_str.push('I'),
                 (false, true) => pauli_str.push('Z'),
@@ -102,7 +168,6 @@ impl fmt::Display for PauliString {
             pauli_str.push(' ');
         }
         pauli_str.pop();
-        // pauli_str.push_str("]");
         write!(f, "{}", pauli_str)
     }
 }
@@ -110,8 +175,8 @@ impl fmt::Display for PauliString {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bitvec::bitvec;
     use bitvec::prelude::Lsb0;
+    use bitvec::{bits, bitvec};
 
     #[test]
     fn test_from_basis_int() {
@@ -119,8 +184,8 @@ mod tests {
         let length = 5;
 
         let paulivec = PauliString::from_basis_int(i, length);
-        assert!(paulivec.x.get(i).unwrap());
-        assert!(paulivec.z.get(i + length).unwrap());
+        assert!(paulivec.x.read().unwrap().get(i).unwrap());
+        assert!(paulivec.z.read().unwrap().get(i + length).unwrap());
     }
 
     #[test]
@@ -137,8 +202,8 @@ mod tests {
         let paulivec = PauliString::from_text(pauli_string);
         let x_ref = bitvec![0, 1, 1, 0];
         let z_ref = bitvec![0, 0, 1, 1];
-        assert_eq!(paulivec.x, x_ref);
-        assert_eq!(paulivec.z, z_ref);
+        assert_eq!(paulivec.x.read().unwrap().as_bitslice(), &x_ref);
+        assert_eq!(paulivec.z.read().unwrap().as_bitslice(), &z_ref);
     }
 
     #[test]
@@ -155,29 +220,84 @@ mod tests {
 
     #[test]
     fn test_pauli_string_s() {
-        let mut paulivec = PauliString::from_text("IXYZ");
+        let paulivec = PauliString::from_text("IXYZ");
         paulivec.s();
         let paulivec_ref = PauliString::from_text("IYXZ");
-        assert!(paulivec.x == paulivec_ref.x);
-        assert!(paulivec.z == paulivec_ref.z);
+
+        assert_eq!(paulivec, paulivec_ref);
     }
 
     #[test]
     fn test_pauli_string_v() {
-        let mut paulivec = PauliString::from_text("IXYZ");
+        let paulivec = PauliString::from_text("IXYZ");
         paulivec.v();
         let paulivec_ref = PauliString::from_text("IXZY");
-        assert!(paulivec.x == paulivec_ref.x);
-        assert!(paulivec.z == paulivec_ref.z);
+
+        assert_eq!(paulivec, paulivec_ref);
     }
 
     #[test]
     fn test_pauli_string_h() {
-        let mut paulivec = PauliString::from_text("IXYZ");
+        let paulivec = PauliString::from_text("IXYZ");
         paulivec.h();
         let paulivec_ref = PauliString::from_text("IZYX");
-        assert!(paulivec.x == paulivec_ref.x);
-        assert!(paulivec.z == paulivec_ref.z);
+
+        assert_eq!(paulivec, paulivec_ref);
+    }
+
+    #[test]
+    fn test_pauli_string_masked_s() {
+        let paulivec = PauliString::from_text("IXYZIXYZ");
+        let mask = bits![usize, Lsb0; 0, 0, 0, 0, 1, 1, 1, 1];
+        paulivec.masked_s(mask);
+        let paulivec_ref = PauliString::from_text("IXYZIYXZ");
+
+        assert_eq!(paulivec, paulivec_ref);
+    }
+
+    #[test]
+    fn test_pauli_string_masked_v() {
+        let paulivec = PauliString::from_text("IXYZIXYZ");
+        let mask = bits![usize, Lsb0; 0, 0, 0, 0, 1, 1, 1, 1];
+        paulivec.masked_v(mask);
+        let paulivec_ref = PauliString::from_text("IXYZIXZY");
+
+        assert_eq!(paulivec, paulivec_ref);
+    }
+
+    #[test]
+    fn test_pauli_string_masked_h() {
+        let paulivec = PauliString::from_text("IXYZIXYZ");
+        let mask = bits![usize, Lsb0; 0, 0, 0, 0, 1, 1, 1, 1];
+        paulivec.masked_h(mask);
+        let paulivec_ref = PauliString::from_text("IXYZIZYX");
+
+        assert_eq!(paulivec, paulivec_ref);
+    }
+
+    #[test]
+    fn test_pauli_string_cx() {
+        let control = PauliString::from_text("IIIIXXXXYYYYZZZZ");
+        let target = PauliString::from_text("IXYZIXYZIXYZIXYZ");
+        cx(&control, &target);
+        let control_ref = PauliString::from_text("IIZZXXYYYYXXZZII");
+        let target_ref = PauliString::from_text("IXYZXIZYXIZYIXYZ");
+
+        assert_eq!(control, control_ref);
+        assert_eq!(target, target_ref);
+    }
+
+    #[test]
+    fn test_pauli_string_masked_cx() {
+        let control = PauliString::from_text("IIIIXXXXYYYYZZZZIIIIXXXXYYYYZZZZ");
+        let target = PauliString::from_text("IXYZIXYZIXYZIXYZIXYZIXYZIXYZIXYZ");
+        let mask = bits![usize, Lsb0; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
+        masked_cx(&control, &target, mask);
+        let control_ref = PauliString::from_text("IIIIXXXXYYYYZZZZIIZZXXYYYYXXZZII");
+        let target_ref = PauliString::from_text("IXYZIXYZIXYZIXYZIXYZXIZYXIZYIXYZ");
+
+        assert_eq!(control, control_ref);
+        assert_eq!(target, target_ref);
     }
 
     #[test]

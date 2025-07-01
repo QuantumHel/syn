@@ -1,0 +1,39 @@
+[build-system]
+requires = ["maturin>=1.0,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "synpy"
+version = "0.1.0"
+
+[tool.maturin]
+python-source = "python"
+bindings = "pyo3"
+features = ["pyo3/extension-module"]
+module-name = "synpy.synpy_rust"
+include = [{ path = "path/**/*", format = "sdist" }]
+
+[project.optional-dependencies]
+pauliopt = [
+    "pauliopt @ git+https://github.com/hashberg-io/pauliopt.git#main"
+]
+all = [
+    "pauliopt @ git+https://github.com/hashberg-io/pauliopt.git#main"
+]
+
+[tool.mypy]
+python_version = "3.12"
+disallow_untyped_defs = true
+check_untyped_defs = true
+ignore_missing_imports = true # TODO fixme
+
+
+[tool.ruff]
+line-length = 150
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W"]
+
+[tool.ruff.format]
+quote-style = "double"

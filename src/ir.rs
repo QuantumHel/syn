@@ -1,7 +1,8 @@
-use crate::IndexType;
+use crate::{data_structures::HasAdjoint, IndexType};
 
 pub mod clifford_tableau;
 pub mod pauli_exponential;
+pub mod pauli_polynomial;
 
 pub trait CliffordGates {
     fn s(&mut self, target: IndexType);
@@ -20,4 +21,15 @@ pub trait Gates {
     fn rx(&mut self, target: IndexType, angle: f64);
     fn ry(&mut self, target: IndexType, angle: f64);
     fn rz(&mut self, target: IndexType, angle: f64);
+}
+
+pub trait AdjointSynthesizer<From, To, Returns = ()>
+where
+    From: HasAdjoint,
+{
+    fn synthesize_adjoint(&mut self, ir: From, external_repr: &mut To) -> Returns;
+}
+
+pub trait Synthesizer<From, To, Returns = ()> {
+    fn synthesize(&mut self, ir: From, repr: &mut To) -> Returns;
 }

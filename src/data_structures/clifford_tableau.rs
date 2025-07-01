@@ -4,12 +4,13 @@ use std::fmt;
 use std::iter::{self, zip};
 use std::ops::Mul;
 
+use super::HasAdjoint;
 use super::{
     pauli_string::{cx, PauliString},
     IndexType, PropagateClifford,
 };
 
-#[derive(PartialEq, Eq, Debug, Clone)]
+#[derive(PartialEq, Eq, Debug, Clone, Default)]
 pub struct CliffordTableau {
     // We keep track of the pauli letters per qubit not per stabilizer
     pauli_columns: Vec<PauliString>,
@@ -27,7 +28,8 @@ impl CliffordTableau {
         }
     }
 
-    pub fn from_parts(pauli_columns: Vec<PauliString>, signs: BitVec, size: usize) -> Self {
+    pub fn from_parts(pauli_columns: Vec<PauliString>, signs: BitVec) -> Self {
+        let size = pauli_columns[0].len() / 2;
         CliffordTableau {
             pauli_columns,
             signs,
@@ -60,27 +62,31 @@ impl CliffordTableau {
     /// Implements algorithms from https://doi.org/10.22331/q-2022-06-13-734 and Qiskit Clifford implementation
     pub(crate) fn prepend(&self, lhs: &Self) -> Self {
         let size = self.size();
-        let mut pauli_columns = vec![PauliString::from_text(&"I".repeat(2 * size)); size];
-
+        let pauli_columns = vec![PauliString::from_text(&"I".repeat(2 * size)); size];
         // Matrix-multiplication for M(rhs o self) = M(self) * M(rhs) as this is a row-permutation.
         // Loop re-order to be (k, i, j) as j ordering is contiguous.
         for (k, rhs_pauli_column) in self.pauli_columns.iter().enumerate() {
             for i in 0..size {
-                pauli_columns[k].x ^=
-                    BitVec::repeat(rhs_pauli_column.x[i], 2 * size) & &lhs.pauli_columns[i].x;
-                pauli_columns[k].x ^= BitVec::repeat(rhs_pauli_column.x[i + size], 2 * size)
-                    & &lhs.pauli_columns[i].z;
-                pauli_columns[k].z ^=
-                    BitVec::repeat(rhs_pauli_column.z[i], 2 * size) & &lhs.pauli_columns[i].x;
-                pauli_columns[k].z ^= BitVec::repeat(rhs_pauli_column.z[i + size], 2 * size)
-                    & &lhs.pauli_columns[i].z;
+                *(pauli_columns[k].x.write().unwrap()) ^=
+                    BitVec::repeat(rhs_pauli_column.x.read().unwrap()[i], 2 * size)
+                        & lhs.pauli_columns[i].x.read().unwrap().as_bitslice();
+                *(pauli_columns[k].x.write().unwrap()) ^=
+                    BitVec::repeat(rhs_pauli_column.x.read().unwrap()[i + size], 2 * size)
+                        & lhs.pauli_columns[i].z.read().unwrap().as_bitslice();
+                *(pauli_columns[k].z.write().unwrap()) ^=
+                    BitVec::repeat(rhs_pauli_column.z.read().unwrap()[i], 2 * size)
+                        & lhs.pauli_columns[i].x.read().unwrap().as_bitslice();
+                *(pauli_columns[k].z.write().unwrap()) ^=
+                    BitVec::repeat(rhs_pauli_column.z.read().unwrap()[i + size], 2 * size)
+                        & lhs.pauli_columns[i].z.read().unwrap().as_bitslice();
             }
         }
 
         let mut i_factors = vec![0_usize; 2 * size];
         // Keep track of the inherent i factors of left-hand tableau (where there are Y's in tableau rows)
         for lhs_pauli_column in lhs.pauli_columns.iter() {
-            let local_sign = lhs_pauli_column.x.clone() & &lhs_pauli_column.z;
+            let local_sign = lhs_pauli_column.x.read().unwrap().clone()
+                & lhs_pauli_column.z.read().unwrap().as_bitslice();
             for (fact, sign) in zip(i_factors.iter_mut(), local_sign) {
                 *fact += sign as usize;
             }
@@ -94,13 +100,13 @@ impl CliffordTableau {
                 let mut x1_select = Vec::new();
                 let mut z1_select = Vec::new();
                 for (j, lhs_pauli_column) in lhs.pauli_columns.iter().enumerate() {
-                    if lhs_pauli_column.x[i] {
-                        x1_select.push(rhs_pauli_column.x[j]);
-                        z1_select.push(rhs_pauli_column.z[j])
+                    if lhs_pauli_column.x(i) {
+                        x1_select.push(rhs_pauli_column.x(j));
+                        z1_select.push(rhs_pauli_column.z(j))
                     }
-                    if lhs_pauli_column.z[i] {
-                        x1_select.push(rhs_pauli_column.x[j + size]);
-                        z1_select.push(rhs_pauli_column.z[j + size])
+                    if lhs_pauli_column.z(i) {
+                        x1_select.push(rhs_pauli_column.x(j + size));
+                        z1_select.push(rhs_pauli_column.z(j + size));
                     }
                 }
                 let x1_accumulator = x1_select
@@ -113,8 +119,8 @@ impl CliffordTableau {
 
                 let z1_accumulator = z1_select
                     .iter()
-                    .scan(false, |state, x| {
-                        *state ^= x;
+                    .scan(false, |state, z| {
+                        *state ^= z;
                         Some(*state)
                     })
                     .collect_vec();
@@ -136,8 +142,10 @@ impl CliffordTableau {
         // Contribution of combination of signs in rhs basis.
         // Calculate matrix vector M(lhs) * sign(rhs)
         for (j, lhs_pauli_column) in lhs.pauli_columns.iter().enumerate() {
-            new_signs ^= BitVec::repeat(self.signs[j], 2 * size) & &lhs_pauli_column.x;
-            new_signs ^= BitVec::repeat(self.signs[j + size], 2 * size) & &lhs_pauli_column.z;
+            new_signs ^= BitVec::repeat(self.signs[j], 2 * size)
+                & lhs_pauli_column.x.read().unwrap().as_bitslice();
+            new_signs ^= BitVec::repeat(self.signs[j + size], 2 * size)
+                & lhs_pauli_column.z.read().unwrap().as_bitslice();
         }
 
         // Get rid of `i` factors and convert to sign flips
@@ -156,37 +164,6 @@ impl CliffordTableau {
         }
     }
 
-    pub fn adjoint(&self) -> Self {
-        // Algorithm taken from https://algassert.com/post/2002
-        let size = self.size();
-        // Create new CliffordTableau entries
-
-        let mut new_columns = vec![PauliString::from_text(&"I".repeat(2 * size)); size];
-        (0..size).for_each(|i| {
-            for (j, pauli_column) in self.pauli_columns.iter().enumerate() {
-                let ((x1, z1), (x2, z2)) = reverse_flow(
-                    *pauli_column.x.get(i).unwrap(),
-                    *pauli_column.z.get(i).unwrap(),
-                    *pauli_column.x.get(i + size).unwrap(),
-                    *pauli_column.z.get(i + size).unwrap(),
-                );
-
-                new_columns[i].x.replace(j, x1);
-                new_columns[i].z.replace(j, z1);
-                new_columns[i].x.replace(j + size, x2);
-                new_columns[i].z.replace(j + size, z2);
-            }
-        });
-        let mut adjoint_table = CliffordTableau {
-            pauli_columns: new_columns,
-            signs: BitVec::repeat(false, 2 * size),
-            size,
-        };
-
-        adjoint_table.signs ^= (adjoint_table.compose(self)).signs;
-        adjoint_table
-    }
-
     pub fn permute(&mut self, permutation_vector: Vec<usize>) {
         assert_eq!(
             permutation_vector
@@ -201,6 +178,39 @@ impl CliffordTableau {
             .map(|a| a.0)
             .collect::<Vec<_>>();
         self.pauli_columns = sorted_pauli_columns;
+    }
+}
+
+impl HasAdjoint for CliffordTableau {
+    fn adjoint(&self) -> Self {
+        // Algorithm taken from https://algassert.com/post/2002
+        let size = self.size();
+        // Create new CliffordTableau entries
+
+        let new_columns = vec![PauliString::from_text(&"I".repeat(2 * size)); size];
+        (0..size).for_each(|i| {
+            for (j, pauli_column) in self.pauli_columns.iter().enumerate() {
+                let ((x1, z1), (x2, z2)) = reverse_flow(
+                    pauli_column.x(i),
+                    pauli_column.z(i),
+                    pauli_column.x(i + size),
+                    pauli_column.z(i + size),
+                );
+
+                new_columns[i].x.write().unwrap().replace(j, x1);
+                new_columns[i].z.write().unwrap().replace(j, z1);
+                new_columns[i].x.write().unwrap().replace(j + size, x2);
+                new_columns[i].z.write().unwrap().replace(j + size, z2);
+            }
+        });
+        let mut adjoint_table = CliffordTableau {
+            pauli_columns: new_columns,
+            signs: BitVec::repeat(false, 2 * size),
+            size,
+        };
+
+        adjoint_table.signs ^= (adjoint_table.compose(self)).signs;
+        adjoint_table
     }
 }
 
@@ -252,10 +262,10 @@ impl PropagateClifford for CliffordTableau {
         };
 
         let mut scratch = BitVec::repeat(true, 2 * n);
-        scratch ^= &target.x;
-        scratch ^= &control.z;
-        scratch &= &control.x;
-        scratch &= &target.z;
+        scratch ^= target.x.read().unwrap().as_bitslice();
+        scratch ^= control.z.read().unwrap().as_bitslice();
+        scratch &= control.x.read().unwrap().as_bitslice();
+        scratch &= target.z.read().unwrap().as_bitslice();
         self.signs ^= scratch;
 
         cx(control, target);
@@ -332,13 +342,13 @@ mod tests {
         let ct = CliffordTableau::new(ct_size);
         let x_1 = bitvec![1, 0, 0, 0, 0, 0];
         let z_1 = bitvec![0, 0, 0, 1, 0, 0];
-        let pauli_1 = PauliString { x: x_1, z: z_1 };
+        let pauli_1 = PauliString::new(x_1, z_1);
         let x_2 = bitvec![0, 1, 0, 0, 0, 0];
         let z_2 = bitvec![0, 0, 0, 0, 1, 0];
-        let pauli_2 = PauliString { x: x_2, z: z_2 };
+        let pauli_2 = PauliString::new(x_2, z_2);
         let x_3 = bitvec![0, 0, 1, 0, 0, 0];
         let z_3 = bitvec![0, 0, 0, 0, 0, 1];
-        let pauli_3 = PauliString { x: x_3, z: z_3 };
+        let pauli_3 = PauliString::new(x_3, z_3);
         let signs = bitvec![0, 0, 0, 0, 0, 0];
 
         let clifford_tableau_ref = CliffordTableau {
@@ -358,7 +368,7 @@ mod tests {
         let x_1 = bitvec![0, 1, 0, 0, 0, 0];
         let z_1 = bitvec![1, 1, 0, 0, 1, 1];
 
-        let pauli_1 = PauliString { x: x_1, z: z_1 };
+        let pauli_1 = PauliString::new(x_1, z_1);
 
         // qubit 2x: ZIX
         // qubit 2z: XII
@@ -366,14 +376,14 @@ mod tests {
         let x_2 = bitvec![0, 0, 1, 1, 0, 0];
         let z_2 = bitvec![1, 0, 0, 0, 0, 0];
 
-        let pauli_2 = PauliString { x: x_2, z: z_2 };
+        let pauli_2 = PauliString::new(x_2, z_2);
 
         // qubit 3x: ZYY
         // qubit 3z: IIZ
 
         let x_3 = bitvec![0, 1, 1, 0, 0, 0];
         let z_3 = bitvec![1, 1, 1, 0, 0, 1];
-        let pauli_3 = PauliString { x: x_3, z: z_3 };
+        let pauli_3 = PauliString::new(x_3, z_3);
 
         let signs = bitvec![0, 1, 0, 1, 0, 0];
         CliffordTableau {
@@ -391,26 +401,26 @@ mod tests {
         // qubit 1z: YYZX
         let x_1 = bitvec![0, 0, 1, 0, 1, 1, 0, 1];
         let z_1 = bitvec![1, 1, 0, 0, 1, 1, 1, 0];
-        let pauli_1 = PauliString { x: x_1, z: z_1 };
+        let pauli_1 = PauliString::new(x_1, z_1);
 
         // qubit 2x: IZZZ
         // qubit 2z: YYIZ
         let x_2 = bitvec![0, 0, 0, 0, 1, 1, 0, 0];
         let z_2 = bitvec![0, 1, 1, 1, 1, 1, 0, 1];
-        let pauli_2 = PauliString { x: x_2, z: z_2 };
+        let pauli_2 = PauliString::new(x_2, z_2);
 
         // qubit 3x: YYXX
         // qubit 3z: IXXX
         let x_3 = bitvec![1, 1, 1, 1, 0, 1, 1, 1];
         let z_3 = bitvec![1, 1, 0, 0, 0, 0, 0, 0];
-        let pauli_3 = PauliString { x: x_3, z: z_3 };
+        let pauli_3 = PauliString::new(x_3, z_3);
 
         // qubit 3x: ZZIX
         // qubit 3z: ZZXZ
         let x_4 = bitvec![0, 0, 0, 1, 0, 0, 1, 0];
         let z_4 = bitvec![1, 1, 0, 0, 1, 1, 0, 1];
 
-        let pauli_4 = PauliString { x: x_4, z: z_4 };
+        let pauli_4 = PauliString::new(x_4, z_4);
 
         let signs = bitvec![1, 1, 1, 0, 1, 1, 0, 1];
         CliffordTableau {
@@ -437,19 +447,19 @@ mod tests {
         // qubit 1z: IZZ
         let z_1 = bitvec![1, 0, 0, 0, 1, 1];
         let x_1 = bitvec![0, 1, 0, 0, 0, 0];
-        let pauli_1_ref = PauliString { x: x_1, z: z_1 };
+        let pauli_1_ref = PauliString::new(x_1, z_1);
 
         // qubit 2x: ZIX
         // qubit 2z: XII
         let z_2 = bitvec![1, 0, 0, 0, 0, 0];
         let x_2 = bitvec![0, 0, 1, 1, 0, 0];
-        let pauli_2_ref = PauliString { x: x_2, z: z_2 };
+        let pauli_2_ref = PauliString::new(x_2, z_2);
 
         // qubit 3x: ZYY
         // qubit 3z: IIZ
         let z_3 = bitvec![1, 1, 1, 0, 0, 1];
         let x_3 = bitvec![0, 1, 1, 0, 0, 0];
-        let pauli_3_ref = PauliString { x: x_3, z: z_3 };
+        let pauli_3_ref = PauliString::new(x_3, z_3);
 
         let signs_ref = bitvec![0, 0, 0, 1, 0, 0];
 
@@ -479,19 +489,19 @@ mod tests {
         // qubit 1z: IYY
         let z_1 = bitvec![1, 1, 0, 0, 1, 1];
         let x_1 = bitvec![1, 0, 0, 0, 1, 1];
-        let pauli_1_ref = PauliString { x: x_1, z: z_1 };
+        let pauli_1_ref = PauliString::new(x_1, z_1);
 
         // qubit 2x: ZIX
         // qubit 2z: XII
         let z_2 = bitvec![1, 0, 0, 0, 0, 0];
         let x_2 = bitvec![0, 0, 1, 1, 0, 0];
-        let pauli_2_ref = PauliString { x: x_2, z: z_2 };
+        let pauli_2_ref = PauliString::new(x_2, z_2);
 
         // qubit 3x: ZYY
         // qubit 3z: IIZ
         let z_3 = bitvec![1, 1, 1, 0, 0, 1];
         let x_3 = bitvec![0, 1, 1, 0, 0, 0];
-        let pauli_3_ref = PauliString { x: x_3, z: z_3 };
+        let pauli_3_ref = PauliString::new(x_3, z_3);
 
         let signs_ref = bitvec![1, 1, 0, 1, 1, 1];
         let clifford_tableau_ref = CliffordTableau {
@@ -521,19 +531,19 @@ mod tests {
         // qubit 1z: IZZ
         let z_1 = bitvec![1, 0, 0, 0, 1, 1];
         let x_1 = bitvec![0, 1, 0, 0, 0, 0];
-        let pauli_1_ref = PauliString { x: x_1, z: z_1 };
+        let pauli_1_ref = PauliString::new(x_1, z_1);
 
         // qubit 2x: ZIY
         // qubit 2z: YII
         let z_2 = bitvec![1, 0, 1, 1, 0, 0];
         let x_2 = bitvec![0, 0, 1, 1, 0, 0];
-        let pauli_2_ref = PauliString { x: x_2, z: z_2 };
+        let pauli_2_ref = PauliString::new(x_2, z_2);
 
         // qubit 3x: ZYY
         // qubit 3z: IIZ
         let z_3 = bitvec![1, 1, 1, 0, 0, 1];
         let x_3 = bitvec![0, 1, 1, 0, 0, 0];
-        let pauli_3_ref = PauliString { x: x_3, z: z_3 };
+        let pauli_3_ref = PauliString::new(x_3, z_3);
 
         let signs_ref = bitvec![0, 1, 1, 0, 0, 0];
 
@@ -564,19 +574,19 @@ mod tests {
         // qubit 1z: IYY
         let z_1 = bitvec![1, 1, 0, 0, 1, 1];
         let x_1 = bitvec![1, 0, 0, 0, 1, 1];
-        let pauli_1_ref = PauliString { x: x_1, z: z_1 };
+        let pauli_1_ref = PauliString::new(x_1, z_1);
 
         // qubit 2x: YIX
         // qubit 2z: XII
         let z_2 = bitvec![1, 0, 0, 0, 0, 0];
         let x_2 = bitvec![1, 0, 1, 1, 0, 0];
-        let pauli_2_ref = PauliString { x: x_2, z: z_2 };
+        let pauli_2_ref = PauliString::new(x_2, z_2);
 
         // qubit 3x: ZYY
         // qubit 3z: IIZ
         let z_3 = bitvec![1, 1, 1, 0, 0, 1];
         let x_3 = bitvec![0, 1, 1, 0, 0, 0];
-        let pauli_3_ref = PauliString { x: x_3, z: z_3 };
+        let pauli_3_ref = PauliString::new(x_3, z_3);
 
         let signs_ref = bitvec![0, 0, 0, 1, 0, 0];
 
@@ -607,19 +617,19 @@ mod tests {
         // qubit 1z: IXX
         let z_1 = bitvec![0, 1, 0, 0, 0, 0];
         let x_1 = bitvec![1, 1, 0, 0, 1, 1];
-        let pauli_1_ref = PauliString { x: x_1, z: z_1 };
+        let pauli_1_ref = PauliString::new(x_1, z_1);
 
         // qubit 2x: XIZ
         // qubit 2z: ZII
         let z_2 = bitvec![0, 0, 1, 1, 0, 0];
         let x_2 = bitvec![1, 0, 0, 0, 0, 0];
-        let pauli_2_ref = PauliString { x: x_2, z: z_2 };
+        let pauli_2_ref = PauliString::new(x_2, z_2);
 
         // qubit 3x: ZYY
         // qubit 3z: IIZ
         let z_3 = bitvec![1, 1, 1, 0, 0, 1];
         let x_3 = bitvec![0, 1, 1, 0, 0, 0];
-        let pauli_3_ref = PauliString { x: x_3, z: z_3 };
+        let pauli_3_ref = PauliString::new(x_3, z_3);
 
         let signs_ref = bitvec![0, 0, 0, 1, 0, 0];
         let clifford_tableau_ref = CliffordTableau {
@@ -648,19 +658,19 @@ mod tests {
         // qubit 1z: IZZ
         let z_1 = bitvec![1, 1, 0, 0, 1, 1];
         let x_1 = bitvec![0, 1, 0, 0, 0, 0];
-        let pauli_1_ref = PauliString { x: x_1, z: z_1 };
+        let pauli_1_ref = PauliString::new(x_1, z_1);
 
         // qubit 2x: ZIX
         // qubit 2z: XII
         let z_2 = bitvec![1, 0, 0, 0, 0, 0];
         let x_2 = bitvec![0, 0, 1, 1, 0, 0];
-        let pauli_2_ref = PauliString { x: x_2, z: z_2 };
+        let pauli_2_ref = PauliString::new(x_2, z_2);
 
         // qubit 3x: ZYY
         // qubit 3z: IIZ
         let z_3 = bitvec![1, 1, 1, 0, 0, 1];
         let x_3 = bitvec![0, 1, 1, 0, 0, 0];
-        let pauli_3_ref = PauliString { x: x_3, z: z_3 };
+        let pauli_3_ref = PauliString::new(x_3, z_3);
 
         let signs_ref = bitvec![1, 0, 0, 1, 1, 1];
         let clifford_tableau_ref = CliffordTableau {
@@ -689,19 +699,19 @@ mod tests {
         // qubit 1z: IZZ
         let z_1 = bitvec![1, 1, 0, 0, 1, 1];
         let x_1 = bitvec![0, 1, 0, 0, 0, 0];
-        let pauli_1_ref = PauliString { x: x_1, z: z_1 };
+        let pauli_1_ref = PauliString::new(x_1, z_1);
 
         // qubit 2x: ZIX
         // qubit 2z: XII
         let z_2 = bitvec![1, 0, 0, 0, 0, 0];
         let x_2 = bitvec![0, 0, 1, 1, 0, 0];
-        let pauli_2_ref = PauliString { x: x_2, z: z_2 };
+        let pauli_2_ref = PauliString::new(x_2, z_2);
 
         // qubit 3x: ZYY
         // qubit 3z: IIZ
         let z_3 = bitvec![1, 1, 1, 0, 0, 1];
         let x_3 = bitvec![0, 1, 1, 0, 0, 0];
-        let pauli_3_ref = PauliString { x: x_3, z: z_3 };
+        let pauli_3_ref = PauliString::new(x_3, z_3);
 
         let signs_ref = bitvec![1, 1, 0, 1, 1, 1];
         let clifford_tableau_ref = CliffordTableau {
@@ -730,19 +740,19 @@ mod tests {
         // qubit 1z: IZZ
         let z_1 = bitvec![1, 1, 0, 0, 1, 1];
         let x_1 = bitvec![0, 1, 0, 0, 0, 0];
-        let pauli_1_ref = PauliString { x: x_1, z: z_1 };
+        let pauli_1_ref = PauliString::new(x_1, z_1);
 
         // qubit 2x: ZIX
         // qubit 2z: XII
         let z_2 = bitvec![1, 0, 0, 0, 0, 0];
         let x_2 = bitvec![0, 0, 1, 1, 0, 0];
-        let pauli_2_ref = PauliString { x: x_2, z: z_2 };
+        let pauli_2_ref = PauliString::new(x_2, z_2);
 
         // qubit 3x: ZYY
         // qubit 3z: IIZ
         let z_3 = bitvec![1, 1, 1, 0, 0, 1];
         let x_3 = bitvec![0, 1, 1, 0, 0, 0];
-        let pauli_3_ref = PauliString { x: x_3, z: z_3 };
+        let pauli_3_ref = PauliString::new(x_3, z_3);
 
         let signs_ref = bitvec![0, 0, 0, 1, 0, 0];
         let clifford_tableau_ref = CliffordTableau {
@@ -763,7 +773,7 @@ mod tests {
                 let z_1 = bitvec![0, 0, 0, 0];
                 let x_1 = bitvec![0, 0, 0, 0];
 
-                PauliString { x: x_1, z: z_1 }
+                PauliString::new(x_1, z_1)
             }
             'x' => {
                 // qubit 1x: XX
@@ -771,7 +781,7 @@ mod tests {
                 let z_1 = bitvec![0, 0, 0, 0];
                 let x_1 = bitvec![1, 1, 1, 1];
 
-                PauliString { x: x_1, z: z_1 }
+                PauliString::new(x_1, z_1)
             }
             'y' => {
                 // qubit 1x: YY
@@ -779,7 +789,7 @@ mod tests {
                 let z_1 = bitvec![1, 1, 1, 1];
                 let x_1 = bitvec![1, 1, 1, 1];
 
-                PauliString { x: x_1, z: z_1 }
+                PauliString::new(x_1, z_1)
             }
             'z' => {
                 // qubit 1x: ZZ
@@ -787,7 +797,7 @@ mod tests {
                 let z_1 = bitvec![1, 1, 1, 1];
                 let x_1 = bitvec![0, 0, 0, 0];
 
-                PauliString { x: x_1, z: z_1 }
+                PauliString::new(x_1, z_1)
             }
             _ => panic!("Pauli letter not recognized"),
         };
@@ -797,7 +807,7 @@ mod tests {
         let z_2 = bitvec![0, 0, 1, 1];
         let x_2 = bitvec![0, 1, 1, 0];
 
-        let pauli_2_ref = PauliString { x: x_2, z: z_2 };
+        let pauli_2_ref = PauliString::new(x_2, z_2);
 
         let signs_ref = bitvec![0, 0, 0, 0];
         CliffordTableau {
@@ -823,12 +833,12 @@ mod tests {
         //qubit 1z: ZZ
         let z_1 = bitvec![0, 0, 1, 1];
         let x_1 = bitvec![0, 0, 0, 0];
-        let pauli_1 = PauliString { x: x_1, z: z_1 };
+        let pauli_1 = PauliString::new(x_1, z_1);
         //qubit 1x: IX
         //qubit 1z: YZ
         let z_2 = bitvec![0, 0, 1, 1];
         let x_2 = bitvec![0, 1, 1, 0];
-        let pauli_2 = PauliString { x: x_2, z: z_2 };
+        let pauli_2 = PauliString::new(x_2, z_2);
 
         let signs = bitvec![0, 0, 0, 0];
         let clifford_tableau_ref = CliffordTableau {
@@ -836,7 +846,7 @@ mod tests {
             signs,
             size: 2,
         };
-        assert_eq!(clifford_tableau_ref, ct);
+        assert_eq!(ct, clifford_tableau_ref);
     }
 
     #[test]
@@ -854,12 +864,12 @@ mod tests {
         //qubit 1z: YY
         let z_1 = bitvec![0, 0, 1, 1];
         let x_1 = bitvec![1, 1, 1, 1];
-        let pauli_1 = PauliString { x: x_1, z: z_1 };
+        let pauli_1 = PauliString::new(x_1, z_1);
         //qubit 2x: XI
         //qubit 2z: ZY
         let z_2 = bitvec![0, 0, 1, 1];
         let x_2 = bitvec![1, 0, 0, 1];
-        let pauli_2 = PauliString { x: x_2, z: z_2 };
+        let pauli_2 = PauliString::new(x_2, z_2);
 
         let signs = bitvec![0, 0, 0, 1];
         let clifford_tableau_ref = CliffordTableau {
@@ -867,7 +877,7 @@ mod tests {
             signs,
             size: 2,
         };
-        assert_eq!(clifford_tableau_ref, ct);
+        assert_eq!(ct, clifford_tableau_ref);
     }
 
     #[test]
@@ -885,12 +895,12 @@ mod tests {
         //qubit 1z: XX
         let z_1 = bitvec![1, 1, 0, 0];
         let x_1 = bitvec![1, 1, 1, 1];
-        let pauli_1 = PauliString { x: x_1, z: z_1 };
+        let pauli_1 = PauliString::new(x_1, z_1);
         //qubit 2x: XI
         //qubit 2z: ZY
         let z_2 = bitvec![0, 0, 1, 1];
         let x_2 = bitvec![1, 0, 0, 1];
-        let pauli_2 = PauliString { x: x_2, z: z_2 };
+        let pauli_2 = PauliString::new(x_2, z_2);
 
         let signs = bitvec![0, 0, 1, 0];
         let clifford_tableau_ref = CliffordTableau {
@@ -898,7 +908,7 @@ mod tests {
             signs,
             size: 2,
         };
-        assert_eq!(clifford_tableau_ref, ct);
+        assert_eq!(ct, clifford_tableau_ref);
     }
 
     #[test]
@@ -916,12 +926,12 @@ mod tests {
         //qubit 1z: II
         let z_1 = bitvec![1, 1, 0, 0];
         let x_1 = bitvec![0, 0, 0, 0];
-        let pauli_1 = PauliString { x: x_1, z: z_1 };
+        let pauli_1 = PauliString::new(x_1, z_1);
         //qubit 2x: IX
         //qubit 2z: YZ
         let z_2 = bitvec![0, 0, 1, 1];
         let x_2 = bitvec![0, 1, 1, 0];
-        let pauli_2 = PauliString { x: x_2, z: z_2 };
+        let pauli_2 = PauliString::new(x_2, z_2);
 
         let signs = bitvec![0, 0, 0, 0];
         let clifford_tableau_ref = CliffordTableau {
@@ -929,7 +939,7 @@ mod tests {
             signs,
             size: 2,
         };
-        assert_eq!(clifford_tableau_ref, ct);
+        assert_eq!(ct, clifford_tableau_ref);
     }
 
     #[test]
@@ -948,12 +958,12 @@ mod tests {
         //qubit 1z: ZI
         let z_1 = bitvec![0, 1, 1, 0];
         let x_1 = bitvec![0, 0, 0, 0];
-        let pauli_1 = PauliString { x: x_1, z: z_1 };
+        let pauli_1 = PauliString::new(x_1, z_1);
         //qubit 1x: IX
         //qubit 1z: YZ
         let z_2 = bitvec![0, 0, 1, 1];
         let x_2 = bitvec![0, 1, 1, 0];
-        let pauli_2 = PauliString { x: x_2, z: z_2 };
+        let pauli_2 = PauliString::new(x_2, z_2);
 
         let signs = bitvec![0, 0, 0, 0];
         let clifford_tableau_ref = CliffordTableau {
@@ -961,7 +971,7 @@ mod tests {
             signs,
             size: 2,
         };
-        assert_eq!(clifford_tableau_ref, ct);
+        assert_eq!(ct, clifford_tableau_ref);
     }
 
     #[test]
@@ -979,12 +989,12 @@ mod tests {
         //qubit 1z: YX
         let z_1 = bitvec![0, 1, 1, 0];
         let x_1 = bitvec![1, 1, 1, 1];
-        let pauli_1 = PauliString { x: x_1, z: z_1 };
+        let pauli_1 = PauliString::new(x_1, z_1);
         //qubit 1x: ZY
         //qubit 1z: XI
         let z_2 = bitvec![1, 1, 0, 0];
         let x_2 = bitvec![0, 1, 1, 0];
-        let pauli_2 = PauliString { x: x_2, z: z_2 };
+        let pauli_2 = PauliString::new(x_2, z_2);
 
         let signs = bitvec![0, 0, 1, 0];
         let clifford_tableau_ref = CliffordTableau {
@@ -992,7 +1002,7 @@ mod tests {
             signs,
             size: 2,
         };
-        assert_eq!(clifford_tableau_ref, ct);
+        assert_eq!(ct, clifford_tableau_ref);
     }
 
     #[test]
@@ -1010,12 +1020,12 @@ mod tests {
         //qubit 1z: XY
         let z_1 = bitvec![1, 0, 0, 1];
         let x_1 = bitvec![1, 1, 1, 1];
-        let pauli_1 = PauliString { x: x_1, z: z_1 };
+        let pauli_1 = PauliString::new(x_1, z_1);
         //qubit 2x: ZY
         //qubit 2z: XI
         let z_2 = bitvec![1, 1, 0, 0];
         let x_2 = bitvec![0, 1, 1, 0];
-        let pauli_2 = PauliString { x: x_2, z: z_2 };
+        let pauli_2 = PauliString::new(x_2, z_2);
 
         let signs = bitvec![0, 1, 0, 0];
         let clifford_tableau_ref = CliffordTableau {
@@ -1023,7 +1033,7 @@ mod tests {
             signs,
             size: 2,
         };
-        assert_eq!(clifford_tableau_ref, ct);
+        assert_eq!(ct, clifford_tableau_ref);
     }
 
     #[test]
@@ -1041,12 +1051,12 @@ mod tests {
         //qubit 1z: IZ
         let z_1 = bitvec![1, 0, 0, 1];
         let x_1 = bitvec![0, 0, 0, 0];
-        let pauli_1 = PauliString { x: x_1, z: z_1 };
+        let pauli_1 = PauliString::new(x_1, z_1);
         //qubit 2x: IX
         //qubit 2z: YZ
         let z_2 = bitvec![0, 0, 1, 1];
         let x_2 = bitvec![0, 1, 1, 0];
-        let pauli_2 = PauliString { x: x_2, z: z_2 };
+        let pauli_2 = PauliString::new(x_2, z_2);
 
         let signs = bitvec![0, 0, 0, 0];
         let clifford_tableau_ref = CliffordTableau {
@@ -1054,7 +1064,7 @@ mod tests {
             signs,
             size: 2,
         };
-        assert_eq!(clifford_tableau_ref, ct);
+        assert_eq!(ct, clifford_tableau_ref);
     }
 
     #[test]
@@ -1106,8 +1116,8 @@ mod tests {
         ref_ct.h(1);
         ref_ct.cx(1, 0);
 
-        assert_eq!(ref_ct, third);
-        assert_eq!(ref_ct, second_ct * first_ct);
+        assert_eq!(third, ref_ct);
+        assert_eq!(second_ct * first_ct, ref_ct);
     }
 
     #[test]
@@ -1154,11 +1164,11 @@ mod tests {
 
         let x_1 = bitvec![0, 0, 1, 1];
         let z_1 = bitvec![1, 0, 0, 0];
-        let pauli_1 = PauliString { x: x_1, z: z_1 };
+        let pauli_1 = PauliString::new(x_1, z_1);
 
         let x_2 = bitvec![1, 1, 0, 0];
         let z_2 = bitvec![0, 0, 0, 1];
-        let pauli_2 = PauliString { x: x_2, z: z_2 };
+        let pauli_2 = PauliString::new(x_2, z_2);
 
         let ct_signs = bitvec![1, 0, 0, 0];
         let ct_ref = CliffordTableau {
@@ -1173,12 +1183,22 @@ mod tests {
     }
 
     #[test]
+    fn test_clifford_tableau_simple_inverse() {
+        let mut ct = CliffordTableau::new(2);
+        ct.x(0);
+        ct.x(0);
+
+        let identity = CliffordTableau::new(2);
+        assert_eq!(identity, ct);
+    }
+
+    #[test]
     fn test_clifford_tableau_inverse_complex() {
         let ct = setup_sample_inverse_ct();
         let adjoint_ct = ct.adjoint();
         let identity = CliffordTableau::new(4);
 
-        assert_eq!(identity, ct * adjoint_ct);
+        assert_eq!(ct * adjoint_ct, identity);
     }
 
     #[test]

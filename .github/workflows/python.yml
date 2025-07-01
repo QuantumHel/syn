@@ -1,0 +1,38 @@
+name: Python
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          make python_project_setup
+          # We need to separately mock install our python library
+          cd synpy
+          pip install .
+          pip install "synpy[all]"
+          cd ..
+
+      - name: Run pre-commit hooks
+        run: pre-commit run -a
+
+      - name: Run security checks
+        run: make python_sec
+
+      - name: Run tests
+        run: pytest synpy/integration_tests

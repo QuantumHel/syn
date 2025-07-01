@@ -8,7 +8,9 @@ use petgraph::{
     graph::NodeIndex,
     visit::{IntoNodeReferences, NodeIndexable, NodeRef},
 };
+use std::borrow::Borrow;
 use std::collections::HashMap;
+use std::ops::Index;
 
 /// Get all the vertices in a graph that are non-cutting (won't make the graph disconnected)
 fn get_non_cutting_vertices(
@@ -190,7 +192,7 @@ impl Architecture for Connectivity {
             j < self.graph.node_count(),
             "architecture does not contain node {j}"
         );
-        self.distance[&(self.graph.from_index(i), self.graph.from_index(j))]
+        self.distance[&(self.graph.from_index(i), self.graph.from_index(j))] as usize
     }
 
     fn neighbors(&self, i: GraphIndex) -> Vec<usize> {

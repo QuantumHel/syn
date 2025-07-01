@@ -15,3 +15,16 @@ repos:
     hooks:
       - id: trailing-whitespace
       - id: check-merge-conflict
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.5.1
+    hooks:
+      - id: ruff
+        args: ["--config", "synpy/pyproject.toml", "--fix"]
+        files: ^synpy/
+      - id: ruff-format
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.6.1
+    hooks:
+      - id: mypy
+        args: ["--config-file", "synpy/pyproject.toml"]
+        files: ^synpy/
