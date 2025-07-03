@@ -348,7 +348,7 @@ checksum = "d6790f58c7ff633d8771f42965289203411a5e5c68388703c06e14f24770b41e"
 [[package]]
 name = "petgraph"
 version = "0.8.2"
-source = "git+ssh://github.com/keefehuang/petgraph#1cdbae4cecd2fb6591697eb8cba3d2c9a76c438e"
+source = "git+https://github.com/keefehuang/petgraph#1cdbae4cecd2fb6591697eb8cba3d2c9a76c438e"
 dependencies = [
  "fixedbitset",
  "hashbrown",
