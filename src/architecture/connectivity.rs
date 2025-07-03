@@ -32,7 +32,7 @@ pub struct Connectivity {
 impl Connectivity {
     pub fn new(num_qubits: usize) -> Self {
         let graph = StableUnGraph::with_capacity(num_qubits, 0);
-        
+
         Connectivity {
             graph,
             non_cutting: Default::default(),
@@ -232,7 +232,13 @@ impl Architecture for Connectivity {
 
         let root_node = tree
             .node_references()
-            .find_map(|(item, _)| if item.index() == *root { Some(item) } else { None })
+            .find_map(|(item, _)| {
+                if item.index() == *root {
+                    Some(item)
+                } else {
+                    None
+                }
+            })
             .ok_or(LadderError::RootNotFound)?;
 
         let mut bfs = Bfs::new(&tree, root_node);
@@ -244,10 +250,7 @@ impl Architecture for Connectivity {
             for neighbor in tree.neighbors(node) {
                 if !visited.is_visited(&neighbor) {
                     visited.visit(neighbor);
-                    edge_list.push((
-                        self.graph.to_index(node),
-                        self.graph.to_index(neighbor),
-                    ));
+                    edge_list.push((self.graph.to_index(node), self.graph.to_index(neighbor)));
                 }
             }
         }
@@ -256,15 +259,7 @@ impl Architecture for Connectivity {
 
     fn disconnect(&self, i: GraphIndex) -> Connectivity {
         let mut graph = self.graph.clone();
-        graph.retain_nodes(
-            |_, index| {
-                if index.index() == i {
-                    false
-                } else {
-                    true
-                }
-            }
-        );
+        graph.retain_nodes(|_, index| if index.index() == i { false } else { true });
         let non_cutting = get_non_cutting_vertices(&graph);
         let (distance, prev) = floyd_warshall_path(&graph, |e| *e.weight()).unwrap();
         let distance = distance.iter().map(|(k, v)| (*k, *v)).collect();
