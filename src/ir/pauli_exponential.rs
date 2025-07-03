@@ -4,10 +4,10 @@ use crate::data_structures::{CliffordTableau, HasAdjoint, PauliPolynomial};
 
 use crate::ir::{CliffordGates, Gates, Synthesizer};
 
+use crate::ir::clifford_tableau::CallbackCliffordSynthesizer;
+use crate::ir::clifford_tableau::NaiveCliffordSynthesizer;
 use crate::ir::{
-    clifford_tableau::{
-        CallbackCliffordSynthesizer, CliffordTableauSynthStrategy, NaiveCliffordSynthesizer,
-    },
+    clifford_tableau::CliffordTableauSynthStrategy,
     pauli_polynomial::{naive::NaivePauliPolynomialSynthesizer, PauliPolynomialSynthStrategy},
 };
 

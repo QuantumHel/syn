@@ -4,7 +4,6 @@ use crate::data_structures::{CliffordTableau, HasAdjoint};
 pub use custom_callback::CallbackCliffordSynthesizer;
 pub use naive::NaiveCliffordSynthesizer;
 
-
 mod custom_callback;
 mod helper;
 mod naive;
