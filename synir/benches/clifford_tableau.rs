@@ -10,8 +10,6 @@ use synir::ir::CliffordGates;
 use synir::ir::Synthesizer;
 use synir::IndexType;
 
-mod connectivity;
-
 #[derive(Debug, Default)]
 pub struct MockCircuit {
     commands: Vec<MockCommand>,
