@@ -1,4 +1,4 @@
-use std::{iter::zip, usize};
+use std::iter::zip;
 
 use crate::{
     architecture::{connectivity::Connectivity, Architecture},
