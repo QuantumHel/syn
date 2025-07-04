@@ -14,6 +14,7 @@ use crate::data_structures::PauliLetter;
 #[derive(PartialEq, Eq, Debug, Clone, Default)]
 pub struct CliffordTableau {
     // We keep track of the pauli letters per qubit not per stabilizer
+    // Each Pauli Column contains 2 BitStrings of length 2 * n and corresponds to all operators on one qubit (vertical)
     pauli_columns: Vec<PauliString>,
     signs: BitVec,
     size: usize, // https://quantumcomputing.stackexchange.com/questions/28740/tracking-the-signs-of-the-inverse-tableau
