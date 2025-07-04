@@ -254,7 +254,6 @@ fn test_prc_clifford_synthesis() {
 
     let mut ref_ct = parse_clifford_commands(3, mock.commands());
     ref_ct.permute(synthesizer.permutation());
-
     assert_eq!(clifford_tableau, ref_ct);
 }
 
