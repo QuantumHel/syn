@@ -9,6 +9,7 @@ use super::{
     pauli_string::{cx, PauliString},
     IndexType, PropagateClifford,
 };
+use crate::data_structures::PauliLetter;
 
 #[derive(PartialEq, Eq, Debug, Clone, Default)]
 pub struct CliffordTableau {
@@ -51,8 +52,32 @@ impl CliffordTableau {
         self.signs[n..].to_bitvec()
     }
 
+    pub(crate) fn destabilizer(&self, qubit: usize, index: usize) -> PauliLetter {
+        let n = self.size();
+        assert!(index < n && qubit < n);
+
+        PauliLetter::new(
+            self.pauli_columns[qubit].x(index),
+            self.pauli_columns[qubit].z(index),
+        )
+    }
+
+    pub(crate) fn stabilizer(&self, qubit: usize, index: usize) -> PauliLetter {
+        let n = self.size();
+        assert!(index < n && qubit < n);
+
+        PauliLetter::new(
+            self.pauli_columns[qubit].x(index + n),
+            self.pauli_columns[qubit].z(index + n),
+        )
+    }
+
     pub(crate) fn column(&self, i: usize) -> &PauliString {
         &self.pauli_columns[i]
+    }
+
+    pub(crate) fn columns(&self) -> &Vec<PauliString> {
+        &self.pauli_columns
     }
 
     pub(crate) fn compose(&self, rhs: &Self) -> Self {
@@ -164,7 +189,7 @@ impl CliffordTableau {
         }
     }
 
-    pub fn permute(&mut self, permutation_vector: Vec<usize>) {
+    pub fn permute(&mut self, permutation_vector: &[usize]) {
         assert_eq!(
             permutation_vector
                 .iter()
