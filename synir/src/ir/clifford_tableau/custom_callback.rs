@@ -84,7 +84,7 @@ where
                 clean_x_observables(
                     repr,
                     &mut clifford_tableau,
-                    &remaining_rows,
+                    &remaining_columns,
                     pivot_column,
                     pivot_row,
                 );
@@ -94,7 +94,7 @@ where
                 clean_z_observables(
                     repr,
                     &mut clifford_tableau,
-                    &remaining_rows,
+                    &remaining_columns,
                     pivot_column,
                     pivot_row,
                 );

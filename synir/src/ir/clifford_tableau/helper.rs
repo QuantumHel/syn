@@ -1,6 +1,7 @@
-use std::iter::zip;
+use std::{iter::zip, usize};
 
 use crate::{
+    architecture::{connectivity::Connectivity, Architecture},
     data_structures::{CliffordTableau, PauliLetter, PauliString, PropagateClifford},
     ir::CliffordGates,
 };
@@ -43,7 +44,7 @@ fn is_not_z(pauli_letter: PauliLetter) -> bool {
     pauli_letter != PauliLetter::Z
 }
 
-pub(super) fn clean_pivot<G>(
+pub(super) fn clean_naive_pivot<G>(
     repr: &mut G,
     ct: &mut CliffordTableau,
     pivot_column: usize,
@@ -68,6 +69,51 @@ pub(super) fn clean_pivot<G>(
     }
 }
 
+pub(super) fn clean_pivot<G>(
+    repr: &mut G,
+    clifford_tableau: &mut CliffordTableau,
+    pivot_column: usize,
+    pivot_row: usize,
+    letter: PauliLetter,
+) where
+    G: CliffordGates,
+{
+    match letter {
+        PauliLetter::X => clean_x_pivot(repr, clifford_tableau, pivot_column, pivot_row),
+        PauliLetter::Z => clean_z_pivot(repr, clifford_tableau, pivot_column, pivot_row),
+        _ => panic!("Invalid Pauli letter for pivot cleaning"),
+    }
+}
+
+pub(super) fn clean_observables<G>(
+    repr: &mut G,
+    clifford_tableau: &mut CliffordTableau,
+    remaining_rows: &[usize],
+    pivot_column: usize,
+    pivot_row: usize,
+    letter: PauliLetter,
+) where
+    G: CliffordGates,
+{
+    match letter {
+        PauliLetter::X => clean_x_observables(
+            repr,
+            clifford_tableau,
+            remaining_rows,
+            pivot_column,
+            pivot_row,
+        ),
+        PauliLetter::Z => clean_z_observables(
+            repr,
+            clifford_tableau,
+            remaining_rows,
+            pivot_column,
+            pivot_row,
+        ),
+        _ => panic!("Invalid Pauli letter for observable cleaning"),
+    }
+}
+
 pub(super) fn clean_x_pivot<G>(
     repr: &mut G,
     clifford_tableau: &mut CliffordTableau,
@@ -77,15 +123,15 @@ pub(super) fn clean_x_pivot<G>(
     G: CliffordGates,
 {
     // These are switched around because of implementation
-    if check_pauli(&*clifford_tableau, pivot_row, pivot_column, is_y) {
-        clifford_tableau.s(pivot_row);
-        repr.s(pivot_row);
+    if check_pauli(&*clifford_tableau, pivot_column, pivot_row, is_y) {
+        clifford_tableau.s(pivot_column);
+        repr.s(pivot_column);
     }
 
     // These are switched around because of implementation
-    if check_pauli(&*clifford_tableau, pivot_row, pivot_column, is_z) {
-        clifford_tableau.h(pivot_row);
-        repr.h(pivot_row);
+    if check_pauli(&*clifford_tableau, pivot_column, pivot_row, is_z) {
+        clifford_tableau.h(pivot_column);
+        repr.h(pivot_column);
     }
 }
 
@@ -98,40 +144,39 @@ pub(super) fn clean_z_pivot<G>(
     G: CliffordGates,
 {
     let num_qubits = clifford_tableau.size();
-    // These are switched around because of implementation
+
     if check_pauli(
         &*clifford_tableau,
-        pivot_row,
-        pivot_column + num_qubits,
+        pivot_column,
+        pivot_row + num_qubits,
         is_y,
     ) {
-        clifford_tableau.v(pivot_row);
-        repr.v(pivot_row);
+        clifford_tableau.v(pivot_column);
+        repr.v(pivot_column);
     }
 
-    // These are switched around because of implementation
     if check_pauli(
         &*clifford_tableau,
-        pivot_row,
-        pivot_column + num_qubits,
+        pivot_column,
+        pivot_row + num_qubits,
         is_x,
     ) {
-        clifford_tableau.h(pivot_row);
-        repr.h(pivot_row);
+        clifford_tableau.h(pivot_column);
+        repr.h(pivot_column);
     }
 }
 
 pub(super) fn clean_x_observables<G>(
     repr: &mut G,
     clifford_tableau: &mut CliffordTableau,
-    remaining_rows: &[usize],
+    remaining_columns: &[usize],
     pivot_column: usize,
     pivot_row: usize,
 ) where
     G: CliffordGates,
 {
     let affected_cols =
-        check_across_columns(&*clifford_tableau, remaining_rows, pivot_column, is_y);
+        check_across_columns(&*clifford_tableau, remaining_columns, pivot_row, is_y);
 
     for col in affected_cols {
         repr.s(col);
@@ -139,7 +184,7 @@ pub(super) fn clean_x_observables<G>(
     }
 
     let affected_cols =
-        check_across_columns(&*clifford_tableau, remaining_rows, pivot_column, is_z);
+        check_across_columns(&*clifford_tableau, remaining_columns, pivot_row, is_z);
 
     for col in affected_cols {
         repr.h(col);
@@ -147,18 +192,18 @@ pub(super) fn clean_x_observables<G>(
     }
 
     let affected_cols =
-        check_across_columns(&*clifford_tableau, remaining_rows, pivot_column, is_not_i);
+        check_across_columns(&*clifford_tableau, remaining_columns, pivot_row, is_not_i);
 
     for col in affected_cols {
-        repr.cx(pivot_row, col);
-        clifford_tableau.cx(pivot_row, col);
+        repr.cx(pivot_column, col);
+        clifford_tableau.cx(pivot_column, col);
     }
 }
 
 pub(super) fn clean_z_observables<G>(
     repr: &mut G,
     clifford_tableau: &mut CliffordTableau,
-    remaining_rows: &[usize],
+    remaining_columns: &[usize],
     pivot_column: usize,
     pivot_row: usize,
 ) where
@@ -167,8 +212,8 @@ pub(super) fn clean_z_observables<G>(
     let num_qubits = clifford_tableau.size();
     let affected_cols = check_across_columns(
         &*clifford_tableau,
-        remaining_rows,
-        pivot_column + num_qubits,
+        remaining_columns,
+        pivot_row + num_qubits,
         is_y,
     );
     for col in affected_cols {
@@ -178,8 +223,8 @@ pub(super) fn clean_z_observables<G>(
 
     let affected_cols = check_across_columns(
         &*clifford_tableau,
-        remaining_rows,
-        pivot_column + num_qubits,
+        remaining_columns,
+        pivot_row + num_qubits,
         is_x,
     );
     for col in affected_cols {
@@ -189,13 +234,13 @@ pub(super) fn clean_z_observables<G>(
 
     let affected_cols = check_across_columns(
         &*clifford_tableau,
-        remaining_rows,
-        pivot_column + num_qubits,
+        remaining_columns,
+        pivot_row + num_qubits,
         is_not_i,
     );
     for col in affected_cols {
-        repr.cx(col, pivot_row);
-        clifford_tableau.cx(col, pivot_row);
+        repr.cx(col, pivot_column);
+        clifford_tableau.cx(col, pivot_column);
     }
 }
 
@@ -258,7 +303,6 @@ pub(super) fn naive_pivot_search(
             break;
         }
     }
-
     pivot_col
 }
 
