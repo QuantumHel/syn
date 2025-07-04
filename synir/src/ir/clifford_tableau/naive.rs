@@ -4,7 +4,8 @@ use crate::{
 };
 
 use super::helper::{
-    clean_pivot, clean_signs, clean_x_observables, clean_z_observables, naive_pivot_search, swap,
+    clean_naive_pivot, clean_signs, clean_x_observables, clean_z_observables, naive_pivot_search,
+    swap,
 };
 
 use crate::data_structures::PauliLetter;
