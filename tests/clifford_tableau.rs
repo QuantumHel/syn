@@ -4,12 +4,11 @@ use bitvec::bitvec;
 use bitvec::prelude::Lsb0;
 use common::{parse_clifford_commands, MockCircuit, MockCommand};
 use syn::architecture::connectivity::Connectivity;
-use syn::architecture::Architecture;
 use syn::data_structures::{CliffordTableau, PauliString, PropagateClifford};
 use syn::ir::clifford_tableau::{
     CallbackCliffordSynthesizer, NaiveCliffordSynthesizer, PermRowColCliffordSynthesizer,
 };
-use syn::ir::{AdjointSynthesizer, CliffordGates, Synthesizer};
+use syn::ir::{AdjointSynthesizer, Synthesizer};
 
 fn setup_sample_ct() -> CliffordTableau {
     // Stab: ZZZ, -YIY, XIX
@@ -226,8 +225,6 @@ fn test_custom_clifford_synthesis_large() {
 
     let mut ref_ct = parse_clifford_commands(4, mock.commands());
     ref_ct.permute(&[0, 2, 1, 3]);
-    println!("ref_ct: {}", ref_ct);
-    println!("ref_ct: {}", clifford_tableau);
 
     assert_eq!(clifford_tableau, ref_ct);
 }
@@ -257,8 +254,7 @@ fn test_prc_clifford_synthesis() {
 
     let mut ref_ct = parse_clifford_commands(3, mock.commands());
     ref_ct.permute(synthesizer.permutation());
-    println!("ref_ct: {}", ref_ct);
-    println!("clifford_tableau: {}", clifford_tableau);
+
     assert_eq!(clifford_tableau, ref_ct);
 }
 
