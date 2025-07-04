@@ -454,7 +454,6 @@ pub(super) fn clean_x_prc<G>(
         .unwrap();
 
     let affected_cols = check_across_columns(&*clifford_tableau, &terminals, pivot_row, is_y);
-    println!("affected cols: {:?}", affected_cols);
     for col in affected_cols {
         repr.s(col);
         clifford_tableau.s(col);
