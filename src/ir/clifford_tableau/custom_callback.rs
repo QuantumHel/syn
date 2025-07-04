@@ -51,7 +51,7 @@ impl CallbackCliffordSynthesizer {
     }
 }
 
-impl<'a, G> AdjointSynthesizer<CliffordTableau, G> for CallbackCliffordSynthesizer
+impl<G> AdjointSynthesizer<CliffordTableau, G> for CallbackCliffordSynthesizer
 where
     G: CliffordGates,
 {
