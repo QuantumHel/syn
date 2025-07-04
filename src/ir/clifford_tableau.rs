@@ -1,12 +1,12 @@
-pub mod custom_callback;
-mod helper;
-pub mod naive;
-
+use super::{AdjointSynthesizer, Synthesizer};
 use crate::data_structures::{CliffordTableau, HasAdjoint};
+
 pub use custom_callback::CallbackCliffordSynthesizer;
 pub use naive::NaiveCliffordSynthesizer;
 
-use super::{AdjointSynthesizer, Synthesizer};
+mod custom_callback;
+mod helper;
+mod naive;
 
 #[derive(Default)]
 pub enum CliffordTableauSynthStrategy {

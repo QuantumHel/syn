@@ -11,6 +11,8 @@ use syn::ir::Synthesizer;
 
 mod connectivity;
 
+mod connectivity;
+
 #[derive(Debug, Default)]
 pub struct MockCircuit {
     commands: Vec<MockCommand>,

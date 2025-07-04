@@ -7,6 +7,7 @@ type NodeWeight = ();
 #[derive(Debug, PartialEq)]
 pub enum LadderError {
     RootNotFound,
+    NodesNotFound(Vec<GraphIndex>),
 }
 
 pub trait Architecture {
@@ -19,4 +20,5 @@ pub trait Architecture {
         nodes: &[GraphIndex],
         root: &GraphIndex,
     ) -> Result<Vec<(usize, usize)>, LadderError>;
+    fn disconnect(&self, i: GraphIndex) -> Self;
 }
