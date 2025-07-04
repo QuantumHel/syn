@@ -4,12 +4,10 @@ use bitvec::prelude::Lsb0;
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use syn::data_structures::CliffordTableau;
 use syn::data_structures::PauliString;
-use syn::ir::clifford_tableau::naive::NaiveCliffordSynthesizer;
 use syn::ir::clifford_tableau::CallbackCliffordSynthesizer;
+use syn::ir::clifford_tableau::NaiveCliffordSynthesizer;
 use syn::ir::CliffordGates;
 use syn::ir::Synthesizer;
-
-mod connectivity;
 
 mod connectivity;
 
