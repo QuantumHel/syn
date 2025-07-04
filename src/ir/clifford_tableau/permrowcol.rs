@@ -4,21 +4,12 @@ use crate::{
     architecture::connectivity::Connectivity,
     data_structures::{CliffordTableau, PauliLetter},
     ir::{
-        clifford_tableau::{
-            self,
-            helper::{
-                clean_observables, clean_pivot, clean_prc, clean_x_pivot, clean_z_pivot,
-                pick_column, pick_row,
-            },
-        },
+        clifford_tableau::helper::{clean_pivot, clean_prc, pick_column, pick_row},
         AdjointSynthesizer, CliffordGates,
     },
 };
 
-use super::helper::{
-    clean_naive_pivot, clean_signs, clean_x_observables, clean_z_observables, naive_pivot_search,
-    swap,
-};
+use super::helper::clean_signs;
 
 #[derive(Default)]
 pub struct PermRowColCliffordSynthesizer {
@@ -64,8 +55,6 @@ where
         while !remaining_columns.is_empty() {
             let pivot_row = pick_row(&clifford_tableau, &self.connectivity, &remaining_rows);
             let pivot_column = pick_column(&clifford_tableau, &self.connectivity);
-            println!("pivot row: {}", pivot_row);
-            println!("pivot column: {}", pivot_column);
             let column = clifford_tableau.column(pivot_column);
             let x_weight = column.x_weight();
             let z_weight = column.z_weight();
@@ -86,9 +75,6 @@ where
                     pivot_row,
                     first_letter,
                 );
-                println!("Cleaning: {:?}", first_letter);
-                println!("repr: {:?}", repr);
-                println!("clifford_tableau: {}", clifford_tableau);
 
                 // Use the pivot to remove all other terms in the X observable.
                 clean_prc(
@@ -100,9 +86,6 @@ where
                     pivot_row,
                     first_letter,
                 );
-                println!("PRC: {:?}", first_letter);
-                println!("repr: {:?}", repr);
-                println!("clifford_tableau: {}", clifford_tableau);
 
                 clean_pivot(
                     repr,
@@ -111,9 +94,6 @@ where
                     pivot_row,
                     second_letter,
                 );
-                println!("Cleaning: {:?}", second_letter);
-                println!("repr: {:?}", repr);
-                println!("clifford_tableau: {}", clifford_tableau);
 
                 // Use the pivot to remove all other terms in the Z observable.
                 clean_prc(
@@ -125,16 +105,12 @@ where
                     pivot_row,
                     second_letter,
                 );
-                println!("PRC: {:?}", second_letter);
-                println!("repr: {:?}", repr);
-                println!("clifford_tableau: {}", clifford_tableau);
             }
 
             // If the pivot row is now an identity row, we can remove it from the tableau.
 
             permutation[pivot_row] = pivot_column;
             self.connectivity.remove_node(pivot_column);
-            println!("nodes: {:?}", self.connectivity.nodes());
         }
 
         clean_signs(repr, &mut clifford_tableau, &permutation);
