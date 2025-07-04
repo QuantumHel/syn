@@ -3,9 +3,13 @@ mod common;
 use bitvec::bitvec;
 use bitvec::prelude::Lsb0;
 use common::{parse_clifford_commands, MockCircuit, MockCommand};
-use synir::data_structures::{CliffordTableau, PauliString, PropagateClifford};
-use synir::ir::clifford_tableau::{CallbackCliffordSynthesizer, NaiveCliffordSynthesizer};
-use synir::ir::{AdjointSynthesizer, Synthesizer};
+use syn::architecture::connectivity::Connectivity;
+use syn::architecture::Architecture;
+use syn::data_structures::{CliffordTableau, PauliString, PropagateClifford};
+use syn::ir::clifford_tableau::{
+    CallbackCliffordSynthesizer, NaiveCliffordSynthesizer, PermRowColCliffordSynthesizer,
+};
+use syn::ir::{AdjointSynthesizer, CliffordGates, Synthesizer};
 
 fn setup_sample_ct() -> CliffordTableau {
     // Stab: ZZZ, -YIY, XIX
@@ -237,5 +241,58 @@ fn test_custom_clifford_synthesis_simple() {
     synthesizer.synthesize(clifford_tableau.clone(), &mut mock);
 
     let ref_ct = parse_clifford_commands(3, mock.commands());
+    assert_eq!(clifford_tableau, ref_ct);
+}
+
+#[test]
+fn test_prc_clifford_synthesis() {
+    let clifford_tableau = setup_sample_ct();
+    let num_qubits = clifford_tableau.size();
+    let mut mock = MockCircuit::new();
+    let connectivity = Connectivity::complete(num_qubits);
+    let mut synthesizer = PermRowColCliffordSynthesizer::new(connectivity);
+    synthesizer.synthesize(clifford_tableau.clone(), &mut mock);
+
+    let mut ref_ct = parse_clifford_commands(3, mock.commands());
+    ref_ct.permute(synthesizer.permutation());
+    println!("ref_ct: {}", ref_ct);
+    println!("clifford_tableau: {}", clifford_tableau);
+    assert_eq!(clifford_tableau, ref_ct);
+}
+
+#[test]
+fn test_prc_clifford_synthesis_large() {
+    let mut clifford_tableau = setup_sample_inverse_ct();
+    let mut mock = MockCircuit::new();
+
+    let connectivity = Connectivity::grid(2, 2);
+    let mut synthesizer = PermRowColCliffordSynthesizer::new(connectivity);
+
+    synthesizer.synthesize(clifford_tableau.clone(), &mut mock);
+
+    let ref_ct = parse_clifford_commands(4, mock.commands());
+    clifford_tableau.permute(synthesizer.permutation());
+
+    assert_eq!(clifford_tableau, ref_ct);
+}
+
+#[test]
+fn test_prc_clifford_synthesis_simple() {
+    let num_qubits = 3;
+    let mut clifford_tableau = CliffordTableau::new(num_qubits);
+
+    clifford_tableau.cx(2, 1);
+    clifford_tableau.cx(1, 2);
+    clifford_tableau.cx(0, 2);
+    let mut mock = MockCircuit::new();
+
+    let connectivity = Connectivity::line(num_qubits);
+
+    let mut synthesizer = PermRowColCliffordSynthesizer::new(connectivity);
+    synthesizer.synthesize(clifford_tableau.clone(), &mut mock);
+
+    let ref_ct = parse_clifford_commands(3, mock.commands());
+
+    clifford_tableau.permute(synthesizer.permutation());
     assert_eq!(clifford_tableau, ref_ct);
 }
