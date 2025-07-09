@@ -12,14 +12,13 @@ use crate::{
 
 use super::helper::{clean_x_observables, clean_z_observables};
 
+type CliffordCallBack = Box<dyn FnMut(&[usize], &[usize], &CliffordTableau) -> (usize, usize)>;
 pub struct CallbackCliffordSynthesizer {
-    custom_callback: Box<dyn FnMut(&[usize], &[usize], &CliffordTableau) -> (usize, usize)>,
+    custom_callback: CliffordCallBack,
 }
 
 impl CallbackCliffordSynthesizer {
-    pub fn new(
-        custom_callback: Box<dyn FnMut(&[usize], &[usize], &CliffordTableau) -> (usize, usize)>,
-    ) -> Self {
+    pub fn new(custom_callback: CliffordCallBack) -> Self {
         Self { custom_callback }
     }
 
@@ -46,16 +45,13 @@ impl Default for CallbackCliffordSynthesizer {
 }
 
 impl CallbackCliffordSynthesizer {
-    pub fn set_custom_callback(
-        &mut self,
-        callback: Box<dyn FnMut(&[usize], &[usize], &CliffordTableau) -> (usize, usize)>,
-    ) -> &mut Self {
+    pub fn set_custom_callback(&mut self, callback: CliffordCallBack) -> &mut Self {
         self.custom_callback = callback;
         self
     }
 }
 
-impl<'a, G> AdjointSynthesizer<CliffordTableau, G> for CallbackCliffordSynthesizer
+impl<G> AdjointSynthesizer<CliffordTableau, G> for CallbackCliffordSynthesizer
 where
     G: CliffordGates,
 {
@@ -84,7 +80,7 @@ where
                 clean_x_observables(
                     repr,
                     &mut clifford_tableau,
-                    &remaining_rows,
+                    &remaining_columns,
                     pivot_column,
                     pivot_row,
                 );
@@ -94,7 +90,7 @@ where
                 clean_z_observables(
                     repr,
                     &mut clifford_tableau,
-                    &remaining_rows,
+                    &remaining_columns,
                     pivot_column,
                     pivot_row,
                 );
