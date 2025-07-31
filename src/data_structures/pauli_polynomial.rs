@@ -1,6 +1,7 @@
 use std::{iter::zip, sync::RwLock};
 
 use bitvec::{order::Lsb0, vec::BitVec};
+use itertools::zip_eq;
 
 use super::{pauli_string::PauliString, IndexType, MaskedPropagateClifford, PropagateClifford};
 
@@ -32,8 +33,7 @@ impl PauliPolynomial {
         let mut chain_strings = vec![String::new(); num_qubits];
         //let chains = vec![PauliString::new(); num_qubits];
         for (pauli_string, angle) in hamiltonian_representation {
-            assert_eq!(pauli_string.len(), chain_strings.len());
-            zip(chain_strings.iter_mut(), pauli_string.chars()).for_each(
+            zip_eq(chain_strings.iter_mut(), pauli_string.chars()).for_each(
                 |(chain, pauli_letter)| {
                     chain.push(pauli_letter);
                 },
