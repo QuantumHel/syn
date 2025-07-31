@@ -28,9 +28,10 @@ impl Clone for PauliPolynomial {
 impl PauliPolynomial {
     pub fn from_hamiltonian(hamiltonian_representation: Vec<(&str, Angle)>) -> Self {
         assert!(!hamiltonian_representation.is_empty());
+        let terms = hamiltonian_representation.len();
         let num_qubits = hamiltonian_representation[0].0.len();
-        let mut angles = Vec::<Angle>::new();
-        let mut chain_strings = vec![String::new(); num_qubits];
+        let mut angles = Vec::<Angle>::with_capacity(terms);
+        let mut chain_strings = vec![String::with_capacity(terms); num_qubits];
         //let chains = vec![PauliString::new(); num_qubits];
         for (pauli_string, angle) in hamiltonian_representation {
             zip_eq(chain_strings.iter_mut(), pauli_string.chars()).for_each(
