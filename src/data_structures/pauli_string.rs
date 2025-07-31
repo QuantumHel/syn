@@ -110,9 +110,7 @@ impl PauliString {
 
     #[allow(dead_code)]
     pub(crate) fn h(&self) {
-        let tmp = self.z.read().unwrap().clone();
-        *self.z.write().unwrap() = self.x.read().unwrap().clone();
-        *self.x.write().unwrap() = tmp;
+        std::mem::swap(&mut *self.x.write().unwrap(), &mut *self.z.write().unwrap());
     }
 
     #[allow(dead_code)]
