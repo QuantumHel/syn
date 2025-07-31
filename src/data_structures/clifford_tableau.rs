@@ -163,18 +163,18 @@ impl CliffordTableau {
         }
     }
 
-    pub fn permute(&mut self, permutation_vector: Vec<usize>) {
+    pub fn permute(&mut self, permutation_vector: &[usize]) {
         assert_eq!(
             permutation_vector
                 .iter()
                 .copied()
-                .sorted()
+                .sorted_unstable()
                 .collect::<Vec<_>>(),
             (0..self.size()).collect::<Vec<_>>()
         );
         let pauli_columns = std::mem::take(&mut self.pauli_columns);
         let sorted_pauli_columns = zip(pauli_columns, permutation_vector)
-            .sorted_by_key(|a| a.1)
+            .sorted_unstable_by_key(|a| a.1)
             .map(|a| a.0)
             .collect::<Vec<_>>();
         self.pauli_columns = sorted_pauli_columns;
