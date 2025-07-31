@@ -356,7 +356,7 @@ mod tests {
             signs,
             size: ct_size,
         };
-        assert_eq!(clifford_tableau_ref, ct);
+        assert_eq!(ct, clifford_tableau_ref);
     }
 
     fn setup_sample_ct() -> CliffordTableau {
@@ -469,7 +469,7 @@ mod tests {
             size: ct_size,
         };
 
-        assert_eq!(clifford_tableau_ref, ct);
+        assert_eq!(ct, clifford_tableau_ref);
     }
 
     #[test]
@@ -510,7 +510,7 @@ mod tests {
             size: ct_size,
         };
 
-        assert_eq!(clifford_tableau_ref, ct);
+        assert_eq!(ct, clifford_tableau_ref);
     }
 
     #[test]
@@ -553,7 +553,7 @@ mod tests {
             size: ct_size,
         };
 
-        assert_eq!(clifford_tableau_ref, ct);
+        assert_eq!(ct, clifford_tableau_ref);
     }
 
     #[test]
@@ -596,7 +596,7 @@ mod tests {
             size: ct_size,
         };
 
-        assert_eq!(clifford_tableau_ref, ct);
+        assert_eq!(ct, clifford_tableau_ref);
     }
 
     #[test]
@@ -638,7 +638,7 @@ mod tests {
             size: ct_size,
         };
 
-        assert_eq!(clifford_tableau_ref, ct);
+        assert_eq!(ct, clifford_tableau_ref);
     }
 
     #[test]
@@ -679,7 +679,7 @@ mod tests {
             size: ct_size,
         };
 
-        assert_eq!(clifford_tableau_ref, ct);
+        assert_eq!(ct, clifford_tableau_ref);
     }
 
     #[test]
@@ -720,7 +720,7 @@ mod tests {
             size: ct_size,
         };
 
-        assert_eq!(clifford_tableau_ref, ct);
+        assert_eq!(ct, clifford_tableau_ref);
     }
 
     #[test]
@@ -761,7 +761,7 @@ mod tests {
             size: ct_size,
         };
 
-        assert_eq!(clifford_tableau_ref, ct);
+        assert_eq!(ct, clifford_tableau_ref);
     }
 
     /// This does not generate a valid Clifford Tableau. Only used to check commutation relations
@@ -1090,7 +1090,7 @@ mod tests {
         ref_ct.h(1);
         ref_ct.cx(1, 0);
 
-        assert_eq!(ref_ct, third);
+        assert_eq!(third, ref_ct);
     }
 
     #[test]
@@ -1177,9 +1177,9 @@ mod tests {
             size: ct_size,
         };
 
-        assert_eq!(ct_ref, adjoint_ct);
+        assert_eq!(adjoint_ct, ct_ref);
         let identity = CliffordTableau::new(2);
-        assert_eq!(identity, ct * adjoint_ct);
+        assert_eq!(ct * adjoint_ct, identity);
     }
 
     #[test]
@@ -1189,7 +1189,7 @@ mod tests {
         ct.x(0);
 
         let identity = CliffordTableau::new(2);
-        assert_eq!(identity, ct);
+        assert_eq!(ct, identity);
     }
 
     #[test]

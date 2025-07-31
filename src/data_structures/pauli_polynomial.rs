@@ -211,7 +211,7 @@ mod tests {
             angles: RwLock::new(angles_ref),
             size,
         };
-        assert_eq!(pp_ref, pp);
+        assert_eq!(pp, pp_ref);
     }
 
     #[test]
@@ -265,7 +265,7 @@ mod tests {
             angles: RwLock::new(angles_ref),
             size,
         };
-        assert_eq!(pp_ref, pp);
+        assert_eq!(pp, pp_ref);
     }
 
     #[test]
@@ -290,7 +290,7 @@ mod tests {
             angles: RwLock::new(angles_ref),
             size,
         };
-        assert_eq!(pp_ref, pp);
+        assert_eq!(pp, pp_ref);
     }
 
     #[test]
@@ -315,7 +315,7 @@ mod tests {
             angles: RwLock::new(angles_ref),
             size,
         };
-        assert_eq!(pp_ref, pp);
+        assert_eq!(pp, pp_ref);
     }
 
     #[test]
@@ -340,7 +340,7 @@ mod tests {
             angles: RwLock::new(angles_ref),
             size,
         };
-        assert_eq!(pp_ref, pp);
+        assert_eq!(pp, pp_ref);
     }
 
     #[test]
@@ -365,7 +365,7 @@ mod tests {
             angles: RwLock::new(angles_ref),
             size,
         };
-        assert_eq!(pp_ref, pp);
+        assert_eq!(pp, pp_ref);
     }
 
     fn setup_sample_two_qubit_pp(pauli_letter: char) -> PauliPolynomial {
@@ -414,7 +414,7 @@ mod tests {
             angles: RwLock::new(angles_ref),
             size,
         };
-        assert_eq!(pp_ref, pp);
+        assert_eq!(pp, pp_ref);
     }
 
     #[test]
@@ -440,7 +440,7 @@ mod tests {
             angles: RwLock::new(angles_ref),
             size,
         };
-        assert_eq!(pp_ref, pp);
+        assert_eq!(pp, pp_ref);
     }
 
     #[test]
@@ -466,7 +466,7 @@ mod tests {
             angles: RwLock::new(angles_ref),
             size,
         };
-        assert_eq!(pp_ref, pp);
+        assert_eq!(pp, pp_ref);
     }
 
     #[test]
@@ -492,7 +492,7 @@ mod tests {
             angles: RwLock::new(angles_ref),
             size,
         };
-        assert_eq!(pp_ref, pp);
+        assert_eq!(pp, pp_ref);
     }
 
     #[test]
@@ -519,7 +519,7 @@ mod tests {
             angles: RwLock::new(angles_ref),
             size,
         };
-        assert_eq!(pp_ref, pp);
+        assert_eq!(pp, pp_ref);
     }
 
     #[test]
@@ -545,7 +545,7 @@ mod tests {
             angles: RwLock::new(angles_ref),
             size,
         };
-        assert_eq!(pp_ref, pp);
+        assert_eq!(pp, pp_ref);
     }
 
     #[test]
@@ -571,7 +571,7 @@ mod tests {
             angles: RwLock::new(angles_ref),
             size,
         };
-        assert_eq!(pp_ref, pp);
+        assert_eq!(pp, pp_ref);
     }
 
     #[test]
@@ -597,6 +597,6 @@ mod tests {
             angles: RwLock::new(angles_ref),
             size,
         };
-        assert_eq!(pp_ref, pp);
+        assert_eq!(pp, pp_ref);
     }
 }

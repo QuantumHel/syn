@@ -311,6 +311,6 @@ mod tests {
     #[test]
     fn test_pauli_string_display() {
         let pauli_string = PauliString::from_text("IXYZI");
-        assert_eq!(String::from("I X Y Z I"), pauli_string.to_string());
+        assert_eq!(pauli_string.to_string(), String::from("I X Y Z I"));
     }
 }
