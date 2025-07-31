@@ -94,7 +94,7 @@ impl PauliString {
 
     pub(crate) fn masked_s(&self, mask: &BitSlice) {
         let mut mask = mask.to_owned();
-        mask &= self.x.read().unwrap().clone();
+        mask &= self.x.read().unwrap().as_bitslice();
         *self.z.write().unwrap() ^= &mask;
     }
 

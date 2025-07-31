@@ -85,8 +85,7 @@ impl CliffordTableau {
         let mut i_factors = vec![0_usize; 2 * size];
         // Keep track of the inherent i factors of left-hand tableau (where there are Y's in tableau rows)
         for lhs_pauli_column in lhs.pauli_columns.iter() {
-            let local_sign = lhs_pauli_column.x.read().unwrap().clone()
-                & lhs_pauli_column.z.read().unwrap().as_bitslice();
+            let local_sign = lhs_pauli_column.y_bitmask();
             for (fact, sign) in zip(i_factors.iter_mut(), local_sign) {
                 *fact += sign as usize;
             }
@@ -155,7 +154,7 @@ impl CliffordTableau {
             .collect::<BitVec>();
 
         new_signs ^= p;
-        new_signs ^= lhs.signs.clone();
+        new_signs ^= lhs.signs.as_bitslice();
 
         CliffordTableau {
             pauli_columns,
@@ -173,7 +172,8 @@ impl CliffordTableau {
                 .collect::<Vec<_>>(),
             (0..self.size()).collect::<Vec<_>>()
         );
-        let sorted_pauli_columns = zip(self.pauli_columns.clone(), permutation_vector)
+        let pauli_columns = std::mem::take(&mut self.pauli_columns);
+        let sorted_pauli_columns = zip(pauli_columns, permutation_vector)
             .sorted_by_key(|a| a.1)
             .map(|a| a.0)
             .collect::<Vec<_>>();

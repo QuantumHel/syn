@@ -122,7 +122,7 @@ impl PropagateClifford for PauliPolynomial {
         let chains_target = self.chains.get_mut(target).unwrap();
         chains_target.v();
         // Update angles
-        let y_vec = chains_target.to_owned().y_bitmask();
+        let y_vec = chains_target.y_bitmask();
         for (angle, flip) in zip(self.angles.write().unwrap().iter_mut(), y_vec.iter()) {
             if *flip {
                 *angle *= -1.0;
