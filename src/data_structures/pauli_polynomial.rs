@@ -74,22 +74,7 @@ impl PropagateClifford for PauliPolynomial {
     fn cx(&mut self, control: IndexType, target: IndexType) -> &mut Self {
         let mut bit_mask = BitVec::<u32, Lsb0>::repeat(true, self.length());
 
-        let (control, target) = match control < target {
-            true => {
-                let split = self.chains.split_at_mut(target);
-                (
-                    split.0.get_mut(control).unwrap(),
-                    split.1.get_mut(0).unwrap(),
-                )
-            }
-            false => {
-                let split = self.chains.split_at_mut(control);
-                (
-                    split.1.get_mut(0).unwrap(),
-                    split.0.get_mut(target).unwrap(),
-                )
-            }
-        };
+        let [control, target] = self.chains.get_disjoint_mut([control, target]).unwrap();
 
         bit_mask ^= control.z.read().unwrap().as_bitslice();
         bit_mask ^= target.x.read().unwrap().as_bitslice();
