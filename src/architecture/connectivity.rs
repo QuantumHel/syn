@@ -258,7 +258,7 @@ impl Architecture for Connectivity {
 
     fn disconnect(&self, i: GraphIndex) -> Connectivity {
         let mut graph = self.graph.clone();
-        graph.retain_nodes(|_, index| if index.index() == i { false } else { true });
+        graph.retain_nodes(|_, index| index.index() != i);
         let non_cutting = get_non_cutting_vertices(&graph);
         let (distance, prev) = floyd_warshall_path(&graph, |e| *e.weight()).unwrap();
         let distance = distance.into_iter().collect();
