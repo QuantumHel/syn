@@ -9,7 +9,6 @@ use petgraph::{
     visit::{IntoNodeReferences, NodeIndexable, NodeRef},
 };
 use std::collections::HashMap;
-use std::ops::Index;
 
 /// Get all the vertices in a graph that are non-cutting (won't make the graph disconnected)
 fn get_non_cutting_vertices(
