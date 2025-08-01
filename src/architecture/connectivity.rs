@@ -9,7 +9,6 @@ use petgraph::{
     visit::{IntoNodeReferences, NodeIndexable, NodeRef},
 };
 use std::collections::HashMap;
-use std::ops::Index;
 
 /// Get all the vertices in a graph that are non-cutting (won't make the graph disconnected)
 fn get_non_cutting_vertices(
@@ -85,7 +84,7 @@ impl Connectivity {
     pub fn from_graph(graph: StableUnGraph<NodeWeight, EdgeWeight, GraphIndex>) -> Self {
         let non_cutting = get_non_cutting_vertices(&graph);
         let (distance, prev) = floyd_warshall_path(&graph, |e| *e.weight()).unwrap();
-        let distance = distance.iter().map(|(k, v)| (*k, *v)).collect();
+        let distance = distance.into_iter().collect();
 
         Connectivity {
             graph,
@@ -259,10 +258,10 @@ impl Architecture for Connectivity {
 
     fn disconnect(&self, i: GraphIndex) -> Connectivity {
         let mut graph = self.graph.clone();
-        graph.retain_nodes(|_, index| if index.index() == i { false } else { true });
+        graph.retain_nodes(|_, index| index.index() != i);
         let non_cutting = get_non_cutting_vertices(&graph);
         let (distance, prev) = floyd_warshall_path(&graph, |e| *e.weight()).unwrap();
-        let distance = distance.iter().map(|(k, v)| (*k, *v)).collect();
+        let distance = distance.into_iter().collect();
 
         Connectivity {
             graph,
@@ -444,14 +443,14 @@ mod tests {
     fn test_best_simple_path() {
         let new_architecture = Connectivity::from_edges(&setup_simple());
 
-        assert_eq!(vec![0, 1, 2, 4], new_architecture.best_path(0, 4));
+        assert_eq!(new_architecture.best_path(0, 4), vec![0, 1, 2, 4]);
     }
 
     #[test]
     fn test_best_weighted_path() {
         let new_architecture = Connectivity::from_weighted_edges(&setup_weighted());
 
-        assert_eq!(vec![0, 1, 2, 3, 4], new_architecture.best_path(0, 4));
+        assert_eq!(new_architecture.best_path(0, 4), vec![0, 1, 2, 3, 4]);
     }
 
     #[test]
@@ -464,9 +463,9 @@ mod tests {
     #[test]
     fn test_distance() {
         let new_architecture = Connectivity::from_weighted_edges(&setup_weighted());
-        assert_eq!(2, new_architecture.distance(2, 4));
-        assert_eq!(2, new_architecture.distance(4, 2));
-        assert_eq!(10, new_architecture.distance(0, 4));
+        assert_eq!(new_architecture.distance(2, 4), 2);
+        assert_eq!(new_architecture.distance(4, 2), 2);
+        assert_eq!(new_architecture.distance(0, 4), 10);
     }
 
     #[test]
@@ -479,7 +478,7 @@ mod tests {
     #[test]
     fn test_neighbors() {
         let new_architecture = Connectivity::from_edges(&setup_simple());
-        assert_eq!(vec![4, 3, 1], new_architecture.neighbors(2));
+        assert_eq!(new_architecture.neighbors(2), vec![4, 3, 1]);
     }
 
     #[test]
