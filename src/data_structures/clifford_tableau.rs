@@ -1,7 +1,7 @@
 use bitvec::prelude::BitVec;
 use itertools::{izip, Itertools};
 use std::fmt;
-use std::iter::{self, zip};
+use std::iter::zip;
 use std::ops::Mul;
 
 use super::HasAdjoint;
@@ -23,7 +23,7 @@ impl CliffordTableau {
     pub fn new(n: usize) -> Self {
         CliffordTableau {
             pauli_columns: { (0..n).map(|i| PauliString::from_basis_int(i, n)).collect() },
-            signs: BitVec::from_iter(iter::repeat(false).take(2 * n)),
+            signs: BitVec::repeat(false, 2 * n),
             size: n,
         }
     }
