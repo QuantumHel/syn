@@ -77,7 +77,7 @@ impl PauliString {
     }
 
     pub fn pauli(&self, i: usize) -> PauliLetter {
-        PauliLetter::new(self.x.read().unwrap()[i], self.z.read().unwrap()[i])
+        PauliLetter::new(self.x(i), self.z(i))
     }
 
     pub fn len(&self) -> usize {

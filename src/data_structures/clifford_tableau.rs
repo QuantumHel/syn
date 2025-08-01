@@ -67,18 +67,16 @@ impl CliffordTableau {
         // Loop re-order to be (k, i, j) as j ordering is contiguous.
         for (k, rhs_pauli_column) in self.pauli_columns.iter().enumerate() {
             for i in 0..size {
-                *(pauli_columns[k].x.write().unwrap()) ^=
-                    BitVec::repeat(rhs_pauli_column.x.read().unwrap()[i], 2 * size)
-                        & lhs.pauli_columns[i].x.read().unwrap().as_bitslice();
-                *(pauli_columns[k].x.write().unwrap()) ^=
-                    BitVec::repeat(rhs_pauli_column.x.read().unwrap()[i + size], 2 * size)
-                        & lhs.pauli_columns[i].z.read().unwrap().as_bitslice();
-                *(pauli_columns[k].z.write().unwrap()) ^=
-                    BitVec::repeat(rhs_pauli_column.z.read().unwrap()[i], 2 * size)
-                        & lhs.pauli_columns[i].x.read().unwrap().as_bitslice();
-                *(pauli_columns[k].z.write().unwrap()) ^=
-                    BitVec::repeat(rhs_pauli_column.z.read().unwrap()[i + size], 2 * size)
-                        & lhs.pauli_columns[i].z.read().unwrap().as_bitslice();
+                let mut x = pauli_columns[k].x.write().unwrap();
+                let mut z = pauli_columns[k].z.write().unwrap();
+                *x ^= BitVec::repeat(rhs_pauli_column.x(i), 2 * size)
+                    & lhs.pauli_columns[i].x.read().unwrap().as_bitslice();
+                *x ^= BitVec::repeat(rhs_pauli_column.x(i + size), 2 * size)
+                    & lhs.pauli_columns[i].z.read().unwrap().as_bitslice();
+                *z ^= BitVec::repeat(rhs_pauli_column.z(i), 2 * size)
+                    & lhs.pauli_columns[i].x.read().unwrap().as_bitslice();
+                *z ^= BitVec::repeat(rhs_pauli_column.z(i + size), 2 * size)
+                    & lhs.pauli_columns[i].z.read().unwrap().as_bitslice();
             }
         }
 
@@ -197,10 +195,12 @@ impl HasAdjoint for CliffordTableau {
                     pauli_column.z(i + size),
                 );
 
-                new_columns[i].x.write().unwrap().replace(j, x1);
-                new_columns[i].z.write().unwrap().replace(j, z1);
-                new_columns[i].x.write().unwrap().replace(j + size, x2);
-                new_columns[i].z.write().unwrap().replace(j + size, z2);
+                let mut x = new_columns[i].x.write().unwrap();
+                let mut z = new_columns[i].z.write().unwrap();
+                x.replace(j, x1);
+                z.replace(j, z1);
+                x.replace(j + size, x2);
+                z.replace(j + size, z2);
             }
         });
         let mut adjoint_table = CliffordTableau {
