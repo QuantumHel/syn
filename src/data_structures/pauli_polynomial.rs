@@ -1,6 +1,6 @@
 use std::{iter::zip, sync::RwLock};
 
-use bitvec::{order::Lsb0, vec::BitVec};
+use bitvec::vec::BitVec;
 use itertools::zip_eq;
 
 use super::{pauli_string::PauliString, IndexType, MaskedPropagateClifford, PropagateClifford};
@@ -72,7 +72,7 @@ impl PauliPolynomial {
 
 impl PropagateClifford for PauliPolynomial {
     fn cx(&mut self, control: IndexType, target: IndexType) -> &mut Self {
-        let mut bit_mask = BitVec::<u32, Lsb0>::repeat(true, self.length());
+        let mut bit_mask: BitVec = BitVec::repeat(true, self.length());
 
         let [control, target] = self.chains.get_disjoint_mut([control, target]).unwrap();
 
