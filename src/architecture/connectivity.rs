@@ -84,7 +84,7 @@ impl Connectivity {
     pub fn from_graph(graph: StableUnGraph<NodeWeight, EdgeWeight, GraphIndex>) -> Self {
         let non_cutting = get_non_cutting_vertices(&graph);
         let (distance, prev) = floyd_warshall_path(&graph, |e| *e.weight()).unwrap();
-        let distance = distance.iter().map(|(k, v)| (*k, *v)).collect();
+        let distance = distance.into_iter().collect();
 
         Connectivity {
             graph,
@@ -261,7 +261,7 @@ impl Architecture for Connectivity {
         graph.retain_nodes(|_, index| if index.index() == i { false } else { true });
         let non_cutting = get_non_cutting_vertices(&graph);
         let (distance, prev) = floyd_warshall_path(&graph, |e| *e.weight()).unwrap();
-        let distance = distance.iter().map(|(k, v)| (*k, *v)).collect();
+        let distance = distance.into_iter().collect();
 
         Connectivity {
             graph,
