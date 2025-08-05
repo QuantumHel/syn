@@ -1,6 +1,7 @@
 use std::{iter::zip, sync::RwLock};
 
-use bitvec::{order::Lsb0, vec::BitVec};
+use bitvec::vec::BitVec;
+use itertools::zip_eq;
 
 use super::{pauli_string::PauliString, IndexType, MaskedPropagateClifford, PropagateClifford};
 
@@ -27,13 +28,13 @@ impl Clone for PauliPolynomial {
 impl PauliPolynomial {
     pub fn from_hamiltonian(hamiltonian_representation: Vec<(&str, Angle)>) -> Self {
         assert!(!hamiltonian_representation.is_empty());
+        let terms = hamiltonian_representation.len();
         let num_qubits = hamiltonian_representation[0].0.len();
-        let mut angles = Vec::<Angle>::new();
-        let mut chain_strings = vec![String::new(); num_qubits];
+        let mut angles = Vec::<Angle>::with_capacity(terms);
+        let mut chain_strings = vec![String::with_capacity(terms); num_qubits];
         //let chains = vec![PauliString::new(); num_qubits];
         for (pauli_string, angle) in hamiltonian_representation {
-            assert!(pauli_string.len() == chain_strings.len());
-            zip(chain_strings.iter_mut(), pauli_string.chars()).for_each(
+            zip_eq(chain_strings.iter_mut(), pauli_string.chars()).for_each(
                 |(chain, pauli_letter)| {
                     chain.push(pauli_letter);
                 },
@@ -71,24 +72,9 @@ impl PauliPolynomial {
 
 impl PropagateClifford for PauliPolynomial {
     fn cx(&mut self, control: IndexType, target: IndexType) -> &mut Self {
-        let mut bit_mask = BitVec::<u32, Lsb0>::repeat(true, self.length());
+        let mut bit_mask: BitVec = BitVec::repeat(true, self.length());
 
-        let (control, target) = match control < target {
-            true => {
-                let split = self.chains.split_at_mut(target);
-                (
-                    split.0.get_mut(control).unwrap(),
-                    split.1.get_mut(0).unwrap(),
-                )
-            }
-            false => {
-                let split = self.chains.split_at_mut(control);
-                (
-                    split.1.get_mut(0).unwrap(),
-                    split.0.get_mut(target).unwrap(),
-                )
-            }
-        };
+        let [control, target] = self.chains.get_disjoint_mut([control, target]).unwrap();
 
         bit_mask ^= control.z.read().unwrap().as_bitslice();
         bit_mask ^= target.x.read().unwrap().as_bitslice();
@@ -122,7 +108,7 @@ impl PropagateClifford for PauliPolynomial {
         let chains_target = self.chains.get_mut(target).unwrap();
         chains_target.v();
         // Update angles
-        let y_vec = chains_target.to_owned().y_bitmask();
+        let y_vec = chains_target.y_bitmask();
         for (angle, flip) in zip(self.angles.write().unwrap().iter_mut(), y_vec.iter()) {
             if *flip {
                 *angle *= -1.0;
@@ -211,7 +197,7 @@ mod tests {
             angles: RwLock::new(angles_ref),
             size,
         };
-        assert_eq!(pp_ref, pp);
+        assert_eq!(pp, pp_ref);
     }
 
     #[test]
@@ -265,7 +251,7 @@ mod tests {
             angles: RwLock::new(angles_ref),
             size,
         };
-        assert_eq!(pp_ref, pp);
+        assert_eq!(pp, pp_ref);
     }
 
     #[test]
@@ -290,7 +276,7 @@ mod tests {
             angles: RwLock::new(angles_ref),
             size,
         };
-        assert_eq!(pp_ref, pp);
+        assert_eq!(pp, pp_ref);
     }
 
     #[test]
@@ -315,7 +301,7 @@ mod tests {
             angles: RwLock::new(angles_ref),
             size,
         };
-        assert_eq!(pp_ref, pp);
+        assert_eq!(pp, pp_ref);
     }
 
     #[test]
@@ -340,7 +326,7 @@ mod tests {
             angles: RwLock::new(angles_ref),
             size,
         };
-        assert_eq!(pp_ref, pp);
+        assert_eq!(pp, pp_ref);
     }
 
     #[test]
@@ -365,7 +351,7 @@ mod tests {
             angles: RwLock::new(angles_ref),
             size,
         };
-        assert_eq!(pp_ref, pp);
+        assert_eq!(pp, pp_ref);
     }
 
     fn setup_sample_two_qubit_pp(pauli_letter: char) -> PauliPolynomial {
@@ -414,7 +400,7 @@ mod tests {
             angles: RwLock::new(angles_ref),
             size,
         };
-        assert_eq!(pp_ref, pp);
+        assert_eq!(pp, pp_ref);
     }
 
     #[test]
@@ -440,7 +426,7 @@ mod tests {
             angles: RwLock::new(angles_ref),
             size,
         };
-        assert_eq!(pp_ref, pp);
+        assert_eq!(pp, pp_ref);
     }
 
     #[test]
@@ -466,7 +452,7 @@ mod tests {
             angles: RwLock::new(angles_ref),
             size,
         };
-        assert_eq!(pp_ref, pp);
+        assert_eq!(pp, pp_ref);
     }
 
     #[test]
@@ -492,7 +478,7 @@ mod tests {
             angles: RwLock::new(angles_ref),
             size,
         };
-        assert_eq!(pp_ref, pp);
+        assert_eq!(pp, pp_ref);
     }
 
     #[test]
@@ -519,7 +505,7 @@ mod tests {
             angles: RwLock::new(angles_ref),
             size,
         };
-        assert_eq!(pp_ref, pp);
+        assert_eq!(pp, pp_ref);
     }
 
     #[test]
@@ -545,7 +531,7 @@ mod tests {
             angles: RwLock::new(angles_ref),
             size,
         };
-        assert_eq!(pp_ref, pp);
+        assert_eq!(pp, pp_ref);
     }
 
     #[test]
@@ -571,7 +557,7 @@ mod tests {
             angles: RwLock::new(angles_ref),
             size,
         };
-        assert_eq!(pp_ref, pp);
+        assert_eq!(pp, pp_ref);
     }
 
     #[test]
@@ -597,6 +583,6 @@ mod tests {
             angles: RwLock::new(angles_ref),
             size,
         };
-        assert_eq!(pp_ref, pp);
+        assert_eq!(pp, pp_ref);
     }
 }

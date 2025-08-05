@@ -1,7 +1,7 @@
 use bitvec::prelude::BitVec;
 use itertools::{izip, Itertools};
 use std::fmt;
-use std::iter::{self, zip};
+use std::iter::zip;
 use std::ops::Mul;
 
 use super::HasAdjoint;
@@ -23,7 +23,7 @@ impl CliffordTableau {
     pub fn new(n: usize) -> Self {
         CliffordTableau {
             pauli_columns: { (0..n).map(|i| PauliString::from_basis_int(i, n)).collect() },
-            signs: BitVec::from_iter(iter::repeat(false).take(2 * n)),
+            signs: BitVec::repeat(false, 2 * n),
             size: n,
         }
     }
@@ -67,26 +67,23 @@ impl CliffordTableau {
         // Loop re-order to be (k, i, j) as j ordering is contiguous.
         for (k, rhs_pauli_column) in self.pauli_columns.iter().enumerate() {
             for i in 0..size {
-                *(pauli_columns[k].x.write().unwrap()) ^=
-                    BitVec::repeat(rhs_pauli_column.x.read().unwrap()[i], 2 * size)
-                        & lhs.pauli_columns[i].x.read().unwrap().as_bitslice();
-                *(pauli_columns[k].x.write().unwrap()) ^=
-                    BitVec::repeat(rhs_pauli_column.x.read().unwrap()[i + size], 2 * size)
-                        & lhs.pauli_columns[i].z.read().unwrap().as_bitslice();
-                *(pauli_columns[k].z.write().unwrap()) ^=
-                    BitVec::repeat(rhs_pauli_column.z.read().unwrap()[i], 2 * size)
-                        & lhs.pauli_columns[i].x.read().unwrap().as_bitslice();
-                *(pauli_columns[k].z.write().unwrap()) ^=
-                    BitVec::repeat(rhs_pauli_column.z.read().unwrap()[i + size], 2 * size)
-                        & lhs.pauli_columns[i].z.read().unwrap().as_bitslice();
+                let mut x = pauli_columns[k].x.write().unwrap();
+                let mut z = pauli_columns[k].z.write().unwrap();
+                *x ^= BitVec::repeat(rhs_pauli_column.x(i), 2 * size)
+                    & lhs.pauli_columns[i].x.read().unwrap().as_bitslice();
+                *x ^= BitVec::repeat(rhs_pauli_column.x(i + size), 2 * size)
+                    & lhs.pauli_columns[i].z.read().unwrap().as_bitslice();
+                *z ^= BitVec::repeat(rhs_pauli_column.z(i), 2 * size)
+                    & lhs.pauli_columns[i].x.read().unwrap().as_bitslice();
+                *z ^= BitVec::repeat(rhs_pauli_column.z(i + size), 2 * size)
+                    & lhs.pauli_columns[i].z.read().unwrap().as_bitslice();
             }
         }
 
         let mut i_factors = vec![0_usize; 2 * size];
         // Keep track of the inherent i factors of left-hand tableau (where there are Y's in tableau rows)
         for lhs_pauli_column in lhs.pauli_columns.iter() {
-            let local_sign = lhs_pauli_column.x.read().unwrap().clone()
-                & lhs_pauli_column.z.read().unwrap().as_bitslice();
+            let local_sign = lhs_pauli_column.y_bitmask();
             for (fact, sign) in zip(i_factors.iter_mut(), local_sign) {
                 *fact += sign as usize;
             }
@@ -155,7 +152,7 @@ impl CliffordTableau {
             .collect::<BitVec>();
 
         new_signs ^= p;
-        new_signs ^= lhs.signs.clone();
+        new_signs ^= lhs.signs.as_bitslice();
 
         CliffordTableau {
             pauli_columns,
@@ -164,17 +161,18 @@ impl CliffordTableau {
         }
     }
 
-    pub fn permute(&mut self, permutation_vector: Vec<usize>) {
+    pub fn permute(&mut self, permutation_vector: &[usize]) {
         assert_eq!(
             permutation_vector
                 .iter()
                 .copied()
-                .sorted()
+                .sorted_unstable()
                 .collect::<Vec<_>>(),
             (0..self.size()).collect::<Vec<_>>()
         );
-        let sorted_pauli_columns = zip(self.pauli_columns.clone(), permutation_vector)
-            .sorted_by_key(|a| a.1)
+        let pauli_columns = std::mem::take(&mut self.pauli_columns);
+        let sorted_pauli_columns = zip(pauli_columns, permutation_vector)
+            .sorted_unstable_by_key(|a| a.1)
             .map(|a| a.0)
             .collect::<Vec<_>>();
         self.pauli_columns = sorted_pauli_columns;
@@ -197,10 +195,12 @@ impl HasAdjoint for CliffordTableau {
                     pauli_column.z(i + size),
                 );
 
-                new_columns[i].x.write().unwrap().replace(j, x1);
-                new_columns[i].z.write().unwrap().replace(j, z1);
-                new_columns[i].x.write().unwrap().replace(j + size, x2);
-                new_columns[i].z.write().unwrap().replace(j + size, z2);
+                let mut x = new_columns[i].x.write().unwrap();
+                let mut z = new_columns[i].z.write().unwrap();
+                x.replace(j, x1);
+                z.replace(j, z1);
+                x.replace(j + size, x2);
+                z.replace(j + size, z2);
             }
         });
         let mut adjoint_table = CliffordTableau {
@@ -244,22 +244,10 @@ impl PropagateClifford for CliffordTableau {
     fn cx(&mut self, control: IndexType, target: IndexType) -> &mut Self {
         let n = self.size();
 
-        let (control, target) = match control < target {
-            true => {
-                let split = self.pauli_columns.split_at_mut(target);
-                (
-                    split.0.get_mut(control).unwrap(),
-                    split.1.get_mut(0).unwrap(),
-                )
-            }
-            false => {
-                let split = self.pauli_columns.split_at_mut(control);
-                (
-                    split.1.get_mut(0).unwrap(),
-                    split.0.get_mut(target).unwrap(),
-                )
-            }
-        };
+        let [control, target] = self
+            .pauli_columns
+            .get_disjoint_mut([control, target])
+            .unwrap();
 
         let mut scratch = BitVec::repeat(true, 2 * n);
         scratch ^= target.x.read().unwrap().as_bitslice();
@@ -356,7 +344,7 @@ mod tests {
             signs,
             size: ct_size,
         };
-        assert_eq!(clifford_tableau_ref, ct);
+        assert_eq!(ct, clifford_tableau_ref);
     }
 
     fn setup_sample_ct() -> CliffordTableau {
@@ -469,7 +457,7 @@ mod tests {
             size: ct_size,
         };
 
-        assert_eq!(clifford_tableau_ref, ct);
+        assert_eq!(ct, clifford_tableau_ref);
     }
 
     #[test]
@@ -510,7 +498,7 @@ mod tests {
             size: ct_size,
         };
 
-        assert_eq!(clifford_tableau_ref, ct);
+        assert_eq!(ct, clifford_tableau_ref);
     }
 
     #[test]
@@ -553,7 +541,7 @@ mod tests {
             size: ct_size,
         };
 
-        assert_eq!(clifford_tableau_ref, ct);
+        assert_eq!(ct, clifford_tableau_ref);
     }
 
     #[test]
@@ -596,7 +584,7 @@ mod tests {
             size: ct_size,
         };
 
-        assert_eq!(clifford_tableau_ref, ct);
+        assert_eq!(ct, clifford_tableau_ref);
     }
 
     #[test]
@@ -638,7 +626,7 @@ mod tests {
             size: ct_size,
         };
 
-        assert_eq!(clifford_tableau_ref, ct);
+        assert_eq!(ct, clifford_tableau_ref);
     }
 
     #[test]
@@ -679,7 +667,7 @@ mod tests {
             size: ct_size,
         };
 
-        assert_eq!(clifford_tableau_ref, ct);
+        assert_eq!(ct, clifford_tableau_ref);
     }
 
     #[test]
@@ -720,7 +708,7 @@ mod tests {
             size: ct_size,
         };
 
-        assert_eq!(clifford_tableau_ref, ct);
+        assert_eq!(ct, clifford_tableau_ref);
     }
 
     #[test]
@@ -761,7 +749,7 @@ mod tests {
             size: ct_size,
         };
 
-        assert_eq!(clifford_tableau_ref, ct);
+        assert_eq!(ct, clifford_tableau_ref);
     }
 
     /// This does not generate a valid Clifford Tableau. Only used to check commutation relations
@@ -1090,7 +1078,7 @@ mod tests {
         ref_ct.h(1);
         ref_ct.cx(1, 0);
 
-        assert_eq!(ref_ct, third);
+        assert_eq!(third, ref_ct);
     }
 
     #[test]
@@ -1177,9 +1165,9 @@ mod tests {
             size: ct_size,
         };
 
-        assert_eq!(ct_ref, adjoint_ct);
+        assert_eq!(adjoint_ct, ct_ref);
         let identity = CliffordTableau::new(2);
-        assert_eq!(identity, ct * adjoint_ct);
+        assert_eq!(ct * adjoint_ct, identity);
     }
 
     #[test]
@@ -1189,7 +1177,7 @@ mod tests {
         ct.x(0);
 
         let identity = CliffordTableau::new(2);
-        assert_eq!(identity, ct);
+        assert_eq!(ct, identity);
     }
 
     #[test]

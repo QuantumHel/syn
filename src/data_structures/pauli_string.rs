@@ -32,7 +32,7 @@ impl Clone for PauliString {
 impl PauliString {
     /// Constructor for PauliString
     pub fn new(pauli_x: BitVec, pauli_z: BitVec) -> Self {
-        assert!(pauli_x.len() == pauli_z.len());
+        assert_eq!(pauli_x.len(), pauli_z.len());
         PauliString {
             x: RwLock::new(pauli_x),
             z: RwLock::new(pauli_z),
@@ -77,7 +77,7 @@ impl PauliString {
     }
 
     pub fn pauli(&self, i: usize) -> PauliLetter {
-        PauliLetter::new(self.x.read().unwrap()[i], self.z.read().unwrap()[i])
+        PauliLetter::new(self.x(i), self.z(i))
     }
 
     pub fn len(&self) -> usize {
@@ -94,7 +94,7 @@ impl PauliString {
 
     pub(crate) fn masked_s(&self, mask: &BitSlice) {
         let mut mask = mask.to_owned();
-        mask &= self.x.read().unwrap().clone();
+        mask &= self.x.read().unwrap().as_bitslice();
         *self.z.write().unwrap() ^= &mask;
     }
 
@@ -110,9 +110,7 @@ impl PauliString {
 
     #[allow(dead_code)]
     pub(crate) fn h(&self) {
-        let tmp = self.z.read().unwrap().clone();
-        *self.z.write().unwrap() = self.x.read().unwrap().clone();
-        *self.x.write().unwrap() = tmp;
+        std::mem::swap(&mut *self.x.write().unwrap(), &mut *self.z.write().unwrap());
     }
 
     #[allow(dead_code)]
@@ -139,13 +137,13 @@ impl PauliString {
 }
 
 pub(crate) fn cx(control: &PauliString, target: &PauliString) {
-    assert!(control.len() == target.len());
+    assert_eq!(control.len(), target.len());
     *target.x.write().unwrap() ^= control.x.read().unwrap().as_bitslice();
     *control.z.write().unwrap() ^= target.z.read().unwrap().as_bitslice();
 }
 
 pub(crate) fn masked_cx(control: &PauliString, target: &PauliString, mask: &BitSlice) {
-    assert!(control.len() == target.len());
+    assert_eq!(control.len(), target.len());
     let mut x_mask = mask.to_owned();
     let mut z_mask = mask.to_owned();
     x_mask &= control.x.read().unwrap().as_bitslice();
@@ -311,6 +309,6 @@ mod tests {
     #[test]
     fn test_pauli_string_display() {
         let pauli_string = PauliString::from_text("IXYZI");
-        assert_eq!(String::from("I X Y Z I"), pauli_string.to_string());
+        assert_eq!(pauli_string.to_string(), String::from("I X Y Z I"));
     }
 }

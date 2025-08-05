@@ -100,7 +100,7 @@ where
                 );
             }
         }
-        let final_permutation = zip(custom_columns.clone(), custom_rows.clone())
+        let final_permutation = zip(custom_columns, custom_rows)
             .sorted_by_key(|a| a.1)
             .map(|a| a.0)
             .collect::<Vec<_>>();

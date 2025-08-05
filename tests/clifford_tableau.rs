@@ -221,7 +221,7 @@ fn test_custom_clifford_synthesis_large() {
     synthesizer.synthesize(clifford_tableau.clone(), &mut mock);
 
     let mut ref_ct = parse_clifford_commands(4, mock.commands());
-    ref_ct.permute(vec![0, 2, 1, 3]);
+    ref_ct.permute(&[0, 2, 1, 3]);
 
     assert_eq!(clifford_tableau, ref_ct);
 }
