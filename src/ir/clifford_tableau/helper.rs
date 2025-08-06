@@ -3,45 +3,14 @@ use std::iter::zip;
 use crate::{
     architecture::{connectivity::Connectivity, Architecture},
     data_structures::{CliffordTableau, PauliLetter, PauliString, PropagateClifford},
-    ir::CliffordGates,
+    ir::{
+        helper::{is_i, is_not_i, is_not_x, is_not_z, is_x, is_y, is_z},
+        CliffordGates,
+    },
 };
 
 fn get_pauli(pauli_string: &PauliString, row: usize) -> PauliLetter {
     PauliLetter::new(pauli_string.x(row), pauli_string.z(row))
-}
-
-#[allow(dead_code)]
-fn is_i(pauli_letter: PauliLetter) -> bool {
-    pauli_letter == PauliLetter::I
-}
-
-fn is_not_i(pauli_letter: PauliLetter) -> bool {
-    pauli_letter != PauliLetter::I
-}
-
-fn is_x(pauli_letter: PauliLetter) -> bool {
-    pauli_letter == PauliLetter::X
-}
-
-fn is_not_x(pauli_letter: PauliLetter) -> bool {
-    pauli_letter != PauliLetter::X
-}
-
-fn is_y(pauli_letter: PauliLetter) -> bool {
-    pauli_letter == PauliLetter::Y
-}
-
-#[allow(dead_code)]
-fn is_not_y(pauli_letter: PauliLetter) -> bool {
-    pauli_letter != PauliLetter::Y
-}
-
-fn is_z(pauli_letter: PauliLetter) -> bool {
-    pauli_letter == PauliLetter::Z
-}
-
-fn is_not_z(pauli_letter: PauliLetter) -> bool {
-    pauli_letter != PauliLetter::Z
 }
 
 pub(super) fn clean_naive_pivot<G>(
