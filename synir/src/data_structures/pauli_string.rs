@@ -68,6 +68,15 @@ impl PauliString {
     pub fn z_weight(&self) -> usize {
         self.z.read().unwrap().count_ones()
     }
+    pub fn combine(&self) -> BitVec {
+        let mut new_string = self.z.read().unwrap().to_bitvec();
+        new_string |= self.x.read().unwrap().as_bitslice();
+        new_string
+    }
+    pub fn weight(&self) -> usize {
+        let new_string = self.combine();
+        new_string.count_ones()
+    }
 
     pub fn z(&self, i: usize) -> bool {
         self.z[i]
@@ -75,6 +84,16 @@ impl PauliString {
 
     pub fn pauli(&self, i: usize) -> PauliLetter {
         PauliLetter::new(self.x(i), self.z(i))
+    }
+
+    pub fn iter(&self) -> Vec<PauliLetter> {
+        self.x
+            .read()
+            .unwrap()
+            .iter()
+            .zip(self.z.read().unwrap().iter())
+            .map(|(x, z)| PauliLetter::new(*x, *z))
+            .collect::<Vec<PauliLetter>>()
     }
 
     pub fn len(&self) -> usize {
@@ -130,6 +149,12 @@ impl PauliString {
         mask &= &self.x;
         mask &= &self.z;
         mask
+    }
+
+    pub(crate) fn swap_remove(&mut self, index: usize) -> PauliLetter {
+        let x = self.x.write().unwrap().swap_remove(index);
+        let z = self.z.write().unwrap().swap_remove(index);
+        PauliLetter::new(x, z)
     }
 }
 
