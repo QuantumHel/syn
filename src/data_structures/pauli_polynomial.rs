@@ -3,16 +3,15 @@ use std::{iter::zip, sync::RwLock};
 use bitvec::vec::BitVec;
 use itertools::zip_eq;
 
-use super::{pauli_string::PauliString, IndexType, MaskedPropagateClifford, PropagateClifford};
+use crate::data_structures::Angle;
 
-// todo: Make this into a union / type Angle
-type Angle = f64;
+use super::{pauli_string::PauliString, IndexType, MaskedPropagateClifford, PropagateClifford};
 
 #[derive(Debug, Default)]
 pub struct PauliPolynomial {
-    chains: Vec<PauliString>,
-    angles: RwLock<Vec<Angle>>,
-    size: usize,
+    pub(crate) chains: Vec<PauliString>,
+    pub(crate) angles: RwLock<Vec<Angle>>,
+    pub(crate) size: usize,
 }
 
 impl Clone for PauliPolynomial {
@@ -46,10 +45,22 @@ impl PauliPolynomial {
             .map(|gadget| (PauliString::from_text(gadget)))
             .collect::<Vec<_>>();
 
-        PauliPolynomial {
+        Self {
             chains,
             angles: RwLock::new(angles),
             size: num_qubits,
+        }
+    }
+
+    pub fn from_components(
+        chains: Vec<PauliString>,
+        angles: RwLock<Vec<Angle>>,
+        size: usize,
+    ) -> Self {
+        Self {
+            chains,
+            angles,
+            size,
         }
     }
 
@@ -65,8 +76,20 @@ impl PauliPolynomial {
         &self.chains
     }
 
+    pub fn angles(&self) -> &RwLock<std::vec::Vec<f64>> {
+        &self.angles
+    }
+
     pub fn angle(&self, i: usize) -> Angle {
         self.angles.read().unwrap()[i]
+    }
+
+    pub fn chain(&self, index: usize) -> &PauliString {
+        &self.chains[index]
+    }
+
+    pub fn mut_chains(&mut self) -> &mut Vec<PauliString> {
+        &mut self.chains
     }
 }
 
