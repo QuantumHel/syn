@@ -96,6 +96,10 @@ pub fn parse_clifford_commands(
     Ok(tableau)
 }
 
+pub trait Synthesize {
+    fn synthesize(&self) -> Vec<PyCommand>;
+}
+
 #[pyclass]
 #[derive(Clone)]
 pub struct PyPauliString {

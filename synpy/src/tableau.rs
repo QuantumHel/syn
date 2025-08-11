@@ -1,4 +1,4 @@
-use crate::synthesis::{CommandCollector, PyCommand};
+use crate::synthesis::{CommandCollector, PyCommand, Synthesize};
 
 use bitvec::prelude::BitVec;
 use pyo3::basic::CompareOp;
@@ -56,10 +56,7 @@ impl PyCliffordTableau {
     }
 
     pub fn synthesize(&self) -> Vec<PyCommand> {
-        let mut tracker = CommandCollector::new();
-        let mut synthesizer = NaiveCliffordSynthesizer::default();
-        synthesizer.synthesize(self.tableau.clone(), &mut tracker);
-        tracker.commands()
+        <Self as Synthesize>::synthesize(self)
     }
 }
 
@@ -77,5 +74,14 @@ impl PropagateClifford for PyCliffordTableau {
     fn v(&mut self, target: usize) -> &mut Self {
         self.tableau.v(target);
         self
+    }
+}
+
+impl Synthesize for PyCliffordTableau {
+    fn synthesize(&self) -> Vec<PyCommand> {
+        let mut tracker = CommandCollector::new();
+        let mut synthesizer = NaiveCliffordSynthesizer::default();
+        synthesizer.synthesize(self.tableau.clone(), &mut tracker);
+        tracker.commands()
     }
 }
