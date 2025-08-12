@@ -27,6 +27,22 @@ impl PauliExponential {
             clifford_tableau,
         }
     }
+    //added getters for the pauli polynomials and the clifford tableau
+    pub fn polynomials(&self) -> &VecDeque<PauliPolynomial> {
+        &self.pauli_polynomials
+    }
+    pub fn clifford_tableau(&self) -> &CliffordTableau {
+        &self.clifford_tableau
+    }
+
+    pub fn visualize_pauli_exponential(&self) {
+        println!("Clifford Tableau:");
+        self.clifford_tableau.visualize_tableaus();
+        println!("Pauli Polynomials:");
+        for polynomial in &self.pauli_polynomials {
+            polynomial.visualize_pauli_polynomial();
+        }
+    }
 }
 
 #[derive(Default)]

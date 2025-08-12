@@ -68,6 +68,14 @@ impl PauliPolynomial {
     pub fn angle(&self, i: usize) -> Angle {
         self.angles.read().unwrap()[i]
     }
+
+    pub fn visualize_pauli_polynomial(&self) {
+        println!("Pauli Polynomial size:{} ", self.size());
+        let chains = self.chains();
+        for i in chains {
+            println!("{}", i);
+        }
+    }
 }
 
 impl PropagateClifford for PauliPolynomial {

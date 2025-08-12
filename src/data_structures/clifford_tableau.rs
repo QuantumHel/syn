@@ -41,6 +41,14 @@ impl CliffordTableau {
         self.size
     }
 
+    pub fn pauli_column(&self, i: usize) -> &PauliString {
+        &self.pauli_columns[i]
+    } //why does column does not work and I need a new getter method ?
+
+    pub fn signs(&self) -> &BitVec {
+        &self.signs
+    }
+
     pub(crate) fn x_signs(&self) -> BitVec {
         let n = self.size();
         self.signs[0..n].to_bitvec()
@@ -176,6 +184,56 @@ impl CliffordTableau {
             .map(|a| a.0)
             .collect::<Vec<_>>();
         self.pauli_columns = sorted_pauli_columns;
+    }
+
+    pub fn visualize_tableaus(&self) {
+        println!("Clifford Tableau ({} qubits):", self.size());
+        print!("    ||");
+        for i in 0..self.size() {
+            print!(" X{} Z{}|", i + 1, i + 1);
+        }
+        println!();
+        print!("+/- ||");
+        for i in 0..self.signs().len() {
+            if self.signs().get(i).map(|b| *b) == Some(true) {
+                print!(" +");
+            } else {
+                print!(" -");
+            }
+            print!(" ");
+            if i % 2 != 0 {
+                print!("|");
+            }
+        }
+        println!();
+
+        for i in 0..self.size() {
+            print!("QB{} ||", i + 1);
+            let column = self.pauli_column(i).to_string();
+            let mut out = String::new();
+            let mut count = 0;
+            for ch in column.chars() {
+                if ch != ' ' {
+                    count += 1;
+                    out.push(ch);
+                    if count % 2 == 1 {
+                        // odd
+                        out.push(' ');
+                    } else {
+                        // even
+                        out.push_str(" | ");
+                    }
+                } else {
+                    out.push(' ');
+                }
+            }
+            let fix = out
+                .replace("|  I", "| I")
+                .replace("|  Z", "| Z")
+                .replace("|  X", "| X")
+                .replace("|  Y", "| Y");
+            println!(" {} ", fix);
+        }
     }
 }
 
