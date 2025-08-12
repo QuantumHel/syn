@@ -1,7 +1,7 @@
 from qiskit.quantum_info import Clifford
 from qiskit import QuantumCircuit
 
-from synpy.qiskit.plugin import SynPyPlugin
+from synpy.qiskit.plugin import SynPyCliffordPlugin
 
 
 def test_qiskit_bell() -> None:
@@ -10,7 +10,7 @@ def test_qiskit_bell() -> None:
     qc.cx(0, 1)
     cliff = Clifford(qc)
 
-    plugin = SynPyPlugin()
+    plugin = SynPyCliffordPlugin()
     circ = plugin.run(cliff, None, None, [])
     # circ.draw()
 

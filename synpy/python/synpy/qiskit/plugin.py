@@ -7,7 +7,7 @@ from synpy.synpy_rust import PyCliffordTableau
 from synpy.utils import pycommand_to_qasm
 
 
-class SynPyPlugin(HighLevelSynthesisPlugin):
+class SynPyCliffordPlugin(HighLevelSynthesisPlugin):
     def __init__(self) -> None:
         super().__init__()
 
