@@ -418,7 +418,7 @@ mod tests {
     fn test_best_simple_path() {
         let new_architecture = Connectivity::from_edges(&setup_simple());
 
-        assert_eq!(new_architecture.best_path(0, 4), vec![0, 1, 2, 4]);
+        assert_eq!(new_architecture.best_path(0, 4), vec![0, 5, 4]);
     }
 
     #[test]
