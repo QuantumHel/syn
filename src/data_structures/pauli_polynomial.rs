@@ -71,9 +71,27 @@ impl PauliPolynomial {
 
     pub fn visualize_pauli_polynomial(&self) {
         println!("Pauli Polynomial size:{} ", self.size());
+        let angles = self.angles.read().unwrap();
+        let string_angles = angles
+            .iter()
+            .map(|x| format!("{:.2}", x)) //force 2 decimal place for easy formatting, is it reasonable?
+            .collect::<Vec<String>>()
+            .join(" | ");
+        println!("Angles | {} |", string_angles);
         let chains = self.chains();
-        for i in chains {
-            println!("{}", i);
+        let mut index = 0;
+        for chain in chains {
+            print!("Qubit {}|", index);
+            let chain_str = chain.to_string();
+            let mut out = String::new();
+            for ch in chain_str.chars() {
+                out.push(ch);
+                if !ch.is_whitespace() {
+                    out.push_str("    |"); //bad, hardcoded spaces
+                }
+            }
+            println!(" {}", out);
+            index += 1;
         }
     }
 }
