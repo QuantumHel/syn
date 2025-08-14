@@ -98,17 +98,24 @@ fn test_psgs_pauli_exponential_synthesis_simple() {
     synthesizer.set_connectivity(Connectivity::complete(4));
     let ct = synthesizer.synthesize(pp, &mut mock);
 
-    let ref_commands = 
-        [MockCommand::S(1), MockCommand::CX(3, 1), MockCommand::V(2), MockCommand::CX(2, 1), MockCommand::Ry(1, 0.3)];
+    let ref_commands = [
+        MockCommand::S(1),
+        MockCommand::CX(3, 1),
+        MockCommand::V(2),
+        MockCommand::CX(2, 1),
+        MockCommand::Ry(1, 0.3),
+    ];
 
     let ref_clifford_commands = [
-        MockCommand::S(1), MockCommand::CX(3, 1), MockCommand::V(2), MockCommand::CX(2, 1)
+        MockCommand::S(1),
+        MockCommand::CX(3, 1),
+        MockCommand::V(2),
+        MockCommand::CX(2, 1),
     ];
 
     assert_eq!(mock.commands(), &ref_commands);
     assert_eq!(ct, parse_clifford_commands(4, &ref_clifford_commands));
 }
-
 
 #[test]
 fn test_psgs_pauli_exponential_synthesis_complex() {
@@ -120,23 +127,23 @@ fn test_psgs_pauli_exponential_synthesis_complex() {
     let ct = synthesizer.synthesize(pp, &mut mock);
 
     let ref_commands = [
-        MockCommand::CX(3, 1), 
-        MockCommand::CX(2, 1), 
-        MockCommand::Rz(1, 0.3), 
-        MockCommand::H(1), 
-        MockCommand::S(0), 
-        MockCommand::CX(1, 0), 
-        MockCommand::Ry(0, 0.7)
-        ];
+        MockCommand::CX(3, 1),
+        MockCommand::CX(2, 1),
+        MockCommand::Rz(1, 0.3),
+        MockCommand::H(1),
+        MockCommand::S(0),
+        MockCommand::CX(1, 0),
+        MockCommand::Ry(0, 0.7),
+    ];
 
     let ref_clifford_commands = [
-        MockCommand::CX(3, 1), 
-        MockCommand::CX(2, 1), 
-        MockCommand::H(1), 
-        MockCommand::S(0), 
-        MockCommand::CX(1, 0), 
+        MockCommand::CX(3, 1),
+        MockCommand::CX(2, 1),
+        MockCommand::H(1),
+        MockCommand::S(0),
+        MockCommand::CX(1, 0),
     ];
-    
+
     assert_eq!(mock.commands(), &ref_commands);
     assert_eq!(ct, parse_clifford_commands(4, &ref_clifford_commands));
 }
