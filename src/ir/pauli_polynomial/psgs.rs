@@ -4,9 +4,7 @@ use crate::{
     architecture::connectivity::Connectivity,
     data_structures::{CliffordTableau, PauliPolynomial},
     ir::{
-        pauli_polynomial::{
-            helper::{check_columns, identity_recurse},
-        },
+        pauli_polynomial::helper::{check_columns, identity_recurse},
         CliffordGates, Gates, Synthesizer,
     },
 };
@@ -46,7 +44,13 @@ where
             let num_gadgets: usize = pauli_polynomial.length();
             let mut polynomial_mask = bitvec![usize, Lsb0; 1; num_gadgets];
             check_columns(repr, &mut pauli_polynomial, &mut polynomial_mask);
-            identity_recurse(&mut pauli_polynomial, &mut clifford_tableau, &self.connectivity, polynomial_mask, repr);
+            identity_recurse(
+                &mut pauli_polynomial,
+                &mut clifford_tableau,
+                &self.connectivity,
+                polynomial_mask,
+                repr,
+            );
         }
         clifford_tableau
     }
