@@ -1,16 +1,14 @@
-use std::{collections::VecDeque, fs::remove_dir, iter::zip, ops::AddAssign, sync::RwLock};
+use std::{collections::VecDeque, iter::zip};
 
-use bitvec::{bitvec, index, order::Lsb0};
+use bitvec::{bitvec, order::Lsb0};
 use itertools::Itertools;
-use typenum::Bit;
 
 use crate::{
     architecture::{connectivity::Connectivity, Architecture},
     data_structures::{
-        Angle, CliffordTableau, MaskedPropagateClifford, PauliLetter, PauliPolynomial, PauliString,
-        PropagateClifford,
+        CliffordTableau, MaskedPropagateClifford, PauliLetter, PauliPolynomial, PropagateClifford,
     },
-    ir::{helper::is_not_i, pauli_polynomial, CliffordGates, Gates},
+    ir::{CliffordGates, Gates},
 };
 
 use bitvec::prelude::BitVec;
@@ -153,7 +151,7 @@ pub(super) fn check_columns<G>(
 
         let mut invalid = BitVec::repeat(false, length);
         let mut seen_one = BitVec::repeat(false, length);
-        
+
         for chain in pauli_polynomial.chains().iter() {
             let combination = chain.combine();
             invalid |= seen_one.clone() & &combination;
@@ -268,7 +266,7 @@ pub(super) fn max_partition(
         (z_mask, PauliLetter::Z),
     ];
     polynomial_parts.sort_by(|a, b| a.0.count_ones().cmp(&b.0.count_ones()));
-    
+
     let (largest_mask, largest_pauli) = polynomial_parts.pop().unwrap();
     let (second_mask, second_pauli) = polynomial_parts.pop().unwrap();
     let (third_mask, third_pauli) = polynomial_parts.pop().unwrap();
@@ -305,9 +303,8 @@ pub(super) fn identity_recurse<G>(
 
     let (identity_mask, other_mask) =
         identity_partition(pauli_polynomial, polynomial_mask, selected_qubit);
-    
+
     if identity_mask.count_ones() > 0 {
-        
         // recurse down identity mask
         identity_recurse(
             pauli_polynomial,
@@ -317,13 +314,13 @@ pub(super) fn identity_recurse<G>(
             repr,
         );
         // ensure remainder is synthesized
-        return identity_recurse(
+        identity_recurse(
             pauli_polynomial,
             clifford_tableau,
             connectivity,
             other_mask,
             repr,
-        );
+        )
     } else {
         // `identity_mask` is empty, we do not process it
         let (largest_mask, largest_pauli, mut remaining_mask, _, third_mask, _) =
@@ -332,11 +329,15 @@ pub(super) fn identity_recurse<G>(
         remaining_mask |= third_mask.as_bitslice();
 
         // Ensure `next_qubit` is always a neighbor of `selected_qubit`
-        let next_qubit = pick_qubit(&pauli_polynomial, &largest_mask, &connectivity.neighbors(selected_qubit));
-        
+        let next_qubit = pick_qubit(
+            pauli_polynomial,
+            &largest_mask,
+            &connectivity.neighbors(selected_qubit),
+        );
+
         // Check if there are identities on `next_qubit`
         let (next_identity_mask, next_other_mask) =
-            identity_partition(&pauli_polynomial, largest_mask, next_qubit);
+            identity_partition(pauli_polynomial, largest_mask, next_qubit);
 
         // Ensure that selected qubit is always Pauli::Z
         diagonalize_qubit(
@@ -358,7 +359,7 @@ pub(super) fn identity_recurse<G>(
             remaining_mask |= next_other_mask.as_bitslice();
 
             let (identity_mask, other_mask) =
-                identity_partition(&pauli_polynomial, remaining_mask, selected_qubit);
+                identity_partition(pauli_polynomial, remaining_mask, selected_qubit);
 
             identity_recurse(
                 pauli_polynomial,
@@ -368,13 +369,13 @@ pub(super) fn identity_recurse<G>(
                 repr,
             );
 
-            return identity_recurse(
+            identity_recurse(
                 pauli_polynomial,
                 clifford_tableau,
                 connectivity,
                 other_mask,
                 repr,
-            );
+            )
         } else {
             let (
                 mut largest_mask,
@@ -383,12 +384,12 @@ pub(super) fn identity_recurse<G>(
                 second_next_pauli,
                 third_mask,
                 _,
-            ) = max_partition(&pauli_polynomial, next_other_mask, next_qubit);
-            
+            ) = max_partition(pauli_polynomial, next_other_mask, next_qubit);
+
             largest_mask |= second_mask.as_bitslice();
             let is_x = largest_next_pauli == PauliLetter::X || second_next_pauli == PauliLetter::X;
             let is_y = largest_next_pauli == PauliLetter::Y || second_next_pauli == PauliLetter::Y;
-            
+
             disconnect(
                 pauli_polynomial,
                 clifford_tableau,
@@ -398,7 +399,7 @@ pub(super) fn identity_recurse<G>(
                 is_x,
                 is_y,
             );
-            
+
             identity_recurse(
                 pauli_polynomial,
                 clifford_tableau,
