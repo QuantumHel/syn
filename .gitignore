@@ -12,5 +12,3 @@ target/
 # Ideas
 .idea/
 .vscode/
-
-src/main.rs
