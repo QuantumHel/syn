@@ -36,9 +36,10 @@ impl PauliExponential {
     }
 
     pub fn visualize_pauli_exponential(&self) {
-        println!("Clifford Tableau:");
+        println!("Visualizing Pauli Exponential:");
+        // println!("Clifford Tableau:");
         self.clifford_tableau.visualize_tableaus();
-        println!("Pauli Polynomials:");
+        // println!("Pauli Polynomials:");
         for polynomial in &self.pauli_polynomials {
             polynomial.visualize_pauli_polynomial();
         }

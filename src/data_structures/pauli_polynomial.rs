@@ -74,7 +74,7 @@ impl PauliPolynomial {
         let angles = self.angles.read().unwrap();
         let string_angles = angles
             .iter()
-            .map(|x| format!("{:.2}", x)) //force 2 decimal place for easy formatting, is it reasonable?
+            .map(|x| format!("{:.3}", x)) //force 3 decimal place for easy formatting, is it reasonable?
             .collect::<Vec<String>>()
             .join(" | ");
         println!("Angles | {} |", string_angles);
@@ -87,13 +87,14 @@ impl PauliPolynomial {
             for ch in chain_str.chars() {
                 out.push(ch);
                 if !ch.is_whitespace() {
-                    out.push_str("    |"); //bad, hardcoded spaces
+                    out.push_str("     |"); //bad, hardcoded spaces. Do we want variable length ?
                 }
             }
             println!(" {}", out);
             index += 1;
         }
-    }
+    } //visualize pauli polynomial is currently a method of the class, The formatting is
+      //hardcoded so it can be easily broken if input parameter changed.
 }
 
 impl PropagateClifford for PauliPolynomial {

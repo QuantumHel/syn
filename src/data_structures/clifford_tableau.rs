@@ -217,22 +217,15 @@ impl CliffordTableau {
                     count += 1;
                     out.push(ch);
                     if count % 2 == 1 {
-                        // odd
                         out.push(' ');
                     } else {
-                        // even
-                        out.push_str(" | ");
+                        out.push_str(" |");
                     }
                 } else {
                     out.push(' ');
                 }
             }
-            let fix = out
-                .replace("|  I", "| I")
-                .replace("|  Z", "| Z")
-                .replace("|  X", "| X")
-                .replace("|  Y", "| Y");
-            println!(" {} ", fix);
+            println!(" {} ", out);
         }
     }
 }
