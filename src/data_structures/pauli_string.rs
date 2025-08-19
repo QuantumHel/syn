@@ -51,17 +51,15 @@ impl PauliString {
 
     /// Takes in a String containing "I"
     pub fn from_text(pauli: &str) -> Self {
-        let (x, z): (BitVec, BitVec) = pauli
+        let (x, z) = pauli
             .chars()
-            .map(|pauli_char| {
-                let (x, z) = match pauli_char {
-                    'I' => (false, false),
-                    'X' => (true, false),
-                    'Y' => (true, true),
-                    'Z' => (false, true),
-                    _ => panic!("Letter not recognized"),
-                };
-                (x, z)
+            .filter_map(|pauli_char| match pauli_char {
+                'I' => Some((false, false)),
+                'X' => Some((true, false)),
+                'Y' => Some((true, true)),
+                'Z' => Some((false, true)),
+                ' ' => None,
+                _ => panic!("Letter not recognized"),
             })
             .collect();
 
