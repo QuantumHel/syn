@@ -1,11 +1,11 @@
 use std::iter::zip;
 
 use crate::{
-    data_structures::{CliffordTableau, PauliLetter, PauliString, PropagateClifford},
+    data_structures::{CliffordTableau, PauliLetter, PauliVec, PropagateClifford},
     ir::CliffordGates,
 };
 
-fn get_pauli(pauli_string: &PauliString, row: usize) -> PauliLetter {
+fn get_pauli(pauli_string: &PauliVec, row: usize) -> PauliLetter {
     PauliLetter::new(pauli_string.x(row), pauli_string.z(row))
 }
 

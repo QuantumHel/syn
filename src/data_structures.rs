@@ -2,12 +2,12 @@ use crate::IndexType;
 
 mod clifford_tableau;
 mod pauli_polynomial;
-mod pauli_string;
+mod pauli_vec;
 
 use bitvec::vec::BitVec;
 pub use clifford_tableau::CliffordTableau;
 pub use pauli_polynomial::PauliPolynomial;
-pub use pauli_string::PauliString;
+pub use pauli_vec::PauliVec;
 
 pub trait HasAdjoint {
     fn adjoint(&self) -> Self;
