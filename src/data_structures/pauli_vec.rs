@@ -5,9 +5,16 @@ use std::sync::RwLock;
 
 use super::PauliLetter;
 
+/// A vector of Pauli operators (`I`, `X`, `Y`, `Z`)-
 #[derive(Debug)]
 pub struct PauliVec {
+    /// The `x` bits. There is one bit for every operator in this vec. When it is
+    /// set, the corresponding operator is either `X` or `Y` (depending on the `z`
+    /// vec).
     pub(super) x: RwLock<BitVec>,
+    /// The `z` bits. There is one bit for every operator in this vec. When it is
+    /// set, the corresponding operator is either `Z` or `Y` (depending on the `x`
+    /// vec).
     pub(super) z: RwLock<BitVec>,
 }
 
@@ -30,7 +37,21 @@ impl Clone for PauliVec {
 }
 
 impl PauliVec {
-    /// Constructs a new Pauli vec.
+    /// Constructs a new Pauli vector from separate `pauli_x` and `pauli_z` vectors.
+    /// Both must have same length. The letters are then represented in the following
+    /// way:
+    ///
+    ///  ```text
+    /// | x     | z     | letter |
+    /// |-------|-------|--------|
+    /// | false | false | I      |
+    /// | true  | false | X      |
+    /// | true  | true  | Y      |
+    /// | false | true  | Z      |
+    /// ```
+    ///
+    /// # Panics
+    /// Panics if `pauli_x` and `pauli_z` are not of the same length.
     pub fn new(pauli_x: BitVec, pauli_z: BitVec) -> Self {
         assert_eq!(pauli_x.len(), pauli_z.len());
         PauliVec {
@@ -39,7 +60,21 @@ impl PauliVec {
         }
     }
 
-    /// Takes in a String containing "I"
+    /// Constructs a new Pauli vector from a string of Pauli letters.
+    ///
+    /// The letters must be upper case (to avoid confusion with the complex `i`).
+    /// Spaces are ignored. The valid letters are `I`, `X`, `Y` and `Z`.
+    ///
+    /// # Panics
+    /// Panics if an unknown letter is encountered.
+    ///
+    /// # Examples
+    /// ```
+    /// # use syn::data_structures::PauliVec;
+    /// let p1 = PauliVec::from_text("XZZ");
+    /// let p2 = PauliVec::from_text("X Z   Z");
+    /// assert_eq!(p1, p2);
+    /// ```
     pub fn from_text(pauli: &str) -> Self {
         let (x, z) = pauli
             .chars()
@@ -56,22 +91,36 @@ impl PauliVec {
         PauliVec::new(x, z)
     }
 
+    /// Returns whether the `i`th operator in the Pauli vector is `X` or `Y`.
+    ///
+    /// # Panics
+    /// Panics if `i` is out of bounds.
     pub fn x(&self, i: usize) -> bool {
         self.x.read().unwrap()[i]
     }
 
+    /// Returns whether the `i`th operator in the Pauli vector is `Z` or `Y`.
+    ///
+    /// # Panics
+    /// Panics if `i` is out of bounds.
     pub fn z(&self, i: usize) -> bool {
         self.z.read().unwrap()[i]
     }
 
+    /// Returns the pauli letter at the `i`th position of the Pauli vector.
+    ///
+    /// # Panics
+    /// Panics if `i` is out of bounds.
     pub fn pauli(&self, i: usize) -> PauliLetter {
         PauliLetter::new(self.x(i), self.z(i))
     }
 
+    /// Returns the length of the Pauli vector.
     pub fn len(&self) -> usize {
         self.x.read().unwrap().len()
     }
 
+    /// Returns whether the Pauli vector is empty.
     pub fn is_empty(&self) -> bool {
         self.x.read().unwrap().is_empty()
     }
