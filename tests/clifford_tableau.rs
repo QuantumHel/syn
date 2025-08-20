@@ -63,7 +63,7 @@ fn setup_2_qubit_clifford() -> CliffordTableau {
 }
 
 #[test]
-fn test_id_synthesis() {
+fn id_synthesis() {
     let clifford_tableau = setup_2_qubit_clifford();
     let mut mock = MockCircuit::new();
 
@@ -73,7 +73,7 @@ fn test_id_synthesis() {
 }
 
 #[test]
-fn test_s_synthesis() {
+fn s_synthesis() {
     let mut clifford_tableau = setup_2_qubit_clifford();
     clifford_tableau.s(1);
     let mut mock = MockCircuit::new();
@@ -84,7 +84,7 @@ fn test_s_synthesis() {
 }
 
 #[test]
-fn test_s_adjoint_synthesis() {
+fn s_adjoint_synthesis() {
     let mut clifford_tableau = setup_2_qubit_clifford();
     clifford_tableau.s(1);
     let mut mock = MockCircuit::new();
@@ -98,7 +98,7 @@ fn test_s_adjoint_synthesis() {
 }
 
 #[test]
-fn test_v_synthesis() {
+fn v_synthesis() {
     let mut clifford_tableau = setup_2_qubit_clifford();
     clifford_tableau.v(1);
     let mut mock = MockCircuit::new();
@@ -117,7 +117,7 @@ fn test_v_synthesis() {
 }
 
 #[test]
-fn test_v_adjoint_synthesis() {
+fn v_adjoint_synthesis() {
     let mut clifford_tableau = setup_2_qubit_clifford();
     clifford_tableau.v(1);
     let mut mock = MockCircuit::new();
@@ -134,7 +134,7 @@ fn test_v_adjoint_synthesis() {
 }
 
 #[test]
-fn test_cnot_synthesis() {
+fn cnot_synthesis() {
     let mut clifford_tableau = setup_2_qubit_clifford();
     clifford_tableau.cx(0, 1);
     let mut mock = MockCircuit::new();
@@ -146,7 +146,7 @@ fn test_cnot_synthesis() {
 }
 
 #[test]
-fn test_cnot_reverse_synthesis() {
+fn cnot_reverse_synthesis() {
     let mut clifford_tableau = setup_2_qubit_clifford();
     clifford_tableau.cx(1, 0);
     let mut mock = MockCircuit::new();
@@ -158,7 +158,7 @@ fn test_cnot_reverse_synthesis() {
 }
 
 #[test]
-fn test_clifford_synthesis() {
+fn clifford_synthesis() {
     let clifford_tableau = setup_sample_ct();
     let mut mock = MockCircuit::new();
 
@@ -171,7 +171,7 @@ fn test_clifford_synthesis() {
 }
 
 #[test]
-fn test_clifford_synthesis_large() {
+fn clifford_synthesis_large() {
     let clifford_tableau = setup_sample_inverse_ct();
     let mut mock = MockCircuit::new();
 
@@ -184,7 +184,7 @@ fn test_clifford_synthesis_large() {
 }
 
 #[test]
-fn test_clifford_synthesis_simple() {
+fn clifford_synthesis_simple() {
     let mut clifford_tableau = CliffordTableau::new(3);
     clifford_tableau.cx(0, 1);
     clifford_tableau.cx(1, 2);
@@ -198,7 +198,7 @@ fn test_clifford_synthesis_simple() {
 }
 
 #[test]
-fn test_custom_clifford_synthesis() {
+fn custom_clifford_synthesis() {
     let clifford_tableau = setup_sample_ct();
     let mut mock = MockCircuit::new();
 
@@ -211,7 +211,7 @@ fn test_custom_clifford_synthesis() {
 }
 
 #[test]
-fn test_custom_clifford_synthesis_large() {
+fn custom_clifford_synthesis_large() {
     let clifford_tableau = setup_sample_inverse_ct();
     let mut mock = MockCircuit::new();
 
@@ -227,7 +227,7 @@ fn test_custom_clifford_synthesis_large() {
 }
 
 #[test]
-fn test_custom_clifford_synthesis_simple() {
+fn custom_clifford_synthesis_simple() {
     let mut clifford_tableau = CliffordTableau::new(3);
     clifford_tableau.cx(0, 1);
     clifford_tableau.cx(1, 2);
