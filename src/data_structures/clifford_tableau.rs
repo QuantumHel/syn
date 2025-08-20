@@ -325,7 +325,7 @@ mod tests {
     use bitvec::prelude::Lsb0;
 
     #[test]
-    fn test_clifford_tableau_constructor() {
+    fn constructing() {
         let ct_size = 3;
         let ct = CliffordTableau::new(ct_size);
         let x_1 = bitvec![1, 0, 0, 0, 0, 0];
@@ -419,7 +419,7 @@ mod tests {
     }
 
     #[test]
-    fn test_clifford_tableau_s() {
+    fn propagate_s() {
         // Stab: ZZZ, -YIY, IXY
         // Destab: -IXI, ZII, ZIZ
         let ct_size = 3;
@@ -461,7 +461,7 @@ mod tests {
     }
 
     #[test]
-    fn test_clifford_tableau_v() {
+    fn propagate_v() {
         // Stab: ZZZ, -YIY, IXY
         // Destab: -IXI, ZII, ZIZ
         let ct_size = 3;
@@ -502,7 +502,7 @@ mod tests {
     }
 
     #[test]
-    fn test_clifford_tableau_sdag() {
+    fn propagate_sdag() {
         // Stab: ZZZ, -YIY, IXY
         // Destab: -IXI, ZII, ZIZ
         let ct_size = 3;
@@ -545,7 +545,7 @@ mod tests {
     }
 
     #[test]
-    fn test_clifford_tableau_vdag() {
+    fn propagate_vdag() {
         // Stab: ZZZ, -YIY, IXY
         // Destab: -IXI, ZII, ZIZ
         let ct_size = 3;
@@ -588,7 +588,7 @@ mod tests {
     }
 
     #[test]
-    fn test_clifford_tableau_h() {
+    fn propagate_h() {
         // Stab: ZZZ, -YIY, IXY
         // Destab: -IXI, ZII, ZIZ
         let ct_size = 3;
@@ -630,7 +630,7 @@ mod tests {
     }
 
     #[test]
-    fn test_clifford_tableau_x() {
+    fn propagate_x() {
         // Stab: ZZZ, -YIY, IXY
         // Destab: -IXI, ZII, ZIZ
         let ct_size = 3;
@@ -671,7 +671,7 @@ mod tests {
     }
 
     #[test]
-    fn test_clifford_tableau_y() {
+    fn propagate_y() {
         // Stab: ZZZ, -YIY, IXY
         // Destab: -IXI, ZII, ZIZ
         let ct_size = 3;
@@ -712,7 +712,7 @@ mod tests {
     }
 
     #[test]
-    fn test_clifford_tableau_z() {
+    fn propagate_z() {
         // Stab: ZZZ, -YIY, IXY
         // Destab: -IXI, ZII, ZIZ
         let ct_size = 3;
@@ -806,7 +806,7 @@ mod tests {
     }
 
     #[test]
-    fn test_clifford_tableau_cx_i() {
+    fn propagate_cx_i() {
         // Stab: II, IX
         // Destab: IY, IZ
         let mut ct = setup_sample_two_qubit_ct('i');
@@ -838,7 +838,7 @@ mod tests {
     }
 
     #[test]
-    fn test_clifford_tableau_cx_x() {
+    fn propagate_cx_x() {
         // Stab: XI, XX
         // Destab: XY, XZ
         let mut ct = setup_sample_two_qubit_ct('x');
@@ -869,7 +869,7 @@ mod tests {
     }
 
     #[test]
-    fn test_clifford_tableau_cx_y() {
+    fn propagate_cx_y() {
         // Stab: YI, YX
         // Destab: YY, YZ
         let mut ct = setup_sample_two_qubit_ct('y');
@@ -900,7 +900,7 @@ mod tests {
     }
 
     #[test]
-    fn test_clifford_tableau_cx_z() {
+    fn propagate_cx_z() {
         // Stab: ZI, ZX
         // Destab: ZY, ZZ
         let mut ct = setup_sample_two_qubit_ct('z');
@@ -931,7 +931,7 @@ mod tests {
     }
 
     #[test]
-    fn test_clifford_tableau_cz_i() {
+    fn propagate_cz_i() {
         // Stab: II, IX
         // Destab: IY, IZ
         let mut ct = setup_sample_two_qubit_ct('i');
@@ -963,7 +963,7 @@ mod tests {
     }
 
     #[test]
-    fn test_clifford_tableau_cz_x() {
+    fn propagate_cz_x() {
         // Stab: XI, XX
         // Destab: XY, XZ
         let mut ct = setup_sample_two_qubit_ct('x');
@@ -994,7 +994,7 @@ mod tests {
     }
 
     #[test]
-    fn test_clifford_tableau_cz_y() {
+    fn propagate_cz_y() {
         // Stab: YI, YX
         // Destab: YY, YZ
         let mut ct = setup_sample_two_qubit_ct('y');
@@ -1025,7 +1025,7 @@ mod tests {
     }
 
     #[test]
-    fn test_clifford_tableau_cz_z() {
+    fn propagate_cz_z() {
         // Stab: ZI, ZX
         // Destab: ZY, ZZ
         let mut ct = setup_sample_two_qubit_ct('z');
@@ -1056,7 +1056,7 @@ mod tests {
     }
 
     #[test]
-    fn test_clifford_tableau_compose() {
+    fn compose() {
         let mut first_ct = setup_sample_ct();
         first_ct.x(0);
         first_ct.h(0);
@@ -1082,7 +1082,7 @@ mod tests {
     }
 
     #[test]
-    fn test_clifford_tableau_prepend() {
+    fn prepend() {
         let mut first_ct = setup_sample_ct();
         first_ct.x(0);
         first_ct.h(0);
@@ -1109,7 +1109,7 @@ mod tests {
     }
 
     #[test]
-    fn test_reverse_flow() {
+    fn reverse_flow_simple() {
         let mut output = Vec::new();
         let ordered_ref = (0..16)
             .map(|i| {
@@ -1140,7 +1140,7 @@ mod tests {
     }
 
     #[test]
-    fn test_clifford_tableau_inverse() {
+    fn inverse() {
         let mut ct = CliffordTableau::new(2);
         ct.x(0);
         ct.h(0);
@@ -1171,7 +1171,7 @@ mod tests {
     }
 
     #[test]
-    fn test_clifford_tableau_simple_inverse() {
+    fn inverse_simple() {
         let mut ct = CliffordTableau::new(2);
         ct.x(0);
         ct.x(0);
@@ -1181,7 +1181,7 @@ mod tests {
     }
 
     #[test]
-    fn test_clifford_tableau_inverse_complex() {
+    fn inverse_complex() {
         let ct = setup_sample_inverse_ct();
         let adjoint_ct = ct.adjoint();
         let identity = CliffordTableau::new(4);
@@ -1190,7 +1190,7 @@ mod tests {
     }
 
     #[test]
-    fn test_clifford_tableau_display() {
+    fn string_display() {
         let ct = setup_sample_ct();
         assert_eq!(
             ct.to_string(),

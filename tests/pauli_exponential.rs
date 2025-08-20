@@ -27,7 +27,7 @@ fn setup_complex_pe() -> PauliExponential {
 }
 
 #[test]
-fn test_naive_pauli_exponential_synthesis() {
+fn naive_pauli_exponential_synthesis() {
     let pe = setup_simple_pe();
     let mut mock = MockCircuit::new();
     let mut synthesizer = PauliExponentialSynthesizer::from_strategy(
@@ -49,7 +49,7 @@ fn test_naive_pauli_exponential_synthesis() {
 }
 
 #[test]
-fn test_naive_pauli_exponential_complex() {
+fn naive_pauli_exponential_complex() {
     let pe = setup_complex_pe();
     let mut mock = MockCircuit::new();
 

@@ -151,7 +151,6 @@ pub(crate) fn masked_cx(control: &PauliString, target: &PauliString, mask: &BitS
 }
 
 impl fmt::Display for PauliString {
-    // This trait requires `fmt` with this exact signature.
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut pauli_str = String::new();
         for (x, z) in zip(self.x.read().unwrap().iter(), self.z.read().unwrap().iter()) {
@@ -175,7 +174,7 @@ mod tests {
     use bitvec::{bits, bitvec};
 
     #[test]
-    fn test_from_basis_int() {
+    fn from_basis_int() {
         let i = 3;
         let length = 5;
 
@@ -186,14 +185,14 @@ mod tests {
 
     #[test]
     #[should_panic]
-    fn test_from_basis_int_oversized_i() {
+    fn from_basis_int_oversized_i() {
         let i = 5;
         let length = 3;
         PauliString::from_basis_int(i, length);
     }
 
     #[test]
-    fn test_from_text_string() {
+    fn from_text_string() {
         let pauli_string = "IXYZ";
         let paulivec = PauliString::from_text(pauli_string);
         let x_ref = bitvec![0, 1, 1, 0];
@@ -203,7 +202,7 @@ mod tests {
     }
 
     #[test]
-    fn test_xz_access() {
+    fn xz_access() {
         let pauli_string = "IXYZ";
         let paulivec = PauliString::from_text(pauli_string);
 
@@ -215,7 +214,7 @@ mod tests {
     }
 
     #[test]
-    fn test_pauli_string_s() {
+    fn apply_s() {
         let paulivec = PauliString::from_text("IXYZ");
         paulivec.s();
         let paulivec_ref = PauliString::from_text("IYXZ");
@@ -224,7 +223,7 @@ mod tests {
     }
 
     #[test]
-    fn test_pauli_string_v() {
+    fn apply_v() {
         let paulivec = PauliString::from_text("IXYZ");
         paulivec.v();
         let paulivec_ref = PauliString::from_text("IXZY");
@@ -233,7 +232,7 @@ mod tests {
     }
 
     #[test]
-    fn test_pauli_string_h() {
+    fn apply_h() {
         let paulivec = PauliString::from_text("IXYZ");
         paulivec.h();
         let paulivec_ref = PauliString::from_text("IZYX");
@@ -242,7 +241,7 @@ mod tests {
     }
 
     #[test]
-    fn test_pauli_string_masked_s() {
+    fn apply_masked_s() {
         let paulivec = PauliString::from_text("IXYZIXYZ");
         let mask = bits![usize, Lsb0; 0, 0, 0, 0, 1, 1, 1, 1];
         paulivec.masked_s(mask);
@@ -252,7 +251,7 @@ mod tests {
     }
 
     #[test]
-    fn test_pauli_string_masked_v() {
+    fn apply_masked_v() {
         let paulivec = PauliString::from_text("IXYZIXYZ");
         let mask = bits![usize, Lsb0; 0, 0, 0, 0, 1, 1, 1, 1];
         paulivec.masked_v(mask);
@@ -262,7 +261,7 @@ mod tests {
     }
 
     #[test]
-    fn test_pauli_string_masked_h() {
+    fn apply_masked_h() {
         let paulivec = PauliString::from_text("IXYZIXYZ");
         let mask = bits![usize, Lsb0; 0, 0, 0, 0, 1, 1, 1, 1];
         paulivec.masked_h(mask);
@@ -272,7 +271,7 @@ mod tests {
     }
 
     #[test]
-    fn test_pauli_string_cx() {
+    fn apply_cx() {
         let control = PauliString::from_text("IIIIXXXXYYYYZZZZ");
         let target = PauliString::from_text("IXYZIXYZIXYZIXYZ");
         cx(&control, &target);
@@ -284,7 +283,7 @@ mod tests {
     }
 
     #[test]
-    fn test_pauli_string_masked_cx() {
+    fn apply_masked_cx() {
         let control = PauliString::from_text("IIIIXXXXYYYYZZZZIIIIXXXXYYYYZZZZ");
         let target = PauliString::from_text("IXYZIXYZIXYZIXYZIXYZIXYZIXYZIXYZ");
         let mask = bits![usize, Lsb0; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
@@ -297,7 +296,7 @@ mod tests {
     }
 
     #[test]
-    fn test_y_bitmask() {
+    fn y_bitmask() {
         let paulivec = PauliString::from_text("IYXYZY");
         let y_bitmask = paulivec.y_bitmask();
         let y_bitmask_ref = bitvec![0, 1, 0, 1, 0, 1];
@@ -305,7 +304,7 @@ mod tests {
     }
 
     #[test]
-    fn test_pauli_string_display() {
+    fn string_display() {
         let pauli_string = PauliString::from_text("IXYZI");
         assert_eq!(pauli_string.to_string(), String::from("I X Y Z I"));
     }

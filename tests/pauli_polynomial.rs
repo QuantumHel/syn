@@ -25,7 +25,7 @@ fn setup_simple_pp() -> VecDeque<PauliPolynomial> {
 }
 
 #[test]
-fn test_naive_pauli_exponential_synthesis() {
+fn naive_pauli_exponential_synthesis() {
     let pp = setup_simple_pp();
     let mut mock = MockCircuit::new();
     let mut synthesizer = NaivePauliPolynomialSynthesizer::default();
@@ -52,7 +52,7 @@ fn test_naive_pauli_exponential_synthesis() {
 }
 
 #[test]
-fn test_naive_pauli_exponential_synthesis_complex() {
+fn naive_pauli_exponential_synthesis_complex() {
     let pp = setup_complex_pp();
     let mut mock = MockCircuit::new();
     let mut synthesizer = NaivePauliPolynomialSynthesizer::default();

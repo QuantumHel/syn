@@ -292,7 +292,7 @@ mod tests {
     }
 
     #[test]
-    fn test_line_creation() {
+    fn line_creation() {
         let line_architecture = Connectivity::line(5);
 
         assert_eq!(
@@ -302,7 +302,7 @@ mod tests {
     }
 
     #[test]
-    fn test_grid_creation() {
+    fn grid_creation() {
         let grid_architecture = Connectivity::grid(3, 3);
         let mut edges = grid_architecture.edges();
         edges.sort();
@@ -326,7 +326,7 @@ mod tests {
     }
 
     #[test]
-    fn test_root_is_not_present() {
+    fn root_is_not_present() {
         let new_architecture = Connectivity::from_edges(&setup_simple());
         assert_eq!(
             new_architecture
@@ -337,7 +337,7 @@ mod tests {
     }
 
     #[test]
-    fn test_cx_ladder_error() {
+    fn cx_ladder_error() {
         let new_architecture = Connectivity::from_edges(&setup_simple());
         assert_eq!(
             new_architecture
@@ -350,13 +350,13 @@ mod tests {
     }
 
     #[test]
-    fn test_simple_constructor() {
+    fn simple_constructor() {
         let new_architecture = Connectivity::from_edges(&setup_simple());
         assert_eq!(new_architecture.nodes(), vec![0, 1, 2, 3, 4, 5]);
     }
 
     #[test]
-    fn test_cx_ladder_line_setup() {
+    fn cx_ladder_line_setup() {
         let new_architecture = Connectivity::from_edges(&setup_simple());
         assert_eq!(
             new_architecture.get_cx_ladder(&[0, 1, 2, 3], &0).unwrap(),
@@ -365,7 +365,7 @@ mod tests {
     }
 
     #[test]
-    fn test_cx_ladder_extended_triangle() {
+    fn cx_ladder_extended_triangle() {
         let new_architecture = Connectivity::from_edges(&setup_simple());
         assert_eq!(
             new_architecture
@@ -377,7 +377,7 @@ mod tests {
     }
 
     #[test]
-    fn test_cx_ladder_weighted_extended_triangle() {
+    fn cx_ladder_weighted_extended_triangle() {
         let new_architecture = Connectivity::from_weighted_edges(&setup_weighted());
         assert_eq!(
             new_architecture
@@ -388,7 +388,7 @@ mod tests {
     }
 
     #[test]
-    fn test_cx_ladder_small_triangle() {
+    fn cx_ladder_small_triangle() {
         let new_architecture = Connectivity::from_edges(&setup_simple());
         assert_eq!(
             new_architecture
@@ -407,7 +407,7 @@ mod tests {
     }
 
     #[test]
-    fn test_cx_ladder_weighted_small_triangle() {
+    fn cx_ladder_weighted_small_triangle() {
         let new_architecture = Connectivity::from_weighted_edges(&setup_weighted());
         assert_eq!(
             new_architecture.get_cx_ladder(&[2, 3, 4], &2).unwrap(),
@@ -420,20 +420,20 @@ mod tests {
     }
 
     #[test]
-    fn test_weighted_constructor() {
+    fn weighted_constructor() {
         let new_architecture = Connectivity::from_weighted_edges(&setup_weighted());
         assert_eq!(new_architecture.nodes(), vec![0, 1, 2, 3, 4, 5]);
     }
 
     #[test]
-    fn test_best_simple_path() {
+    fn best_simple_path() {
         let new_architecture = Connectivity::from_edges(&setup_simple());
 
         assert_eq!(new_architecture.best_path(0, 4), vec![0, 1, 2, 4]);
     }
 
     #[test]
-    fn test_best_weighted_path() {
+    fn best_weighted_path() {
         let new_architecture = Connectivity::from_weighted_edges(&setup_weighted());
 
         assert_eq!(new_architecture.best_path(0, 4), vec![0, 1, 2, 3, 4]);
@@ -441,13 +441,13 @@ mod tests {
 
     #[test]
     #[should_panic = "architecture does not contain node 6"]
-    fn test_best_path_missing() {
+    fn best_path_missing() {
         let new_architecture = Connectivity::from_edges(&setup_simple());
         new_architecture.best_path(5, 6);
     }
 
     #[test]
-    fn test_distance() {
+    fn distance() {
         let new_architecture = Connectivity::from_weighted_edges(&setup_weighted());
         assert_eq!(new_architecture.distance(2, 4), 2);
         assert_eq!(new_architecture.distance(4, 2), 2);
@@ -456,38 +456,38 @@ mod tests {
 
     #[test]
     #[should_panic = "architecture does not contain node 6"]
-    fn test_distance_missing() {
+    fn distance_missing() {
         let new_architecture = Connectivity::from_edges(&setup_simple());
         new_architecture.distance(5, 6);
     }
 
     #[test]
-    fn test_neighbors() {
+    fn neighbors() {
         let new_architecture = Connectivity::from_edges(&setup_simple());
         assert_eq!(new_architecture.neighbors(2), vec![4, 3, 1]);
     }
 
     #[test]
     #[should_panic = "architecture does not contain node 7"]
-    fn test_neighbor_missing() {
+    fn neighbor_missing() {
         let new_architecture = Connectivity::from_edges(&setup_simple());
         new_architecture.distance(2, 7);
     }
 
     #[test]
-    fn test_non_cutting() {
+    fn non_cutting() {
         let mut new_architecture = Connectivity::from_edges(&setup_simple());
         assert_eq!(&new_architecture.nodes(), new_architecture.non_cutting());
     }
 
     #[test]
-    fn test_non_cutting_line() {
+    fn non_cutting_line() {
         let mut line_architecture = Connectivity::line(5);
         assert_eq!(*line_architecture.non_cutting(), vec![0, 4]);
     }
 
     #[test]
-    fn test_non_cutting_grid() {
+    fn non_cutting_grid() {
         let mut line_architecture = Connectivity::grid(3, 3);
         assert_eq!(
             *line_architecture.non_cutting(),
@@ -496,13 +496,13 @@ mod tests {
     }
 
     #[test]
-    fn test_non_cutting_complete() {
+    fn non_cutting_complete() {
         let mut line_architecture = Connectivity::complete(3);
         assert_eq!(*line_architecture.non_cutting(), vec![0, 1, 2]);
     }
 
     #[test]
-    fn test_remove_node() {
+    fn remove_node() {
         let mut architecture = Connectivity::from_edges(&setup_simple());
         assert_eq!(architecture.nodes(), vec![0, 1, 2, 3, 4, 5]);
 
@@ -532,7 +532,7 @@ mod tests {
     }
 
     #[test]
-    fn test_remove_node_line() {
+    fn remove_node_line() {
         let mut architecture = Connectivity::line(5);
         assert_eq!(architecture.nodes(), vec![0, 1, 2, 3, 4]);
 
@@ -546,7 +546,7 @@ mod tests {
     }
 
     #[test]
-    fn test_remove_node_grid() {
+    fn remove_node_grid() {
         let mut architecture = Connectivity::grid(3, 3);
         assert_eq!(architecture.nodes(), vec![0, 1, 2, 3, 4, 5, 6, 7, 8]);
 
@@ -589,7 +589,7 @@ mod tests {
     }
 
     #[test]
-    fn test_disconnect() {
+    fn disconnect() {
         let architecture = Connectivity::from_edges(&setup_simple());
         let new_architecture = architecture.disconnect(1);
 
@@ -619,7 +619,7 @@ mod tests {
     }
 
     #[test]
-    fn test_disconnect_line() {
+    fn disconnect_line() {
         let architecture = Connectivity::line(5);
         let new_architecture = architecture.disconnect(1);
 
@@ -633,7 +633,7 @@ mod tests {
     }
 
     #[test]
-    fn test_disconnect_grid() {
+    fn disconnect_grid() {
         let architecture = Connectivity::grid(3, 3);
         let new_architecture = architecture.disconnect(1);
 
@@ -676,7 +676,7 @@ mod tests {
     }
 
     #[test]
-    fn test_disconnected_cx_ladder() {
+    fn disconnected_cx_ladder() {
         let architecture = Connectivity::from_weighted_edges(&setup_weighted());
         let new_architecture = architecture.disconnect(3);
 

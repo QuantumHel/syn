@@ -180,7 +180,7 @@ mod tests {
     }
 
     #[test]
-    fn test_pauli_polynomial_constructor() {
+    fn from_hamiltonian() {
         let size = 3;
         let ham = vec![("IXYZ", 0.3), ("XXII", 0.7), ("YYII", 0.12)];
         let pp = PauliPolynomial::from_hamiltonian(ham);
@@ -202,14 +202,14 @@ mod tests {
 
     #[test]
     #[should_panic]
-    fn test_pauli_polynomial_constructor_empty_hamiltonian() {
+    fn from_hamiltonian_empty_hamiltonian() {
         let ham = vec![];
         let _ = PauliPolynomial::from_hamiltonian(ham);
     }
 
     #[test]
     #[should_panic]
-    fn test_pauli_polynomial_constructor_unequal_strings() {
+    fn from_hamiltonian_unequal_strings() {
         let ham = vec![("IXYZ", 0.3), ("XXI", 0.7), ("YYII", 0.12)];
         let _ = PauliPolynomial::from_hamiltonian(ham);
     }
@@ -228,7 +228,7 @@ mod tests {
     }
 
     #[test]
-    fn test_pauli_polynomial_s() {
+    fn propagate_s() {
         // Polynomials: IZY, XYI, YXX
         let size = 3;
         let mut pp = setup_sample_pp();
@@ -255,7 +255,7 @@ mod tests {
     }
 
     #[test]
-    fn test_pauli_polynomial_v() {
+    fn propagate_v() {
         // Polynomials: IZY, XYI, YXX
         let size = 3;
         let mut pp = setup_sample_pp();
@@ -280,7 +280,7 @@ mod tests {
     }
 
     #[test]
-    fn test_pauli_polynomial_s_dgr() {
+    fn propagate_s_dgr() {
         // Polynomials: IZY, XYI, YXX
         let size = 3;
         let mut pp = setup_sample_pp();
@@ -305,7 +305,7 @@ mod tests {
     }
 
     #[test]
-    fn test_pauli_polynomial_v_dgr() {
+    fn propagate_v_dgr() {
         // Polynomials: IZY, XYI, YXX
         let size = 3;
         let mut pp = setup_sample_pp();
@@ -330,7 +330,7 @@ mod tests {
     }
 
     #[test]
-    fn test_pauli_polynomial_h() {
+    fn propagate_h() {
         // Polynomials: IZY, XYI, YXX
         let size = 3;
         let mut pp = setup_sample_pp();
@@ -377,7 +377,7 @@ mod tests {
     }
 
     #[test]
-    fn test_pauli_polynomial_cx_i() {
+    fn propagate_cx_i() {
         let size = 3;
         // Setup:
         // q0 -> IIII
@@ -404,7 +404,7 @@ mod tests {
     }
 
     #[test]
-    fn test_pauli_polynomial_cx_x() {
+    fn propagate_cx_x() {
         let size = 3;
         // Setup:
         // q0 -> XXXX
@@ -430,7 +430,7 @@ mod tests {
     }
 
     #[test]
-    fn test_pauli_polynomial_cx_y() {
+    fn propagate_cx_y() {
         let size = 3;
         // Setup:
         // q0 -> YYYY
@@ -456,7 +456,7 @@ mod tests {
     }
 
     #[test]
-    fn test_pauli_polynomial_cx_z() {
+    fn propagate_cx_z() {
         let size = 3;
         // Setup:
         // q0 -> ZZZZ
@@ -482,7 +482,7 @@ mod tests {
     }
 
     #[test]
-    fn test_pauli_polynomial_cz_i() {
+    fn propagate_cz_i() {
         let size = 3;
         // Setup:
         // q0 -> IIII
@@ -509,7 +509,7 @@ mod tests {
     }
 
     #[test]
-    fn test_pauli_polynomial_cz_x() {
+    fn propagate_cz_x() {
         let size = 3;
         // Setup:
         // q0 -> XXXX
@@ -535,7 +535,7 @@ mod tests {
     }
 
     #[test]
-    fn test_pauli_polynomial_cz_y() {
+    fn propagate_cz_y() {
         let size = 3;
         // Setup:
         // q0 -> YYYY
@@ -561,7 +561,7 @@ mod tests {
     }
 
     #[test]
-    fn test_pauli_polynomial_cz_z() {
+    fn propagate_cz_z() {
         let size = 3;
         // Setup:
         // q0 -> ZZZZ
