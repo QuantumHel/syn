@@ -41,10 +41,6 @@ impl CliffordTableau {
         self.size
     }
 
-    pub fn pauli_column(&self, i: usize) -> &PauliString {
-        &self.pauli_columns[i]
-    } //why does column does not work and I need a new getter method ?
-
     pub fn signs(&self) -> &BitVec {
         &self.signs
     }
@@ -209,7 +205,7 @@ impl CliffordTableau {
 
         for i in 0..self.size() {
             print!("QB{} ||", i + 1);
-            let column = self.pauli_column(i).to_string();
+            let column = self.column(i).to_string();
             let mut out = String::new();
             let mut count = 0;
             for ch in column.chars() {
@@ -350,22 +346,66 @@ impl Mul for CliffordTableau {
     }
 }
 
+// impl fmt::Display for CliffordTableau {
+//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+//         writeln!(f, "CliffordTableau({})", self.size())?;
+//         for pauli_column in self.pauli_columns.iter() {
+//             writeln!(f, "{}", pauli_column)?;
+//         }
+//         let mut sign_str = String::new();
+//         for bit in self.signs.iter() {
+//             match *bit {
+//                 true => sign_str.push('-'),
+//                 false => sign_str.push('+'),
+//             }
+//             sign_str.push(' ')
+//         }
+//         sign_str.pop();
+//         write!(f, "{}", sign_str)
+//     }
+// }
+
 impl fmt::Display for CliffordTableau {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        writeln!(f, "CliffordTableau({})", self.size())?;
-        for pauli_column in self.pauli_columns.iter() {
-            writeln!(f, "{}", pauli_column)?;
+        write!(f, "    ||")?;
+        for i in 0..self.size() {
+            write!(f, " X{} Z{}|", i + 1, i + 1)?;
         }
-        let mut sign_str = String::new();
-        for bit in self.signs.iter() {
-            match *bit {
-                true => sign_str.push('-'),
-                false => sign_str.push('+'),
+        writeln!(f)?;
+        write!(f, "+/- ||")?;
+        for (i, sign) in self.signs().iter().enumerate() {
+            if *sign {
+                write!(f, " + ")?;
+            } else {
+                write!(f, " - ")?;
             }
-            sign_str.push(' ')
+            if i % 2 != 0 {
+                write!(f, "|")?;
+            }
         }
-        sign_str.pop();
-        write!(f, "{}", sign_str)
+        writeln!(f)?;
+
+        for i in 0..self.size() {
+            write!(f, "QB{} ||", i + 1)?;
+            let column = self.column(i).to_string();
+            let mut out = String::new();
+            let mut count = 0;
+            for ch in column.chars() {
+                if ch != ' ' {
+                    count += 1;
+                    out.push(ch);
+                    if count % 2 == 1 {
+                        out.push(' ');
+                    } else {
+                        out.push_str(" |");
+                    }
+                } else {
+                    out.push(' ');
+                }
+            }
+            writeln!(f, " {} ", out)?;
+        }
+        writeln!(f)
     }
 }
 

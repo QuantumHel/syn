@@ -70,7 +70,6 @@ impl PauliPolynomial {
     }
 
     pub fn visualize_pauli_polynomial(&self) {
-        println!("Pauli Polynomial size:{} ", self.size());
         let angles = self.angles.read().unwrap();
         let string_angles = angles
             .iter()
@@ -93,7 +92,7 @@ impl PauliPolynomial {
             println!(" {}", out);
             index += 1;
         }
-    } //visualize pauli polynomial is currently a method of the class, The formatting is
+    } //visualize pauli polynomial is currently a method of the struct, The formatting is
       //hardcoded so it can be easily broken if input parameter changed.
 }
 
