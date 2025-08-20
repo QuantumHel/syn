@@ -39,17 +39,6 @@ impl PauliVec {
         }
     }
 
-    /// Constructs the identity Pauli vec for qubit `i`, given `length` qubits in
-    /// total.
-    pub fn from_basis_int(i: usize, length: usize) -> Self {
-        assert!(length > i);
-        let mut x = BitVec::repeat(false, 2 * length);
-        let mut z = BitVec::repeat(false, 2 * length);
-        x.set(i, true);
-        z.set(i + length, true);
-        PauliVec::new(x, z)
-    }
-
     /// Takes in a String containing "I"
     pub fn from_text(pauli: &str) -> Self {
         let (x, z) = pauli
@@ -173,24 +162,6 @@ mod tests {
     use super::*;
     use bitvec::prelude::Lsb0;
     use bitvec::{bits, bitvec};
-
-    #[test]
-    fn from_basis_int() {
-        let i = 3;
-        let length = 5;
-
-        let paulivec = PauliVec::from_basis_int(i, length);
-        assert!(paulivec.x.read().unwrap().get(i).unwrap());
-        assert!(paulivec.z.read().unwrap().get(i + length).unwrap());
-    }
-
-    #[test]
-    #[should_panic]
-    fn from_basis_int_oversized_i() {
-        let i = 5;
-        let length = 3;
-        PauliVec::from_basis_int(i, length);
-    }
 
     #[test]
     fn from_text_string() {
