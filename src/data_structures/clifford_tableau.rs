@@ -22,10 +22,20 @@ impl CliffordTableau {
     /// Constructs a Clifford Tableau of `n` qubits initialized to the identity operation
     pub fn new(n: usize) -> Self {
         CliffordTableau {
-            pauli_columns: { (0..n).map(|i| PauliVec::from_basis_int(i, n)).collect() },
+            pauli_columns: { (0..n).map(|i| Self::new_basis_column(i, n)).collect() },
             signs: BitVec::repeat(false, 2 * n),
             size: n,
         }
+    }
+
+    /// Creates a new identity column for qubit `i`, given `n` qubits in total.
+    fn new_basis_column(i: usize, n: usize) -> PauliVec {
+        assert!(n > i);
+        let mut x = BitVec::repeat(false, 2 * n);
+        let mut z = BitVec::repeat(false, 2 * n);
+        x.set(i, true);
+        z.set(i + n, true);
+        PauliVec::new(x, z)
     }
 
     pub fn from_parts(pauli_columns: Vec<PauliVec>, signs: BitVec) -> Self {
@@ -345,6 +355,24 @@ mod tests {
             size: ct_size,
         };
         assert_eq!(ct, clifford_tableau_ref);
+    }
+
+    #[test]
+    fn new_basis_column() {
+        let i = 3;
+        let n = 5;
+
+        let paulivec = CliffordTableau::new_basis_column(i, n);
+        assert!(paulivec.x.read().unwrap().get(i).unwrap());
+        assert!(paulivec.z.read().unwrap().get(i + n).unwrap());
+    }
+
+    #[test]
+    #[should_panic]
+    fn new_basis_column_oversized_i() {
+        let i = 5;
+        let n = 3;
+        CliffordTableau::new_basis_column(i, n);
     }
 
     fn setup_sample_ct() -> CliffordTableau {
