@@ -3,14 +3,14 @@ use std::{iter::zip, sync::RwLock};
 use bitvec::vec::BitVec;
 use itertools::zip_eq;
 
-use super::{pauli_string::PauliString, IndexType, MaskedPropagateClifford, PropagateClifford};
+use super::{pauli_vec::PauliVec, IndexType, MaskedPropagateClifford, PropagateClifford};
 
 // todo: Make this into a union / type Angle
 type Angle = f64;
 
 #[derive(Debug, Default)]
 pub struct PauliPolynomial {
-    chains: Vec<PauliString>,
+    chains: Vec<PauliVec>,
     angles: RwLock<Vec<Angle>>,
     size: usize,
 }
@@ -32,7 +32,6 @@ impl PauliPolynomial {
         let num_qubits = hamiltonian_representation[0].0.len();
         let mut angles = Vec::<Angle>::with_capacity(terms);
         let mut chain_strings = vec![String::with_capacity(terms); num_qubits];
-        //let chains = vec![PauliString::new(); num_qubits];
         for (pauli_string, angle) in hamiltonian_representation {
             zip_eq(chain_strings.iter_mut(), pauli_string.chars()).for_each(
                 |(chain, pauli_letter)| {
@@ -43,7 +42,7 @@ impl PauliPolynomial {
         }
         let chains = chain_strings
             .iter()
-            .map(|gadget| (PauliString::from_text(gadget)))
+            .map(|gadget| (PauliVec::from_text(gadget)))
             .collect::<Vec<_>>();
 
         PauliPolynomial {
@@ -61,7 +60,7 @@ impl PauliPolynomial {
         self.angles.read().unwrap().len()
     }
 
-    pub fn chains(&self) -> &Vec<PauliString> {
+    pub fn chains(&self) -> &Vec<PauliVec> {
         &self.chains
     }
 
@@ -81,7 +80,7 @@ impl PropagateClifford for PauliPolynomial {
         bit_mask &= control.x.read().unwrap().as_bitslice();
         bit_mask &= target.z.read().unwrap().as_bitslice();
 
-        super::pauli_string::cx(control, target);
+        super::pauli_vec::cx(control, target);
         for (angle, flip) in zip(self.angles.write().unwrap().iter_mut(), bit_mask.iter()) {
             if *flip {
                 *angle *= -1.0;
@@ -131,7 +130,7 @@ impl MaskedPropagateClifford for PauliPolynomial {
         bit_mask &= target.z.read().unwrap().as_bitslice();
         bit_mask &= mask;
 
-        super::pauli_string::masked_cx(control, target, mask);
+        super::pauli_vec::masked_cx(control, target, mask);
         for (angle, flip) in zip(self.angles.write().unwrap().iter_mut(), bit_mask.iter()) {
             if *flip {
                 *angle *= -1.0;
@@ -185,10 +184,10 @@ mod tests {
         let ham = vec![("IXYZ", 0.3), ("XXII", 0.7), ("YYII", 0.12)];
         let pp = PauliPolynomial::from_hamiltonian(ham);
 
-        let pg1_ref = PauliString::from_text("IXY");
-        let pg2_ref = PauliString::from_text("XXY");
-        let pg3_ref = PauliString::from_text("YII");
-        let pg4_ref = PauliString::from_text("ZII");
+        let pg1_ref = PauliVec::from_text("IXY");
+        let pg2_ref = PauliVec::from_text("XXY");
+        let pg3_ref = PauliVec::from_text("YII");
+        let pg4_ref = PauliVec::from_text("ZII");
 
         let angles_ref = vec![0.3, 0.7, 0.12];
 
@@ -216,9 +215,9 @@ mod tests {
 
     fn setup_sample_pp() -> PauliPolynomial {
         let size = 3;
-        let pg1_ref = PauliString::from_text("IXY");
-        let pg2_ref = PauliString::from_text("ZYX");
-        let pg3_ref = PauliString::from_text("YIX");
+        let pg1_ref = PauliVec::from_text("IXY");
+        let pg2_ref = PauliVec::from_text("ZYX");
+        let pg3_ref = PauliVec::from_text("YIX");
         let angles_ref = vec![0.3, 0.7, 0.12];
         PauliPolynomial {
             chains: vec![pg1_ref, pg2_ref, pg3_ref],
@@ -240,11 +239,11 @@ mod tests {
         // Polynomials: IZY, -YXI, -XYX
 
         // IXY -> IY(-X)
-        let pg1_ref = PauliString::from_text("IYX");
+        let pg1_ref = PauliVec::from_text("IYX");
         // ZYX -> Z(-X)Y
-        let pg2_ref = PauliString::from_text("ZXY");
+        let pg2_ref = PauliVec::from_text("ZXY");
         // YIX
-        let pg3_ref = PauliString::from_text("YIX");
+        let pg3_ref = PauliVec::from_text("YIX");
         let angles_ref = vec![0.3, -0.7, -0.12];
         let pp_ref = PauliPolynomial {
             chains: vec![pg1_ref, pg2_ref, pg3_ref],
@@ -265,11 +264,11 @@ mod tests {
         pp.v(2);
 
         // IXY
-        let pg1_ref = PauliString::from_text("IXY");
+        let pg1_ref = PauliVec::from_text("IXY");
         // ZYX -> (-Y)ZX
-        let pg2_ref = PauliString::from_text("YZX");
+        let pg2_ref = PauliVec::from_text("YZX");
         // YIX -> ZIX
-        let pg3_ref = PauliString::from_text("ZIX");
+        let pg3_ref = PauliVec::from_text("ZIX");
         let angles_ref = vec![-0.3, 0.7, 0.12];
         let pp_ref = PauliPolynomial {
             chains: vec![pg1_ref, pg2_ref, pg3_ref],
@@ -290,11 +289,11 @@ mod tests {
         pp.s_dgr(2);
 
         // IXY
-        let pg1_ref = PauliString::from_text("IXY");
+        let pg1_ref = PauliVec::from_text("IXY");
         // ZYX -> ZX(-Y)
-        let pg2_ref = PauliString::from_text("ZXY");
+        let pg2_ref = PauliVec::from_text("ZXY");
         // YIX -> XI(-Y)
-        let pg3_ref = PauliString::from_text("XIY");
+        let pg3_ref = PauliVec::from_text("XIY");
         let angles_ref = vec![0.3, 0.7, 0.12];
         let pp_ref = PauliPolynomial {
             chains: vec![pg1_ref, pg2_ref, pg3_ref],
@@ -315,11 +314,11 @@ mod tests {
         pp.v_dgr(2);
 
         // IXY
-        let pg1_ref = PauliString::from_text("IXY");
+        let pg1_ref = PauliVec::from_text("IXY");
         // ZYX -> Y(-Z)X
-        let pg2_ref = PauliString::from_text("YZX");
+        let pg2_ref = PauliVec::from_text("YZX");
         // YIX -> (-Z)IX
-        let pg3_ref = PauliString::from_text("ZIX");
+        let pg3_ref = PauliVec::from_text("ZIX");
         let angles_ref = vec![-0.3, -0.7, 0.12];
         let pp_ref = PauliPolynomial {
             chains: vec![pg1_ref, pg2_ref, pg3_ref],
@@ -340,11 +339,11 @@ mod tests {
         pp.h(1);
 
         // IXY -> IZ(-Y)
-        let pg1_ref = PauliString::from_text("IZY");
+        let pg1_ref = PauliVec::from_text("IZY");
         // ZYX -> X(-Y)Z
-        let pg2_ref = PauliString::from_text("XYZ");
+        let pg2_ref = PauliVec::from_text("XYZ");
         // YIX -
-        let pg3_ref = PauliString::from_text("YIX");
+        let pg3_ref = PauliVec::from_text("YIX");
         let angles_ref = vec![0.3, -0.7, -0.12];
         let pp_ref = PauliPolynomial {
             chains: vec![pg1_ref, pg2_ref, pg3_ref],
@@ -357,15 +356,15 @@ mod tests {
     fn setup_sample_two_qubit_pp(pauli_letter: char) -> PauliPolynomial {
         let size = 3;
         let pg1_ref = match pauli_letter {
-            'i' => PauliString::from_text("IIII"),
-            'x' => PauliString::from_text("XXXX"),
-            'y' => PauliString::from_text("YYYY"),
-            'z' => PauliString::from_text("ZZZZ"),
+            'i' => PauliVec::from_text("IIII"),
+            'x' => PauliVec::from_text("XXXX"),
+            'y' => PauliVec::from_text("YYYY"),
+            'z' => PauliVec::from_text("ZZZZ"),
             _ => panic!("Pauli letter not recognized"),
         };
 
-        let pg2_ref = PauliString::from_text("IXYZ");
-        let pg3_ref = PauliString::from_text("YIXZ");
+        let pg2_ref = PauliVec::from_text("IXYZ");
+        let pg3_ref = PauliVec::from_text("YIXZ");
 
         let angles_ref = vec![0.3, 0.7, 0.12, 0.15];
 
@@ -389,10 +388,10 @@ mod tests {
         // IIII -> IIZZ
         // IXYZ -> IXYZ
 
-        let pg1_ref = PauliString::from_text("IIZZ");
-        let pg2_ref = PauliString::from_text("IXYZ");
+        let pg1_ref = PauliVec::from_text("IIZZ");
+        let pg2_ref = PauliVec::from_text("IXYZ");
         // YIXZ
-        let pg3_ref = PauliString::from_text("YIXZ");
+        let pg3_ref = PauliVec::from_text("YIXZ");
         // [1, 1, 1, 1]
         let angles_ref = vec![0.3, 0.7, 0.12, 0.15];
         let pp_ref = PauliPolynomial {
@@ -415,10 +414,10 @@ mod tests {
 
         // XXXX -> XXYY
         // IXYZ -> XIZY
-        let pg1_ref = PauliString::from_text("XXYY");
-        let pg2_ref = PauliString::from_text("XIZY");
+        let pg1_ref = PauliVec::from_text("XXYY");
+        let pg2_ref = PauliVec::from_text("XIZY");
         // YIXZ
-        let pg3_ref = PauliString::from_text("YIXZ");
+        let pg3_ref = PauliVec::from_text("YIXZ");
         // [1, 1, 1, -1]
         let angles_ref = vec![0.3, 0.7, 0.12, -0.15];
         let pp_ref = PauliPolynomial {
@@ -441,10 +440,10 @@ mod tests {
 
         // YYYY -> YYXX
         // IXYZ -> XIZY
-        let pg1_ref = PauliString::from_text("YYXX");
-        let pg2_ref = PauliString::from_text("XIZY");
+        let pg1_ref = PauliVec::from_text("YYXX");
+        let pg2_ref = PauliVec::from_text("XIZY");
         // YIXZ
-        let pg3_ref = PauliString::from_text("YIXZ");
+        let pg3_ref = PauliVec::from_text("YIXZ");
         // [1, 1, -1, 1]
         let angles_ref = vec![0.3, 0.7, -0.12, 0.15];
         let pp_ref = PauliPolynomial {
@@ -467,10 +466,10 @@ mod tests {
 
         // ZZZZ -> ZZII
         // IXYZ -> IXYZ
-        let pg1_ref = PauliString::from_text("ZZII");
-        let pg2_ref = PauliString::from_text("IXYZ");
+        let pg1_ref = PauliVec::from_text("ZZII");
+        let pg2_ref = PauliVec::from_text("IXYZ");
         // YIXZ
-        let pg3_ref = PauliString::from_text("YIXZ");
+        let pg3_ref = PauliVec::from_text("YIXZ");
         // [1, 1, 1, 1]
         let angles_ref = vec![0.3, 0.7, 0.12, 0.15];
         let pp_ref = PauliPolynomial {
@@ -494,10 +493,10 @@ mod tests {
         // IIII -> IZZI
         // IXYZ -> IXYZ
 
-        let pg1_ref = PauliString::from_text("IZZI");
-        let pg2_ref = PauliString::from_text("IXYZ");
+        let pg1_ref = PauliVec::from_text("IZZI");
+        let pg2_ref = PauliVec::from_text("IXYZ");
         // YIXZ
-        let pg3_ref = PauliString::from_text("YIXZ");
+        let pg3_ref = PauliVec::from_text("YIXZ");
         // [1, 1, 1, 1]
         let angles_ref = vec![0.3, 0.7, 0.12, 0.15];
         let pp_ref = PauliPolynomial {
@@ -520,10 +519,10 @@ mod tests {
 
         // XXXX -> XYYX
         // IXYZ -> ZYXI
-        let pg1_ref = PauliString::from_text("XYYX");
-        let pg2_ref = PauliString::from_text("ZYXI");
+        let pg1_ref = PauliVec::from_text("XYYX");
+        let pg2_ref = PauliVec::from_text("ZYXI");
         // YIXZ
-        let pg3_ref = PauliString::from_text("YIXZ");
+        let pg3_ref = PauliVec::from_text("YIXZ");
         // [1, 1, -1, 1]
         let angles_ref = vec![0.3, 0.7, -0.12, 0.15];
         let pp_ref = PauliPolynomial {
@@ -546,10 +545,10 @@ mod tests {
 
         // YYYY -> YXXY
         // IXYZ -> ZYXI
-        let pg1_ref = PauliString::from_text("YXXY");
-        let pg2_ref = PauliString::from_text("ZYXI");
+        let pg1_ref = PauliVec::from_text("YXXY");
+        let pg2_ref = PauliVec::from_text("ZYXI");
         // YIXZ
-        let pg3_ref = PauliString::from_text("YIXZ");
+        let pg3_ref = PauliVec::from_text("YIXZ");
         // [1, -1, 1, 1]
         let angles_ref = vec![0.3, -0.7, 0.12, 0.15];
         let pp_ref = PauliPolynomial {
@@ -572,10 +571,10 @@ mod tests {
 
         // ZZZZ -> ZIIZ
         // IXYZ -> IXYZ
-        let pg1_ref = PauliString::from_text("ZIIZ");
-        let pg2_ref = PauliString::from_text("IXYZ");
+        let pg1_ref = PauliVec::from_text("ZIIZ");
+        let pg2_ref = PauliVec::from_text("IXYZ");
         // YIXZ
-        let pg3_ref = PauliString::from_text("YIXZ");
+        let pg3_ref = PauliVec::from_text("YIXZ");
         // [1, 1, -1, 1]
         let angles_ref = vec![0.3, 0.7, 0.12, 0.15];
         let pp_ref = PauliPolynomial {

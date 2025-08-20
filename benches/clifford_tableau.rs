@@ -3,7 +3,7 @@ use bitvec::bitvec;
 use bitvec::prelude::Lsb0;
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use syn::data_structures::CliffordTableau;
-use syn::data_structures::PauliString;
+use syn::data_structures::PauliVec;
 use syn::ir::clifford_tableau::naive::NaiveCliffordSynthesizer;
 use syn::ir::clifford_tableau::CallbackCliffordSynthesizer;
 use syn::ir::CliffordGates;
@@ -91,15 +91,15 @@ fn setup_sample_ct() -> CliffordTableau {
 
     // qubit 1x: ZYI
     // qubit 1z: IZZ
-    let pauli_1 = PauliString::from_text("ZYIIZZ");
+    let pauli_1 = PauliVec::from_text("ZYIIZZ");
 
     // qubit 2x: ZIX
     // qubit 2z: XII
-    let pauli_2 = PauliString::from_text("ZIXXII");
+    let pauli_2 = PauliVec::from_text("ZIXXII");
 
     // qubit 3x: ZYY
     // qubit 3z: IIZ
-    let pauli_3 = PauliString::from_text("ZYYIIZ");
+    let pauli_3 = PauliVec::from_text("ZYYIIZ");
 
     let signs = bitvec![0, 1, 0, 1, 0, 0];
     CliffordTableau::from_parts(vec![pauli_1, pauli_2, pauli_3], signs)
@@ -111,19 +111,19 @@ fn setup_sample_inverse_ct() -> CliffordTableau {
 
     // qubit 1x: ZZXI
     // qubit 1z: YYZX
-    let pauli_1 = PauliString::from_text("ZZXIYYZX");
+    let pauli_1 = PauliVec::from_text("ZZXIYYZX");
 
     // qubit 2x: IZZZ
     // qubit 2z: YYIZ
-    let pauli_2 = PauliString::from_text("IZZZYYIZ");
+    let pauli_2 = PauliVec::from_text("IZZZYYIZ");
 
     // qubit 3x: YYXX
     // qubit 3z: IXXX
-    let pauli_3 = PauliString::from_text("YYXXIXXX");
+    let pauli_3 = PauliVec::from_text("YYXXIXXX");
 
     // qubit 3x: ZZIX
     // qubit 3z: ZZXZ
-    let pauli_4 = PauliString::from_text("ZZIXZZXZ");
+    let pauli_4 = PauliVec::from_text("ZZIXZZXZ");
 
     let signs = bitvec![1, 1, 1, 0, 1, 1, 0, 1];
     CliffordTableau::from_parts(vec![pauli_1, pauli_2, pauli_3, pauli_4], signs)
