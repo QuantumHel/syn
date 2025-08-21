@@ -20,26 +20,27 @@ fn main() {
     let pauli_3 = PauliString::from_text("ZYYIIZ");
     let signs = bitvec![0, 1, 0, 1, 0, 0];
     let my_tableaus = CliffordTableau::from_parts(vec![pauli_1, pauli_2, pauli_3], signs);
-    CliffordTableau::visualize_tableaus(&my_tableaus);
 
+    println!("{}", my_tableaus);
     //test pauli polynomial
 
     let ham = vec![("IXYZ", 0.3), ("XXII", 0.7), ("YYII", 0.12)];
     let pp = PauliPolynomial::from_hamiltonian(ham);
-    pp.visualize_pauli_polynomial();
+    println!("{}", pp);
+    // pp.visualize_pauli_polynomial();
 
-    // visualize_pauli_exponential_simple(&pe);
-    let ham = vec![("IZZZ", 0.3)];
-    let pp = PauliPolynomial::from_hamiltonian(ham);
-    let ct = CliffordTableau::new(4);
-    let pe = PauliExponential::new(VecDeque::from([pp]), ct);
-    pe.visualize_pauli_exponential();
+    // // visualize_pauli_exponential_simple(&pe);
+    // let ham = vec![("IZZZ", 0.3)];
+    // let pp = PauliPolynomial::from_hamiltonian(ham);
+    // let ct = CliffordTableau::new(4);
+    // let pe = PauliExponential::new(VecDeque::from([pp]), ct);
+    // pe.visualize_pauli_exponential();
 
-    //visualize_pauli_exponential complex
-    let ham = vec![("IXYZ", 0.3), ("XXII", 0.7), ("YYII", 0.12)];
+    // //visualize_pauli_exponential complex
+    // let ham = vec![("IXYZ", 0.3), ("XXII", 0.7), ("YYII", 0.12)];
 
-    let pauli_polynomial = PauliPolynomial::from_hamiltonian(ham);
-    let clifford_tableau = CliffordTableau::new(4);
-    let complex_pe = PauliExponential::new(VecDeque::from([pauli_polynomial]), clifford_tableau);
-    complex_pe.visualize_pauli_exponential();
+    // let pauli_polynomial = PauliPolynomial::from_hamiltonian(ham);
+    // let clifford_tableau = CliffordTableau::new(4);
+    // let complex_pe = PauliExponential::new(VecDeque::from([pauli_polynomial]), clifford_tableau);
+    // complex_pe.visualize_pauli_exponential();
 }

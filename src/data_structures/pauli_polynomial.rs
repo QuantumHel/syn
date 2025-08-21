@@ -1,7 +1,7 @@
-use std::{iter::zip, sync::RwLock};
-
 use bitvec::vec::BitVec;
 use itertools::zip_eq;
+use std::fmt;
+use std::{iter::zip, sync::RwLock};
 
 use super::{pauli_string::PauliString, IndexType, MaskedPropagateClifford, PropagateClifford};
 
@@ -194,6 +194,33 @@ impl MaskedPropagateClifford for PauliPolynomial {
         self
     }
 }
+
+impl fmt::Display for PauliPolynomial {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let angles = self.angles.read().unwrap();
+        let string_angles = angles
+            .iter()
+            .map(|x| format!("{:.3}", x)) //force 3 decimal place for formatting
+            .collect::<Vec<String>>()
+            .join(" | ");
+        writeln!(f, "Angles | {} |", string_angles)?;
+        let chains = self.chains();
+        for (i, pauli) in chains.iter().enumerate() {
+            write!(f, "Qubit {}|", i)?;
+            let chain_str = pauli.to_string();
+            let mut out = String::new();
+            for ch in chain_str.chars() {
+                out.push(ch);
+                if !ch.is_whitespace() {
+                    out.push_str("     |"); //bad, hardcoded spaces. Do we want variable length ?
+                }
+            }
+            writeln!(f, " {}", out)?;
+        }
+        writeln!(f)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -610,5 +637,13 @@ mod tests {
             size,
         };
         assert_eq!(pp, pp_ref);
+    }
+    #[test]
+    fn test_pauli_polynomial_display() {
+        let pp = setup_sample_pp();
+        assert_eq!(
+            pp.to_string(),
+            "Angles | 0.300 | 0.700 | 0.120 |\nQubit 0| I     | X     | Y     |\nQubit 1| Z     | Y     | X     |\nQubit 2| Y     | I     | X     |\n\n"
+        );
     }
 }
