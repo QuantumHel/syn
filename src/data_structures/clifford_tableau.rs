@@ -375,9 +375,9 @@ impl fmt::Display for CliffordTableau {
         write!(f, "+/- ||")?;
         for (i, sign) in self.signs().iter().enumerate() {
             if *sign {
-                write!(f, " + ")?;
-            } else {
                 write!(f, " - ")?;
+            } else {
+                write!(f, " + ")?;
             }
             if i % 2 != 0 {
                 write!(f, "|")?;
@@ -1286,7 +1286,7 @@ mod tests {
         assert_eq!(
             ct.to_string(),
             // "CliffordTableau(3)\nZ Y I I Z Z\nZ I X X I I\nZ Y Y I I Z\n+ - + - + +"
-            "    || X1 Z1| X2 Z2| X3 Z3|\n+/- || -  + | -  + | -  - |\nQB1 || Z  Y | I  I | Z  Z | \nQB2 || Z  I | X  X | I  I | \nQB3 || Z  Y | Y  I | I  Z | \n\n"
+            "    || X1 Z1| X2 Z2| X3 Z3|\n+/- || +  - | +  - | +  + |\nQB1 || Z  Y | I  I | Z  Z | \nQB2 || Z  I | X  X | I  I | \nQB3 || Z  Y | Y  I | I  Z | \n\n"
         );
     }
 }
