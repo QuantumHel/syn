@@ -1,5 +1,6 @@
 use bitvec::vec::BitVec;
 use itertools::zip_eq;
+use itertools::Itertools;
 use std::fmt;
 use std::{iter::zip, sync::RwLock};
 
@@ -67,31 +68,6 @@ impl PauliPolynomial {
 
     pub fn angle(&self, i: usize) -> Angle {
         self.angles.read().unwrap()[i]
-    }
-
-    pub fn visualize_pauli_polynomial(&self) {
-        let angles = self.angles.read().unwrap();
-        let string_angles = angles
-            .iter()
-            .map(|x| format!("{:.3}", x)) //force 3 decimal place for easy formatting
-            .collect::<Vec<String>>()
-            .join(" | ");
-        println!("Angles | {} |", string_angles);
-        let chains = self.chains();
-        let mut index = 0;
-        for chain in chains {
-            print!("Qubit {}|", index);
-            let chain_str = chain.to_string();
-            let mut out = String::new();
-            for ch in chain_str.chars() {
-                out.push(ch);
-                if !ch.is_whitespace() {
-                    out.push_str("     |");
-                }
-            }
-            println!(" {}", out);
-            index += 1;
-        }
     }
 }
 
@@ -200,7 +176,6 @@ impl fmt::Display for PauliPolynomial {
         let string_angles = angles
             .iter()
             .map(|x| format!("{:.3}", x)) //force 3 decimal place for formatting
-            .collect::<Vec<String>>()
             .join(" | ");
         writeln!(f, "Angles | {} |", string_angles)?;
         let chains = self.chains();
@@ -211,7 +186,7 @@ impl fmt::Display for PauliPolynomial {
             for ch in chain_str.chars() {
                 out.push(ch);
                 if !ch.is_whitespace() {
-                    out.push_str("     |"); //bad, hardcoded spaces. Do we want variable length ?
+                    out.push_str("     |");
                 }
             }
             writeln!(f, " {}", out)?;
