@@ -181,49 +181,6 @@ impl CliffordTableau {
             .collect::<Vec<_>>();
         self.pauli_columns = sorted_pauli_columns;
     }
-
-    pub fn visualize_tableaus(&self) {
-        println!("Clifford Tableau ({} qubits):", self.size());
-        print!("    ||");
-        for i in 0..self.size() {
-            print!(" X{} Z{}|", i + 1, i + 1);
-        }
-        println!();
-        print!("+/- ||");
-        for i in 0..self.signs().len() {
-            if self.signs().get(i).map(|b| *b) == Some(true) {
-                print!(" +");
-            } else {
-                print!(" -");
-            }
-            print!(" ");
-            if i % 2 != 0 {
-                print!("|");
-            }
-        }
-        println!();
-
-        for i in 0..self.size() {
-            print!("QB{} ||", i + 1);
-            let column = self.column(i).to_string();
-            let mut out = String::new();
-            let mut count = 0;
-            for ch in column.chars() {
-                if ch != ' ' {
-                    count += 1;
-                    out.push(ch);
-                    if count % 2 == 1 {
-                        out.push(' ');
-                    } else {
-                        out.push_str(" |");
-                    }
-                } else {
-                    out.push(' ');
-                }
-            }
-            println!(" {} ", out);
-        }
-    }
 }
 
 impl HasAdjoint for CliffordTableau {
@@ -346,25 +303,6 @@ impl Mul for CliffordTableau {
     }
 }
 
-// impl fmt::Display for CliffordTableau {
-//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-//         writeln!(f, "CliffordTableau({})", self.size())?;
-//         for pauli_column in self.pauli_columns.iter() {
-//             writeln!(f, "{}", pauli_column)?;
-//         }
-//         let mut sign_str = String::new();
-//         for bit in self.signs.iter() {
-//             match *bit {
-//                 true => sign_str.push('-'),
-//                 false => sign_str.push('+'),
-//             }
-//             sign_str.push(' ')
-//         }
-//         sign_str.pop();
-//         write!(f, "{}", sign_str)
-//     }
-// }
-
 impl fmt::Display for CliffordTableau {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "    ||")?;
@@ -385,12 +323,11 @@ impl fmt::Display for CliffordTableau {
         }
         writeln!(f)?;
 
-        for i in 0..self.size() {
-            write!(f, "QB{} ||", i + 1)?;
-            let column = self.column(i).to_string();
+        for (i, column) in self.pauli_columns.iter().enumerate() {
+            write!(f, "QB{} ||", i)?;
             let mut out = String::new();
             let mut count = 0;
-            for ch in column.chars() {
+            for ch in column.to_string().chars() {
                 if ch != ' ' {
                     count += 1;
                     out.push(ch);
@@ -1286,7 +1223,7 @@ mod tests {
         assert_eq!(
             ct.to_string(),
             // "CliffordTableau(3)\nZ Y I I Z Z\nZ I X X I I\nZ Y Y I I Z\n+ - + - + +"
-            "    || X1 Z1| X2 Z2| X3 Z3|\n+/- || +  - | +  - | +  + |\nQB1 || Z  Y | I  I | Z  Z | \nQB2 || Z  I | X  X | I  I | \nQB3 || Z  Y | Y  I | I  Z | \n\n"
+            "    || X1 Z1| X2 Z2| X3 Z3|\n+/- || +  - | +  - | +  + |\nQB0 || Z  Y | I  I | Z  Z | \nQB1 || Z  I | X  X | I  I | \nQB2 || Z  Y | Y  I | I  Z | \n\n"
         );
     }
 }

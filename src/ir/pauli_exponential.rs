@@ -1,4 +1,5 @@
 use std::collections::VecDeque;
+use std::fmt;
 
 use crate::data_structures::{CliffordTableau, HasAdjoint, PauliPolynomial};
 
@@ -27,18 +28,19 @@ impl PauliExponential {
             clifford_tableau,
         }
     }
-
-    pub fn visualize_pauli_exponential(&self) {
-        println!("Visualizing Pauli Exponential:");
-        // println!("Clifford Tableau:");
-        self.clifford_tableau.visualize_tableaus();
-        // println!("Pauli Polynomials:");
-        for polynomial in &self.pauli_polynomials {
-            polynomial.visualize_pauli_polynomial();
-        }
-    }
 }
 
+impl fmt::Display for PauliExponential {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        writeln!(f, "Clifford Tableau: \n{}", self.clifford_tableau)?;
+        writeln!(f, "Pauli Polynomials:")?;
+        for (i, pp) in self.pauli_polynomials.iter().enumerate() {
+            writeln!(f, "Pauli {} ", i)?;
+            writeln!(f, "{}", pp)?;
+        }
+        writeln!(f)
+    }
+}
 #[derive(Default)]
 pub struct PauliExponentialSynthesizer {
     pauli_strategy: PauliPolynomialSynthStrategy,
