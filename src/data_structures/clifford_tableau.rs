@@ -1222,7 +1222,6 @@ mod tests {
         let ct = setup_sample_ct();
         assert_eq!(
             ct.to_string(),
-            // "CliffordTableau(3)\nZ Y I I Z Z\nZ I X X I I\nZ Y Y I I Z\n+ - + - + +"
             "    || X1 Z1| X2 Z2| X3 Z3|\n+/- || +  - | +  - | +  + |\nQB0 || Z  Y | I  I | Z  Z | \nQB1 || Z  I | X  X | I  I | \nQB2 || Z  Y | Y  I | I  Z | \n\n"
         );
     }
