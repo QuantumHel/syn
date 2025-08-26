@@ -46,7 +46,7 @@ impl Connectivity {
     }
 
     pub fn grid(num_rows: usize, num_cols: usize) -> Self {
-        let mut edges = Vec::new();
+        let mut edges = Vec::with_capacity(2 * num_rows * num_cols);
 
         for r in 0..num_rows {
             for c in 0..num_cols {
@@ -62,7 +62,7 @@ impl Connectivity {
     }
 
     pub fn complete(num_qubits: usize) -> Self {
-        let mut edges = Vec::new();
+        let mut edges = Vec::with_capacity(num_qubits * num_qubits / 2);
         for i in 0..num_qubits {
             for j in (i + 1)..num_qubits {
                 edges.push((i, j));
