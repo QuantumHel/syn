@@ -15,8 +15,15 @@ fn get_non_cutting_vertices(
     graph: &StableUnGraph<NodeWeight, EdgeWeight, GraphIndex>,
 ) -> Vec<GraphIndex> {
     let art_points = articulation_points(&graph);
-    (0..graph.node_count())
-        .filter(|node| !art_points.contains(&graph.from_index(*node)))
+    graph
+        .node_indices()
+        .filter_map(|node| {
+            if !art_points.contains(&node) {
+                Some(node.index())
+            } else {
+                None
+            }
+        })
         .collect()
 }
 
