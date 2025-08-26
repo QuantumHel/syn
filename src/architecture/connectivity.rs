@@ -145,17 +145,17 @@ impl Connectivity {
     }
 
     fn path_from_shortest_path_tree(&self, u: GraphIndex, mut v: GraphIndex) -> Vec<GraphIndex> {
-        let mut path = vec![v];
-
         if self.prev[u][v].is_none() {
             return Vec::new();
         }
 
+        let mut path = vec![v];
         while u != v {
-            if let Some(new_v) = self.prev[u][v] {
-                v = new_v;
-                path.push(v);
-            }
+            let Some(new_v) = self.prev[u][v] else {
+                panic!("broken path from {u} to {v}");
+            };
+            v = new_v;
+            path.push(v);
         }
 
         path.reverse();
