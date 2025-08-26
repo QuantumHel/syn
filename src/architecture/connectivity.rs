@@ -102,17 +102,10 @@ impl Connectivity {
     }
 
     pub fn edges(&self) -> Vec<(GraphIndex, GraphIndex)> {
-        let graph_edges: Vec<(GraphIndex, GraphIndex)> = self
-            .graph
+        self.graph
             .edge_references()
-            .map(|node| {
-                (
-                    self.graph.to_index(node.source()),
-                    self.graph.to_index(node.target()),
-                )
-            })
-            .collect();
-        graph_edges
+            .map(|node| (node.source().index(), node.target().index()))
+            .collect()
     }
 
     fn update(&mut self) {
@@ -177,7 +170,7 @@ impl Architecture for Connectivity {
             j < self.graph.node_count(),
             "architecture does not contain node {j}"
         );
-        self.distance[&(self.graph.from_index(i), self.graph.from_index(j))] as usize
+        self.distance[&(self.graph.from_index(i), self.graph.from_index(j))]
     }
 
     fn neighbors(&self, i: GraphIndex) -> Vec<usize> {
@@ -186,7 +179,7 @@ impl Architecture for Connectivity {
             "architecture does not contain node {i}"
         );
         self.graph
-            .neighbors(NodeIndex::new(i))
+            .neighbors(self.graph.from_index(i))
             .map(|neighbor| neighbor.index())
             .collect()
     }
@@ -241,7 +234,7 @@ impl Architecture for Connectivity {
             for neighbor in tree.neighbors(node) {
                 if !visited.is_visited(&neighbor) {
                     visited.visit(neighbor);
-                    edge_list.push((self.graph.to_index(node), self.graph.to_index(neighbor)));
+                    edge_list.push((node.index(), neighbor.index()));
                 }
             }
         }
