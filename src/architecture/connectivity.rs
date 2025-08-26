@@ -116,15 +116,9 @@ impl Connectivity {
     }
 
     fn update(&mut self) {
-        let non_cutting = get_non_cutting_vertices(&self.graph);
-
-        let (distance, prev) = floyd_warshall_path(&self.graph, |e| *e.weight()).unwrap();
-
-        let distance = distance.iter().map(|(k, v)| (*k, *v)).collect();
-
-        self.non_cutting = non_cutting;
-        self.distance = distance;
-        self.prev = prev;
+        let graph = std::mem::take(&mut self.graph);
+        let updated_self = Self::from_graph(graph);
+        *self = updated_self;
     }
 
     pub fn remove_node(&mut self, i: GraphIndex) {
@@ -133,9 +127,7 @@ impl Connectivity {
     }
 
     pub fn add_edge(&mut self, i: GraphIndex, j: GraphIndex) {
-        self.graph
-            .add_edge(self.graph.from_index(i), self.graph.from_index(j), 1);
-        self.update();
+        self.add_weighted_edge(i, j, 1);
     }
 
     pub fn add_weighted_edge(&mut self, i: GraphIndex, j: GraphIndex, weight: EdgeWeight) {
@@ -258,17 +250,8 @@ impl Architecture for Connectivity {
 
     fn disconnect(&self, i: GraphIndex) -> Connectivity {
         let mut graph = self.graph.clone();
-        graph.retain_nodes(|_, index| index.index() != i);
-        let non_cutting = get_non_cutting_vertices(&graph);
-        let (distance, prev) = floyd_warshall_path(&graph, |e| *e.weight()).unwrap();
-        let distance = distance.into_iter().collect();
-
-        Connectivity {
-            graph,
-            non_cutting,
-            prev,
-            distance,
-        }
+        graph.remove_node(graph.from_index(i));
+        Connectivity::from_graph(graph)
     }
 }
 
