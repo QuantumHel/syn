@@ -1,4 +1,5 @@
 use super::{Architecture, EdgeWeight, GraphIndex, LadderError, NodeWeight};
+use itertools::Itertools;
 use petgraph::algo::floyd_warshall::floyd_warshall_path;
 use petgraph::algo::steiner_tree::stable_steiner_tree;
 use petgraph::prelude::{EdgeRef, StableUnGraph};
@@ -202,18 +203,20 @@ impl Architecture for Connectivity {
         root: &GraphIndex,
     ) -> Result<Vec<(GraphIndex, GraphIndex)>, LadderError> {
         let mut nodes = nodes.to_vec();
-        let terminals: Vec<_> = self
+        let terminals = self
             .graph
             .node_references()
             .filter_map(|(node_index, _)| {
-                if nodes.contains(&node_index.index()) {
-                    nodes.retain(|&x| x != node_index.index());
-                    Some(node_index)
-                } else {
-                    None
-                }
+                // Try to remove node from `nodes`
+                nodes
+                    .iter()
+                    .position(|x| *x == node_index.index())
+                    .map(|pos| {
+                        nodes.swap_remove(pos);
+                        node_index
+                    })
             })
-            .collect();
+            .collect_vec();
 
         if !nodes.is_empty() {
             return Err(LadderError::NodesNotFound(nodes));
