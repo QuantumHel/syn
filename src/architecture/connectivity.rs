@@ -180,7 +180,7 @@ impl Architecture for Connectivity {
         self.distance[&(self.graph.from_index(i), self.graph.from_index(j))]
     }
 
-    fn neighbors(&self, i: GraphIndex) -> Vec<usize> {
+    fn neighbors(&self, i: GraphIndex) -> Vec<GraphIndex> {
         assert!(
             i < self.graph.node_count(),
             "architecture does not contain node {i}"
@@ -200,7 +200,7 @@ impl Architecture for Connectivity {
         &self,
         nodes: &[GraphIndex],
         root: &GraphIndex,
-    ) -> Result<Vec<(usize, usize)>, LadderError> {
+    ) -> Result<Vec<(GraphIndex, GraphIndex)>, LadderError> {
         let mut nodes = nodes.to_vec();
         let terminals: Vec<_> = self
             .graph
