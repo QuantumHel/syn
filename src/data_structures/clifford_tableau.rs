@@ -59,7 +59,7 @@ impl CliffordTableau {
         &self.pauli_columns[i]
     }
 
-    pub(crate) fn compose(&self, rhs: &Self) -> Self {
+    pub fn compose(&self, rhs: &Self) -> Self {
         rhs.prepend(self)
     }
 
