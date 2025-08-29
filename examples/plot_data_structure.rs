@@ -22,7 +22,8 @@ fn main() {
     let my_tableaus = CliffordTableau::from_parts(vec![pauli_1, pauli_2, pauli_3], signs);
 
     println!("{}", my_tableaus);
-    //test pauli polynomial
+
+    // test pauli polynomial
 
     let ham = vec![("IXYZ", 0.3), ("XXII", 0.7), ("YYII", 0.12)];
     let pp = PauliPolynomial::from_hamiltonian(ham);

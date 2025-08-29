@@ -4,6 +4,8 @@ use std::fmt;
 use std::iter::zip;
 use std::ops::Mul;
 
+use crate::data_structures::PauliLetter;
+
 use super::HasAdjoint;
 use super::{
     pauli_string::{cx, PauliString},
@@ -59,7 +61,7 @@ impl CliffordTableau {
         &self.pauli_columns[i]
     }
 
-    pub fn compose(&self, rhs: &Self) -> Self {
+    pub(crate) fn compose(&self, rhs: &Self) -> Self {
         rhs.prepend(self)
     }
 
@@ -326,21 +328,36 @@ impl fmt::Display for CliffordTableau {
         for (i, column) in self.pauli_columns.iter().enumerate() {
             write!(f, "QB{} ||", i)?;
             let mut out = String::new();
-            let mut count = 0;
-            for ch in column.to_string().chars() {
-                if ch != ' ' {
-                    count += 1;
-                    out.push(ch);
-                    if count % 2 == 1 {
-                        out.push(' ');
-                    } else {
-                        out.push_str(" |");
+            let mut letter_count = 0;
+            for j in 0..column.len() {
+                // let letter = column.pauli(j);
+                match column.pauli(j) {
+                    PauliLetter::I => {
+                        out.push('I');
+                        letter_count += 1;
                     }
-                } else {
-                    out.push(' ');
+                    PauliLetter::X => {
+                        out.push('X');
+                        letter_count += 1;
+                    }
+                    PauliLetter::Z => {
+                        out.push('Z');
+                        letter_count += 1;
+                    }
+                    PauliLetter::Y => {
+                        out.push('Y');
+                        letter_count += 1;
+                    }
                 }
+                if letter_count % 2 == 1 {
+                    out.push(' ');
+                } else {
+                    out.push_str(" |");
+                }
+                out.push(' ');
             }
-            writeln!(f, " {} ", out)?;
+            out.push('\n');
+            write!(f, " {}", out)?;
         }
         writeln!(f)
     }
