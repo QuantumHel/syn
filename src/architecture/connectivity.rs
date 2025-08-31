@@ -1,4 +1,5 @@
 use super::{Architecture, EdgeWeight, GraphIndex, LadderError, NodeWeight};
+use itertools::Itertools;
 use petgraph::algo::floyd_warshall::floyd_warshall_path;
 use petgraph::algo::steiner_tree::stable_steiner_tree;
 use petgraph::prelude::{EdgeRef, StableUnGraph};
@@ -15,8 +16,15 @@ fn get_non_cutting_vertices(
     graph: &StableUnGraph<NodeWeight, EdgeWeight, GraphIndex>,
 ) -> Vec<GraphIndex> {
     let art_points = articulation_points(&graph);
-    (0..graph.node_count())
-        .filter(|node| !art_points.contains(&graph.from_index(*node)))
+    graph
+        .node_indices()
+        .filter_map(|node| {
+            if !art_points.contains(&node) {
+                Some(node.index())
+            } else {
+                None
+            }
+        })
         .collect()
 }
 
@@ -40,13 +48,13 @@ impl Connectivity {
         }
     }
 
-    pub fn line(nr_qubits: usize) -> Self {
-        let edges: Vec<(usize, usize)> = (0..nr_qubits - 1).map(|i| (i, i + 1)).collect();
+    pub fn line(num_qubits: usize) -> Self {
+        let edges: Vec<(usize, usize)> = (1..num_qubits).map(|i| (i - 1, i)).collect();
         Connectivity::from_edges(&edges)
     }
 
     pub fn grid(num_rows: usize, num_cols: usize) -> Self {
-        let mut edges = Vec::new();
+        let mut edges = Vec::with_capacity(2 * num_rows * num_cols);
 
         for r in 0..num_rows {
             for c in 0..num_cols {
@@ -62,7 +70,7 @@ impl Connectivity {
     }
 
     pub fn complete(num_qubits: usize) -> Self {
-        let mut edges = Vec::new();
+        let mut edges = Vec::with_capacity(num_qubits * num_qubits / 2);
         for i in 0..num_qubits {
             for j in (i + 1)..num_qubits {
                 edges.push((i, j));
@@ -102,29 +110,16 @@ impl Connectivity {
     }
 
     pub fn edges(&self) -> Vec<(GraphIndex, GraphIndex)> {
-        let graph_edges: Vec<(GraphIndex, GraphIndex)> = self
-            .graph
+        self.graph
             .edge_references()
-            .map(|node| {
-                (
-                    self.graph.to_index(node.source()),
-                    self.graph.to_index(node.target()),
-                )
-            })
-            .collect();
-        graph_edges
+            .map(|node| (node.source().index(), node.target().index()))
+            .collect()
     }
 
     fn update(&mut self) {
-        let non_cutting = get_non_cutting_vertices(&self.graph);
-
-        let (distance, prev) = floyd_warshall_path(&self.graph, |e| *e.weight()).unwrap();
-
-        let distance = distance.iter().map(|(k, v)| (*k, *v)).collect();
-
-        self.non_cutting = non_cutting;
-        self.distance = distance;
-        self.prev = prev;
+        let graph = std::mem::take(&mut self.graph);
+        let updated_self = Self::from_graph(graph);
+        *self = updated_self;
     }
 
     pub fn remove_node(&mut self, i: GraphIndex) {
@@ -133,9 +128,7 @@ impl Connectivity {
     }
 
     pub fn add_edge(&mut self, i: GraphIndex, j: GraphIndex) {
-        self.graph
-            .add_edge(self.graph.from_index(i), self.graph.from_index(j), 1);
-        self.update();
+        self.add_weighted_edge(i, j, 1);
     }
 
     pub fn add_weighted_edge(&mut self, i: GraphIndex, j: GraphIndex, weight: EdgeWeight) {
@@ -145,17 +138,17 @@ impl Connectivity {
     }
 
     fn path_from_shortest_path_tree(&self, u: GraphIndex, mut v: GraphIndex) -> Vec<GraphIndex> {
-        let mut path = vec![v];
-
         if self.prev[u][v].is_none() {
             return Vec::new();
         }
 
+        let mut path = vec![v];
         while u != v {
-            if let Some(new_v) = self.prev[u][v] {
-                v = new_v;
-                path.push(v);
-            }
+            let Some(new_v) = self.prev[u][v] else {
+                panic!("broken path from {u} to {v}");
+            };
+            v = new_v;
+            path.push(v);
         }
 
         path.reverse();
@@ -185,16 +178,16 @@ impl Architecture for Connectivity {
             j < self.graph.node_count(),
             "architecture does not contain node {j}"
         );
-        self.distance[&(self.graph.from_index(i), self.graph.from_index(j))] as usize
+        self.distance[&(self.graph.from_index(i), self.graph.from_index(j))]
     }
 
-    fn neighbors(&self, i: GraphIndex) -> Vec<usize> {
+    fn neighbors(&self, i: GraphIndex) -> Vec<GraphIndex> {
         assert!(
             i < self.graph.node_count(),
             "architecture does not contain node {i}"
         );
         self.graph
-            .neighbors(NodeIndex::new(i))
+            .neighbors(self.graph.from_index(i))
             .map(|neighbor| neighbor.index())
             .collect()
     }
@@ -208,20 +201,22 @@ impl Architecture for Connectivity {
         &self,
         nodes: &[GraphIndex],
         root: &GraphIndex,
-    ) -> Result<Vec<(usize, usize)>, LadderError> {
+    ) -> Result<Vec<(GraphIndex, GraphIndex)>, LadderError> {
         let mut nodes = nodes.to_vec();
-        let terminals: Vec<_> = self
+        let terminals = self
             .graph
             .node_references()
             .filter_map(|(node_index, _)| {
-                if nodes.contains(&node_index.index()) {
-                    nodes.retain(|&x| x != node_index.index());
-                    Some(node_index)
-                } else {
-                    None
-                }
+                // Try to remove node from `nodes`
+                nodes
+                    .iter()
+                    .position(|x| *x == node_index.index())
+                    .map(|pos| {
+                        nodes.swap_remove(pos);
+                        node_index
+                    })
             })
-            .collect();
+            .collect_vec();
 
         if !nodes.is_empty() {
             return Err(LadderError::NodesNotFound(nodes));
@@ -249,7 +244,7 @@ impl Architecture for Connectivity {
             for neighbor in tree.neighbors(node) {
                 if !visited.is_visited(&neighbor) {
                     visited.visit(neighbor);
-                    edge_list.push((self.graph.to_index(node), self.graph.to_index(neighbor)));
+                    edge_list.push((node.index(), neighbor.index()));
                 }
             }
         }
@@ -258,17 +253,8 @@ impl Architecture for Connectivity {
 
     fn disconnect(&self, i: GraphIndex) -> Connectivity {
         let mut graph = self.graph.clone();
-        graph.retain_nodes(|_, index| index.index() != i);
-        let non_cutting = get_non_cutting_vertices(&graph);
-        let (distance, prev) = floyd_warshall_path(&graph, |e| *e.weight()).unwrap();
-        let distance = distance.into_iter().collect();
-
-        Connectivity {
-            graph,
-            non_cutting,
-            prev,
-            distance,
-        }
+        graph.remove_node(graph.from_index(i));
+        Connectivity::from_graph(graph)
     }
 }
 
