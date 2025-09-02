@@ -617,7 +617,7 @@ mod tests {
         let pp = setup_sample_pp();
         assert_eq!(
             pp.to_string(),
-            "Angles | 0.300 | 0.700 | 0.120 |\nQubit 0| I     | X     | Y     |\nQubit 1| Z     | Y     | X     |\nQubit 2| Y     | I     | X     |\n\n"
+            "Angles || 0.300 | 0.700 | 0.120 |\nQB0    || I     | X     | Y     |\nQB1    || Z     | Y     | X     |\nQB2    || Y     | I     | X     |\n\n"
         );
     }
 }
