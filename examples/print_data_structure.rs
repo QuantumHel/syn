@@ -22,9 +22,9 @@ fn main() {
     // qubit 4z: IZI
     // let pauli_4 = PauliString::from_text("ZYXIZI");
     let signs = bitvec![0, 1, 0, 1, 0, 0, 1, 1];
-    let my_tableaus = CliffordTableau::from_parts(vec![pauli_1, pauli_2, pauli_3], signs);
+    let my_tableaux = CliffordTableau::from_parts(vec![pauli_1, pauli_2, pauli_3], signs);
 
-    println!("{}", my_tableaus);
+    println!("{}", my_tableaux);
 
     // // test pauli polynomial
 
