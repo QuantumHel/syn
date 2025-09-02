@@ -367,45 +367,63 @@ impl fmt::Display for CliffordTableau {
         write!(f, "    || Stabilizers | Destabilizers |\n")?;
         let column0 = self.pauli_columns[0].len();
         for i in 0..column0 / 2 {
-            write!(f, "QB{} || ", i)?;
-            let sign = self.signs[i];
-            if sign {
-                write!(f, "- ")?;
-            } else {
-                write!(f, "+ ")?;
-            }
+            let mut out = String::new();
+            //beginning of line string
+            out.push_str("QB");
+            out.push_str(&i.to_string());
+            out.push_str(" || ");
+
+            //add sign for stabilizers
+            out.push(get_pauli_sign(self.signs[i]));
+            out.push(' ');
+
+            //add stabilizers pauli
             for column in self.pauli_columns.iter() {
-                let mut out = String::new();
                 let ch = get_pauli_char(&column.pauli(i));
                 out.push(ch);
-                write!(f, "{} ", out)?;
+                out.push(' ');
             }
+
+            //add space due to the length of "stabilizers" string
             let space_left = 10 - 2 * self.pauli_columns.len();
             for _ in 0..space_left {
-                write!(f, " ")?;
+                out.push(' ');
             }
-            write!(f, "| ")?;
-            let sign = self.signs[i + column0 / 2];
-            if sign {
-                write!(f, "- ")?;
-            } else {
-                write!(f, "+ ")?;
-            }
+
+            //add separator between stabilizers and destabilizers
+            out.push_str("| ");
+
+            //add sign for destabilizers
+            out.push(get_pauli_sign(self.signs[i + column0 / 2]));
+            out.push(' ');
+
+            // add destabilizers pauli
             for column in self.pauli_columns.iter() {
-                let mut out = String::new();
                 let ch = get_pauli_char(&column.pauli(i + column0 / 2));
                 out.push(ch);
-                write!(f, "{} ", out)?;
+                out.push(' ');
             }
+
+            //add space due to the length of "destabilizers" string
             let space_left = 12 - 2 * self.pauli_columns.len();
             for _ in 0..space_left {
-                write!(f, " ")?;
+                out.push(' ');
             }
-            writeln!(f, "|")?;
+            out.push('|');
+            writeln!(f, "{}", out)?;
         }
         writeln!(f)
     }
 }
+
+pub fn get_pauli_sign(sign: bool) -> char {
+    if sign {
+        '-'
+    } else {
+        '+'
+    }
+}
+
 pub fn get_pauli_char(letter: &PauliLetter) -> char {
     match letter {
         PauliLetter::I => 'I',
@@ -414,6 +432,7 @@ pub fn get_pauli_char(letter: &PauliLetter) -> char {
         PauliLetter::Z => 'Z',
     }
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;

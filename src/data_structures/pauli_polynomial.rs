@@ -177,10 +177,10 @@ impl fmt::Display for PauliPolynomial {
             .iter()
             .map(|x| format!("{:.3}", x)) //force 3 decimal place for formatting
             .join(" | ");
-        writeln!(f, "Angles | {} |", string_angles)?;
+        writeln!(f, "Angles || {} |", string_angles)?;
         let chains = self.chains();
         for (i, pauli) in chains.iter().enumerate() {
-            write!(f, "Qubit {}|", i)?;
+            write!(f, "QB{}    ||", i)?;
             let chain_str = pauli.to_string();
             let mut out = String::new();
             for ch in chain_str.chars() {

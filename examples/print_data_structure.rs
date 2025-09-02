@@ -20,17 +20,17 @@ fn main() {
     let pauli_3 = PauliString::from_text("ZYYIIZ");
     // qubit 4x: ZYX
     // qubit 4z: IZI
-    let pauli_4 = PauliString::from_text("ZYXIZI");
+    // let pauli_4 = PauliString::from_text("ZYXIZI");
     let signs = bitvec![0, 1, 0, 1, 0, 0, 1, 1];
-    let my_tableaus = CliffordTableau::from_parts(vec![pauli_1, pauli_2, pauli_3, pauli_4], signs);
+    let my_tableaus = CliffordTableau::from_parts(vec![pauli_1, pauli_2, pauli_3], signs);
 
     println!("{}", my_tableaus);
 
     // // test pauli polynomial
 
-    // let ham = vec![("IXYZ", 0.3), ("XXII", 0.7), ("YYII", 0.12)];
-    // let pp = PauliPolynomial::from_hamiltonian(ham);
-    // println!("{}", pp);
+    let ham = vec![("IXYZ", 0.3), ("XXII", 0.7), ("YYII", 0.12)];
+    let pp = PauliPolynomial::from_hamiltonian(ham);
+    println!("{}", pp);
 
     // // // visualize_pauli_exponential_simple(&pe);
     // let ham = vec![("IZZZ", 0.3)];
