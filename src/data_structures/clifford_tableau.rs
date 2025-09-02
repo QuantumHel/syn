@@ -306,63 +306,114 @@ impl Mul for CliffordTableau {
 }
 
 impl fmt::Display for CliffordTableau {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "    ||")?;
-        for i in 0..self.size() {
-            write!(f, " X{} Z{}|", i + 1, i + 1)?;
-        }
-        writeln!(f)?;
-        write!(f, "+/- ||")?;
-        for (i, sign) in self.signs().iter().enumerate() {
-            if *sign {
-                write!(f, " - ")?;
-            } else {
-                write!(f, " + ")?;
-            }
-            if i % 2 != 0 {
-                write!(f, "|")?;
-            }
-        }
-        writeln!(f)?;
+    // fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    //     write!(f, "    ||")?;
+    //     for i in 0..self.size() {
+    //         write!(f, " X{} Z{}|", i + 1, i + 1)?;
+    //     }
+    //     writeln!(f)?;
+    //     write!(f, "+/- ||")?;
+    //     for (i, sign) in self.signs().iter().enumerate() {
+    //         if *sign {
+    //             write!(f, " - ")?;
+    //         } else {
+    //             write!(f, " + ")?;
+    //         }
+    //         if i % 2 != 0 {
+    //             write!(f, "|")?;
+    //         }
+    //     }
+    //     writeln!(f)?;
 
-        for (i, column) in self.pauli_columns.iter().enumerate() {
-            write!(f, "QB{} ||", i)?;
-            let mut out = String::new();
-            let mut letter_count = 0;
-            for j in 0..column.len() {
-                // let letter = column.pauli(j);
-                match column.pauli(j) {
-                    PauliLetter::I => {
-                        out.push('I');
-                        letter_count += 1;
-                    }
-                    PauliLetter::X => {
-                        out.push('X');
-                        letter_count += 1;
-                    }
-                    PauliLetter::Z => {
-                        out.push('Z');
-                        letter_count += 1;
-                    }
-                    PauliLetter::Y => {
-                        out.push('Y');
-                        letter_count += 1;
-                    }
-                }
-                if letter_count % 2 == 1 {
-                    out.push(' ');
-                } else {
-                    out.push_str(" |");
-                }
-                out.push(' ');
+    //     for (i, column) in self.pauli_columns.iter().enumerate() {
+    //         write!(f, "QB{} ||", i)?;
+    //         let mut out = String::new();
+    //         let mut letter_count = 0;
+    //         for j in 0..column.len() {
+    //             // let letter = column.pauli(j);
+    //             match column.pauli(j) {
+    //                 PauliLetter::I => {
+    //                     out.push('I');
+    //                     letter_count += 1;
+    //                 }
+    //                 PauliLetter::X => {
+    //                     out.push('X');
+    //                     letter_count += 1;
+    //                 }
+    //                 PauliLetter::Z => {
+    //                     out.push('Z');
+    //                     letter_count += 1;
+    //                 }
+    //                 PauliLetter::Y => {
+    //                     out.push('Y');
+    //                     letter_count += 1;
+    //                 }
+    //             }
+    //             if letter_count % 2 == 1 {
+    //                 out.push(' ');
+    //             } else {
+    //                 out.push_str(" |");
+    //             }
+    //             out.push(' ');
+    //         }
+    //         out.push('\n');
+    //         write!(f, " {}", out)?;
+    //     }
+    //     writeln!(f)
+    // }
+
+    // build a function that push the correct string character for each Pauli letter
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "    || Stabilizers | Destabilizers |\n")?;
+        let column0 = self.pauli_columns[0].len();
+        for i in 0..column0 / 2 {
+            write!(f, "QB{} || ", i)?;
+            let sign = self.signs[i];
+            if sign {
+                write!(f, "- ")?;
+            } else {
+                write!(f, "+ ")?;
             }
-            out.push('\n');
-            write!(f, " {}", out)?;
+            for column in self.pauli_columns.iter() {
+                let mut out = String::new();
+                let ch = get_pauli_char(&column.pauli(i));
+                out.push(ch);
+                write!(f, "{} ", out)?;
+            }
+            let space_left = 10 - 2 * self.pauli_columns.len();
+            for _ in 0..space_left {
+                write!(f, " ")?;
+            }
+            write!(f, "| ")?;
+            let sign = self.signs[i + column0 / 2];
+            if sign {
+                write!(f, "- ")?;
+            } else {
+                write!(f, "+ ")?;
+            }
+            for column in self.pauli_columns.iter() {
+                let mut out = String::new();
+                let ch = get_pauli_char(&column.pauli(i + column0 / 2));
+                out.push(ch);
+                write!(f, "{} ", out)?;
+            }
+            let space_left = 12 - 2 * self.pauli_columns.len();
+            for _ in 0..space_left {
+                write!(f, " ")?;
+            }
+            writeln!(f, "|")?;
         }
         writeln!(f)
     }
 }
-
+pub fn get_pauli_char(letter: &PauliLetter) -> char {
+    match letter {
+        PauliLetter::I => 'I',
+        PauliLetter::X => 'X',
+        PauliLetter::Y => 'Y',
+        PauliLetter::Z => 'Z',
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*;
