@@ -12,3 +12,6 @@ target/
 # Ideas
 .idea/
 .vscode/
+
+# Jupyter notebook checkpoints
+examples/.ipynb_checkpoints/
