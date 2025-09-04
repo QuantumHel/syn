@@ -4,6 +4,8 @@ use std::fmt;
 use std::iter::zip;
 use std::ops::Mul;
 
+use crate::data_structures::PauliLetter;
+
 use super::HasAdjoint;
 use super::{
     pauli_string::{cx, PauliString},
@@ -41,6 +43,10 @@ impl CliffordTableau {
         self.size
     }
 
+    pub fn signs(&self) -> &BitVec {
+        &self.signs
+    }
+
     pub(crate) fn x_signs(&self) -> BitVec {
         let n = self.size();
         self.signs[0..n].to_bitvec()
@@ -57,6 +63,49 @@ impl CliffordTableau {
 
     pub fn compose(&self, rhs: &Self) -> Self {
         rhs.prepend(self)
+    }
+
+    pub(crate) fn get_line_string(&self, i: usize) -> String {
+        let mut out = String::new();
+
+        //add sign for stabilizers
+        out.push(get_pauli_sign(self.signs[i]));
+        out.push(' ');
+
+        //add stabilizers pauli
+        for column in self.pauli_columns.iter() {
+            let ch = get_pauli_char(&column.pauli(i));
+            out.push(ch);
+            out.push(' ');
+        }
+
+        //add space due to the length of "stabilizers" string
+        let space_left = 10 - 2 * self.pauli_columns.len();
+        for _ in 0..space_left {
+            out.push(' ');
+        }
+
+        //add separator between stabilizers and destabilizers
+        out.push_str("| ");
+
+        //add sign for destabilizers
+        out.push(get_pauli_sign(self.signs[i + self.size()]));
+        out.push(' ');
+
+        // add destabilizers pauli
+        for column in self.pauli_columns.iter() {
+            let ch = get_pauli_char(&column.pauli(i + self.size()));
+            out.push(ch);
+            out.push(' ');
+        }
+
+        //add space due to the length of "destabilizers" string
+        let space_left = 12 - 2 * self.pauli_columns.len();
+        for _ in 0..space_left {
+            out.push(' ');
+        }
+        out.push('|');
+        out
     }
 
     /// Implements algorithms from https://doi.org/10.22331/q-2022-06-13-734 and Qiskit Clifford implementation
@@ -301,20 +350,37 @@ impl Mul for CliffordTableau {
 
 impl fmt::Display for CliffordTableau {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        writeln!(f, "CliffordTableau({})", self.size())?;
-        for pauli_column in self.pauli_columns.iter() {
-            writeln!(f, "{}", pauli_column)?;
+        //first line
+        write!(f, "    || Stabilizers | Destabilizers |\n")?;
+        let column0 = self.pauli_columns[0].len();
+        for i in 0..column0 / 2 {
+            let mut out = String::new();
+            //beginning of line string
+            out.push_str("QB");
+            out.push_str(&i.to_string());
+            out.push_str(" || ");
+
+            out.push_str(&self.get_line_string(i));
+            writeln!(f, "{}", out)?;
         }
-        let mut sign_str = String::new();
-        for bit in self.signs.iter() {
-            match *bit {
-                true => sign_str.push('-'),
-                false => sign_str.push('+'),
-            }
-            sign_str.push(' ')
-        }
-        sign_str.pop();
-        write!(f, "{}", sign_str)
+        writeln!(f)
+    }
+}
+
+pub fn get_pauli_sign(sign: bool) -> char {
+    if sign {
+        '-'
+    } else {
+        '+'
+    }
+}
+
+pub fn get_pauli_char(letter: &PauliLetter) -> char {
+    match letter {
+        PauliLetter::I => 'I',
+        PauliLetter::X => 'X',
+        PauliLetter::Y => 'Y',
+        PauliLetter::Z => 'Z',
     }
 }
 
@@ -1194,7 +1260,7 @@ mod tests {
         let ct = setup_sample_ct();
         assert_eq!(
             ct.to_string(),
-            "CliffordTableau(3)\nZ Y I I Z Z\nZ I X X I I\nZ Y Y I I Z\n+ - + - + +"
+            "    || Stabilizers | Destabilizers |\nQB0 || + Z Z Z     | - I X I       |\nQB1 || - Y I Y     | + Z I I       |\nQB2 || + I X Y     | + Z I Z       |\n\n"
         );
     }
 }
