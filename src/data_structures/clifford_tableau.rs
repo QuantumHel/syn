@@ -65,6 +65,49 @@ impl CliffordTableau {
         rhs.prepend(self)
     }
 
+    pub(crate) fn get_line_string(&self, i: usize) -> String {
+        let mut out = String::new();
+
+        //add sign for stabilizers
+        out.push(get_pauli_sign(self.signs[i]));
+        out.push(' ');
+
+        //add stabilizers pauli
+        for column in self.pauli_columns.iter() {
+            let ch = get_pauli_char(&column.pauli(i));
+            out.push(ch);
+            out.push(' ');
+        }
+
+        //add space due to the length of "stabilizers" string
+        let space_left = 10 - 2 * self.pauli_columns.len();
+        for _ in 0..space_left {
+            out.push(' ');
+        }
+
+        //add separator between stabilizers and destabilizers
+        out.push_str("| ");
+
+        //add sign for destabilizers
+        out.push(get_pauli_sign(self.signs[i + self.size()]));
+        out.push(' ');
+
+        // add destabilizers pauli
+        for column in self.pauli_columns.iter() {
+            let ch = get_pauli_char(&column.pauli(i + self.size()));
+            out.push(ch);
+            out.push(' ');
+        }
+
+        //add space due to the length of "destabilizers" string
+        let space_left = 12 - 2 * self.pauli_columns.len();
+        for _ in 0..space_left {
+            out.push(' ');
+        }
+        out.push('|');
+        out
+    }
+
     /// Implements algorithms from https://doi.org/10.22331/q-2022-06-13-734 and Qiskit Clifford implementation
     pub(crate) fn prepend(&self, lhs: &Self) -> Self {
         let size = self.size();
@@ -317,43 +360,7 @@ impl fmt::Display for CliffordTableau {
             out.push_str(&i.to_string());
             out.push_str(" || ");
 
-            //add sign for stabilizers
-            out.push(get_pauli_sign(self.signs[i]));
-            out.push(' ');
-
-            //add stabilizers pauli
-            for column in self.pauli_columns.iter() {
-                let ch = get_pauli_char(&column.pauli(i));
-                out.push(ch);
-                out.push(' ');
-            }
-
-            //add space due to the length of "stabilizers" string
-            let space_left = 10 - 2 * self.pauli_columns.len();
-            for _ in 0..space_left {
-                out.push(' ');
-            }
-
-            //add separator between stabilizers and destabilizers
-            out.push_str("| ");
-
-            //add sign for destabilizers
-            out.push(get_pauli_sign(self.signs[i + column0 / 2]));
-            out.push(' ');
-
-            // add destabilizers pauli
-            for column in self.pauli_columns.iter() {
-                let ch = get_pauli_char(&column.pauli(i + column0 / 2));
-                out.push(ch);
-                out.push(' ');
-            }
-
-            //add space due to the length of "destabilizers" string
-            let space_left = 12 - 2 * self.pauli_columns.len();
-            for _ in 0..space_left {
-                out.push(' ');
-            }
-            out.push('|');
+            out.push_str(&self.get_line_string(i));
             writeln!(f, "{}", out)?;
         }
         writeln!(f)

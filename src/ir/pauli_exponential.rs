@@ -32,11 +32,19 @@ impl PauliExponential {
 
 impl fmt::Display for PauliExponential {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        writeln!(f, "Clifford Tableau: \n{}", self.clifford_tableau)?;
-        writeln!(f, "Pauli Polynomials:")?;
-        for (i, pp) in self.pauli_polynomials.iter().enumerate() {
-            writeln!(f, "Pauli {} ", i)?;
-            writeln!(f, "{}", pp)?;
+        let ct = &self.clifford_tableau;
+        let pp = &self.pauli_polynomials[0];
+        let mut out = String::new();
+        out.push_str(pp.get_first_line_string().as_str());
+        out.push_str("| Stabilizers | Destabilizers |");
+        out.push_str("\n");
+        write!(f, "{}", out)?;
+        for i in 0..ct.column(0).len() / 2 {
+            let mut out = String::new();
+            out.push_str(pp.get_line_string(i).as_str());
+            out.push_str("| ");
+            out.push_str(ct.get_line_string(i).as_str());
+            writeln!(f, "{}", out)?;
         }
         writeln!(f)
     }

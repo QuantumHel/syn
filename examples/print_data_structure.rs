@@ -33,11 +33,11 @@ fn main() {
     println!("{}", pp);
 
     // // // visualize_pauli_exponential_simple(&pe);
-    // let ham = vec![("IZZZ", 0.3)];
-    // let pp = PauliPolynomial::from_hamiltonian(ham);
-    // let ct = CliffordTableau::new(4);
-    // let pe = PauliExponential::new(VecDeque::from([pp]), ct);
-    // println!("{}", pe);
+    let ham = vec![("IZZZ", 0.3)];
+    let pp = PauliPolynomial::from_hamiltonian(ham);
+    let ct = CliffordTableau::new(4);
+    let pe = PauliExponential::new(VecDeque::from([pp]), ct);
+    println!("{}", pe);
 
     // // //visualize_pauli_exponential complex
     // let ham = vec![("IXYZ", 0.3), ("XXII", 0.7), ("YYII", 0.12)];

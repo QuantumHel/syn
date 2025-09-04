@@ -69,6 +69,34 @@ impl PauliPolynomial {
     pub fn angle(&self, i: usize) -> Angle {
         self.angles.read().unwrap()[i]
     }
+
+    pub fn get_line_string(&self, i: usize) -> String {
+        let mut out = String::new();
+        //beginning of line string
+        out.push_str("QB");
+        out.push_str(&i.to_string());
+        out.push_str("    || ");
+        let chain_str = self.chains[i].to_string();
+        for ch in chain_str.chars() {
+            out.push(ch);
+            if !ch.is_whitespace() {
+                out.push_str("     |");
+            }
+        }
+        out
+    }
+
+    pub fn get_first_line_string(&self) -> String {
+        let mut out = String::new();
+        //beginning of line string
+        out.push_str("Angles ||");
+        let angles = self.angles.read().unwrap();
+        for angle in angles.iter() {
+            out.push_str(&format!(" {:.3}", angle)); //force 3 decimal place for formatting
+            out.push_str(" |");
+        }
+        out
+    }
 }
 
 impl PropagateClifford for PauliPolynomial {
@@ -172,24 +200,17 @@ impl MaskedPropagateClifford for PauliPolynomial {
 
 impl fmt::Display for PauliPolynomial {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let angles = self.angles.read().unwrap();
-        let string_angles = angles
-            .iter()
-            .map(|x| format!("{:.3}", x)) //force 3 decimal place for formatting
-            .join(" | ");
-        writeln!(f, "Angles || {} |", string_angles)?;
+        // write first line
+        let mut out = String::new();
+        out.push_str(&self.get_first_line_string());
+        writeln!(f, "{}", out)?;
+
+        // write subsequent lines
         let chains = self.chains();
-        for (i, pauli) in chains.iter().enumerate() {
-            write!(f, "QB{}    ||", i)?;
-            let chain_str = pauli.to_string();
+        for (i, _) in chains.iter().enumerate() {
             let mut out = String::new();
-            for ch in chain_str.chars() {
-                out.push(ch);
-                if !ch.is_whitespace() {
-                    out.push_str("     |");
-                }
-            }
-            writeln!(f, " {}", out)?;
+            out.push_str(&self.get_line_string(i));
+            writeln!(f, "{}", out)?;
         }
         writeln!(f)
     }
