@@ -3,9 +3,9 @@ mod common;
 use std::collections::VecDeque;
 
 use common::{parse_clifford_commands, MockCircuit, MockCommand};
-use syn::data_structures::{CliffordTableau, PauliPolynomial};
-use syn::ir::pauli_polynomial::NaivePauliPolynomialSynthesizer;
-use syn::ir::Synthesizer;
+use synir::data_structures::{CliffordTableau, PauliPolynomial};
+use synir::ir::pauli_polynomial::NaivePauliPolynomialSynthesizer;
+use synir::ir::Synthesizer;
 
 fn setup_complex_pp() -> VecDeque<PauliPolynomial> {
     let ham_1 = vec![("IZZZ", 0.3)];
