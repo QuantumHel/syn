@@ -2,14 +2,13 @@ use crate::connectivity::connectivity_benchmark;
 use bitvec::bitvec;
 use bitvec::prelude::Lsb0;
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
-use syn::data_structures::CliffordTableau;
-use syn::data_structures::PauliString;
-use syn::ir::clifford_tableau::naive::NaiveCliffordSynthesizer;
-use syn::ir::clifford_tableau::CallbackCliffordSynthesizer;
-use syn::ir::CliffordGates;
-use syn::ir::Synthesizer;
-
-mod connectivity;
+use synir::data_structures::CliffordTableau;
+use synir::data_structures::PauliString;
+use synir::ir::clifford_tableau::naive::NaiveCliffordSynthesizer;
+use synir::ir::clifford_tableau::CallbackCliffordSynthesizer;
+use synir::ir::CliffordGates;
+use synir::ir::Synthesizer;
+use synir::IndexType;
 
 mod connectivity;
 
@@ -44,43 +43,43 @@ impl MockCircuit {
 }
 
 impl CliffordGates for MockCircuit {
-    fn s(&mut self, target: syn::IndexType) {
+    fn s(&mut self, target: IndexType) {
         self.commands.push(MockCommand::S(target));
     }
 
-    fn v(&mut self, target: syn::IndexType) {
+    fn v(&mut self, target: IndexType) {
         self.commands.push(MockCommand::V(target));
     }
 
-    fn s_dgr(&mut self, target: syn::IndexType) {
+    fn s_dgr(&mut self, target: IndexType) {
         self.commands.push(MockCommand::SDgr(target));
     }
 
-    fn v_dgr(&mut self, target: syn::IndexType) {
+    fn v_dgr(&mut self, target: IndexType) {
         self.commands.push(MockCommand::VDgr(target));
     }
 
-    fn x(&mut self, target: syn::IndexType) {
+    fn x(&mut self, target: IndexType) {
         self.commands.push(MockCommand::X(target));
     }
 
-    fn y(&mut self, target: syn::IndexType) {
+    fn y(&mut self, target: IndexType) {
         self.commands.push(MockCommand::Y(target));
     }
 
-    fn z(&mut self, target: syn::IndexType) {
+    fn z(&mut self, target: IndexType) {
         self.commands.push(MockCommand::Z(target));
     }
 
-    fn h(&mut self, target: syn::IndexType) {
+    fn h(&mut self, target: IndexType) {
         self.commands.push(MockCommand::H(target));
     }
 
-    fn cx(&mut self, control: syn::IndexType, target: syn::IndexType) {
+    fn cx(&mut self, control: IndexType, target: IndexType) {
         self.commands.push(MockCommand::CX(control, target));
     }
 
-    fn cz(&mut self, control: syn::IndexType, target: syn::IndexType) {
+    fn cz(&mut self, control: IndexType, target: IndexType) {
         self.commands.push(MockCommand::CZ(control, target));
     }
 }

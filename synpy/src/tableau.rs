@@ -4,12 +4,11 @@ use bitvec::prelude::BitVec;
 use pyo3::basic::CompareOp;
 use pyo3::prelude::*;
 use pyo3::PyResult;
-use syn::data_structures::CliffordTableau as CliffordTableau;
-use syn::data_structures::PauliString;
-use syn::data_structures::PropagateClifford;
-
-use syn::ir::clifford_tableau::NaiveCliffordSynthesizer;
-use syn::ir::Synthesizer;
+use synir::data_structures::CliffordTableau;
+use synir::data_structures::PauliString;
+use synir::data_structures::PropagateClifford;
+use synir::ir::clifford_tableau::NaiveCliffordSynthesizer;
+use synir::ir::Synthesizer;
 
 #[pyclass(unsendable)]
 pub struct PyCliffordTableau {

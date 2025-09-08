@@ -1,6 +1,7 @@
-use syn::{
+use synir::{
     data_structures::{CliffordTableau, PropagateClifford},
     ir::{CliffordGates, Gates},
+    IndexType,
 };
 
 type Angle = f64;
@@ -38,57 +39,57 @@ impl MockCircuit {
 }
 
 impl CliffordGates for MockCircuit {
-    fn s(&mut self, target: syn::IndexType) {
+    fn s(&mut self, target: IndexType) {
         self.commands.push(MockCommand::S(target));
     }
 
-    fn v(&mut self, target: syn::IndexType) {
+    fn v(&mut self, target: IndexType) {
         self.commands.push(MockCommand::V(target));
     }
 
-    fn s_dgr(&mut self, target: syn::IndexType) {
+    fn s_dgr(&mut self, target: IndexType) {
         self.commands.push(MockCommand::SDgr(target));
     }
 
-    fn v_dgr(&mut self, target: syn::IndexType) {
+    fn v_dgr(&mut self, target: IndexType) {
         self.commands.push(MockCommand::VDgr(target));
     }
 
-    fn x(&mut self, target: syn::IndexType) {
+    fn x(&mut self, target: IndexType) {
         self.commands.push(MockCommand::X(target));
     }
 
-    fn y(&mut self, target: syn::IndexType) {
+    fn y(&mut self, target: IndexType) {
         self.commands.push(MockCommand::Y(target));
     }
 
-    fn z(&mut self, target: syn::IndexType) {
+    fn z(&mut self, target: IndexType) {
         self.commands.push(MockCommand::Z(target));
     }
 
-    fn h(&mut self, target: syn::IndexType) {
+    fn h(&mut self, target: IndexType) {
         self.commands.push(MockCommand::H(target));
     }
 
-    fn cx(&mut self, control: syn::IndexType, target: syn::IndexType) {
+    fn cx(&mut self, control: IndexType, target: IndexType) {
         self.commands.push(MockCommand::CX(control, target));
     }
 
-    fn cz(&mut self, control: syn::IndexType, target: syn::IndexType) {
+    fn cz(&mut self, control: IndexType, target: IndexType) {
         self.commands.push(MockCommand::CZ(control, target));
     }
 }
 
 impl Gates for MockCircuit {
-    fn rx(&mut self, target: syn::IndexType, angle: Angle) {
+    fn rx(&mut self, target: IndexType, angle: Angle) {
         self.commands.push(MockCommand::Rx(target, angle));
     }
 
-    fn ry(&mut self, target: syn::IndexType, angle: Angle) {
+    fn ry(&mut self, target: IndexType, angle: Angle) {
         self.commands.push(MockCommand::Ry(target, angle));
     }
 
-    fn rz(&mut self, target: syn::IndexType, angle: Angle) {
+    fn rz(&mut self, target: IndexType, angle: Angle) {
         self.commands.push(MockCommand::Rz(target, angle));
     }
 }

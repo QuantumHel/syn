@@ -1,16 +1,19 @@
-use std::ops::Deref;
-use pyo3::{pyfunction, PyRef, PyResult};
 use pyo3::exceptions::PyException;
 use pyo3::{pyclass, pymethods, PyErr};
-use syn::data_structures::{CliffordTableau, PauliPolynomial};
-use syn::data_structures::PropagateClifford;
-use syn::ir::clifford_tableau::CliffordTableauSynthStrategy;
-use syn::ir::CliffordGates;
-use syn::ir::Gates;
-use syn::ir::pauli_exponential::{PauliExponential, PauliExponentialSynthesizer};
-use syn::ir::pauli_polynomial::PauliPolynomialSynthStrategy;
+use std::ops::Deref;
+
+use pyo3::{pyfunction, PyRef, PyResult};
+use synir::data_structures::PropagateClifford;
+use synir::data_structures::{CliffordTableau, PauliPolynomial};
+use synir::ir::clifford_tableau::CliffordTableauSynthStrategy;
+use synir::ir::pauli_exponential::{PauliExponential, PauliExponentialSynthesizer};
+use synir::ir::pauli_polynomial::PauliPolynomialSynthStrategy;
+use synir::ir::CliffordGates;
+use synir::ir::Gates;
+use synir::ir::Synthesizer;
+use synir::IndexType;
+
 use crate::validation::validate;
-use syn::ir::Synthesizer;
 
 #[pyclass]
 #[derive(Debug, Copy, Clone)]
@@ -137,63 +140,63 @@ impl CommandCollector {
         }
     }
 
-    pub fn commands(&self) -> Vec<PyCommand>  {
+    pub fn commands(&self) -> Vec<PyCommand> {
         self.commands.clone()
     }
 }
 
 impl CliffordGates for CommandCollector {
-    fn s(&mut self, target: syn::IndexType) {
+    fn s(&mut self, target: IndexType) {
         self.commands.push(PyCommand::S(target));
     }
 
-    fn v(&mut self, target: syn::IndexType) {
+    fn v(&mut self, target: IndexType) {
         self.commands.push(PyCommand::V(target));
     }
 
-    fn s_dgr(&mut self, target: syn::IndexType) {
+    fn s_dgr(&mut self, target: IndexType) {
         self.commands.push(PyCommand::SDgr(target));
     }
 
-    fn v_dgr(&mut self, target: syn::IndexType) {
+    fn v_dgr(&mut self, target: IndexType) {
         self.commands.push(PyCommand::VDgr(target));
     }
 
-    fn x(&mut self, target: syn::IndexType) {
+    fn x(&mut self, target: IndexType) {
         self.commands.push(PyCommand::X(target));
     }
 
-    fn y(&mut self, target: syn::IndexType) {
+    fn y(&mut self, target: IndexType) {
         self.commands.push(PyCommand::Y(target));
     }
 
-    fn z(&mut self, target: syn::IndexType) {
+    fn z(&mut self, target: IndexType) {
         self.commands.push(PyCommand::Z(target));
     }
 
-    fn h(&mut self, target: syn::IndexType) {
+    fn h(&mut self, target: IndexType) {
         self.commands.push(PyCommand::H(target));
     }
 
-    fn cx(&mut self, control: syn::IndexType, target: syn::IndexType) {
+    fn cx(&mut self, control: IndexType, target: IndexType) {
         self.commands.push(PyCommand::CX(control, target));
     }
 
-    fn cz(&mut self, control: syn::IndexType, target: syn::IndexType) {
+    fn cz(&mut self, control: IndexType, target: IndexType) {
         self.commands.push(PyCommand::CZ(control, target));
     }
 }
 
 impl Gates for CommandCollector {
-    fn rx(&mut self, target: syn::IndexType, angle: f64) {
+    fn rx(&mut self, target: IndexType, angle: f64) {
         self.commands.push(PyCommand::Rx(target, angle));
     }
 
-    fn ry(&mut self, target: syn::IndexType, angle: f64) {
+    fn ry(&mut self, target: IndexType, angle: f64) {
         self.commands.push(PyCommand::Ry(target, angle));
     }
 
-    fn rz(&mut self, target: syn::IndexType, angle: f64) {
+    fn rz(&mut self, target: IndexType, angle: f64) {
         self.commands.push(PyCommand::Rz(target, angle));
     }
 }
