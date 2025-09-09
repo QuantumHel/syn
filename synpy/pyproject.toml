@@ -37,3 +37,6 @@ select = ["E", "F", "W"]
 
 [tool.ruff.format]
 quote-style = "double"
+
+[project.entry-points."qiskit.synthesis"]
+"clifford.synpy" = "synpy.qiskit.plugin:SynPyCliffordPlugin"
