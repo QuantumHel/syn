@@ -72,7 +72,6 @@ impl PauliPolynomial {
 
     pub fn get_line_string(&self, i: usize) -> String {
         let mut out = String::new();
-        //beginning of line string
         let chain_str = self.chains[i].to_string();
         for ch in chain_str.chars() {
             out.push(ch);
@@ -85,7 +84,6 @@ impl PauliPolynomial {
 
     pub fn get_first_line_string(&self) -> String {
         let mut out = String::new();
-        //beginning of line string
         let angles = self.angles.read().unwrap();
         for angle in angles.iter() {
             out.push_str(&format!(" {:.3}", angle)); //force 3 decimal place for formatting
@@ -198,7 +196,7 @@ impl fmt::Display for PauliPolynomial {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         // write first line
         let mut out = String::new();
-        out.push_str("Angles ||");
+        out.push_str("Angles ||"); // I take this out from get_first_line_string because I want to reuse that function for pauli exponential
         out.push_str(&self.get_first_line_string());
         writeln!(f, "{}", out)?;
 
@@ -206,7 +204,7 @@ impl fmt::Display for PauliPolynomial {
         let chains = self.chains();
         for (i, _) in chains.iter().enumerate() {
             let mut out = String::new();
-            out.push_str("QB");
+            out.push_str("QB"); //same here
             out.push_str(&i.to_string());
             out.push_str("    || ");
             out.push_str(&self.get_line_string(i));

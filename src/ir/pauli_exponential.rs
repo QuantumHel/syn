@@ -39,12 +39,8 @@ impl fmt::Display for PauliExponential {
             out.push_str(pp.get_first_line_string().as_str());
             out.push('|');
         }
-        // out.push_str(pp.get_first_line_string().as_str());
-        out.push_str(" Stabilizers | Destabilizers |");
-        out.push_str("\n");
-
+        out.push_str(&ct.get_first_line_string());
         for i in 0..ct.column(0).len() / 2 {
-            // let mut out = String::new();
             out.push_str("QB");
             out.push_str(&i.to_string());
             out.push_str("    || ");
@@ -52,8 +48,6 @@ impl fmt::Display for PauliExponential {
                 out.push_str(pp.get_line_string(i).as_str());
                 out.push_str("| ");
             }
-            // out.push_str(pp.get_line_string(i).as_str());
-            // out.push_str(" ");
             out.push_str(ct.get_line_string(i).as_str());
             out.push_str("\n");
         }

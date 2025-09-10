@@ -66,6 +66,7 @@ impl CliffordTableau {
     }
 
     pub(crate) fn get_line_string(&self, i: usize) -> String {
+        let number_of_column = self.pauli_columns.len();
         let mut out = String::new();
 
         //add sign for stabilizers
@@ -79,10 +80,11 @@ impl CliffordTableau {
             out.push(' ');
         }
 
-        //add space due to the length of "stabilizers" string
-        let space_left = 10 - 2 * self.pauli_columns.len();
-        for _ in 0..space_left {
-            out.push(' ');
+        if number_of_column <= 5 {
+            let space_left = 10 - 2 * number_of_column;
+            for _ in 0..space_left {
+                out.push(' ');
+            }
         }
 
         //add separator between stabilizers and destabilizers
@@ -100,14 +102,34 @@ impl CliffordTableau {
         }
 
         //add space due to the length of "destabilizers" string
-        let space_left = 12 - 2 * self.pauli_columns.len();
-        for _ in 0..space_left {
-            out.push(' ');
+        if number_of_column <= 6 {
+            let space_left = 12 - 2 * self.pauli_columns.len();
+            for _ in 0..space_left {
+                out.push(' ');
+            }
         }
+
         out.push('|');
         out
     }
-
+    pub(crate) fn get_first_line_string(&self) -> String {
+        let number_of_column = self.pauli_columns.len();
+        let mut out = String::new();
+        if number_of_column <= 5 {
+            out.push_str(" Stabilizers | Destabilizers |\n");
+        } else {
+            out.push_str(" Stabilizers");
+            for _ in 0..number_of_column - 5 {
+                out.push_str("  ");
+            }
+            out.push_str(" | Destabilizers");
+            for _ in 0..number_of_column - 6 {
+                out.push_str("  ");
+            }
+            out.push_str(" |\n");
+        }
+        out
+    }
     /// Implements algorithms from https://doi.org/10.22331/q-2022-06-13-734 and Qiskit Clifford implementation
     pub(crate) fn prepend(&self, lhs: &Self) -> Self {
         let size = self.size();
@@ -350,8 +372,10 @@ impl Mul for CliffordTableau {
 
 impl fmt::Display for CliffordTableau {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        //first line
-        write!(f, "    || Stabilizers | Destabilizers |\n")?;
+        let mut out: String = String::new();
+        out.push_str("    ||");
+        out.push_str(&self.get_first_line_string());
+        write!(f, "{}", out)?;
         let column0 = self.pauli_columns[0].len();
         for i in 0..column0 / 2 {
             let mut out = String::new();
@@ -359,7 +383,6 @@ impl fmt::Display for CliffordTableau {
             out.push_str("QB");
             out.push_str(&i.to_string());
             out.push_str(" || ");
-
             out.push_str(&self.get_line_string(i));
             writeln!(f, "{}", out)?;
         }
@@ -375,7 +398,7 @@ pub fn get_pauli_sign(sign: bool) -> char {
     }
 }
 
-pub fn get_pauli_char(letter: &PauliLetter) -> char {
+pub(crate) fn get_pauli_char(letter: &PauliLetter) -> char {
     match letter {
         PauliLetter::I => 'I',
         PauliLetter::X => 'X',
