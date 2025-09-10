@@ -4,7 +4,8 @@ use crate::{
 };
 
 use super::helper::{
-    clean_pivot, clean_signs, clean_x_observables, clean_z_observables, naive_pivot_search, swap,
+    clean_naive_pivot, clean_signs, clean_x_observables, clean_z_observables, naive_pivot_search,
+    swap,
 };
 
 #[derive(Default)]
@@ -25,7 +26,7 @@ where
             }
 
             // Cleanup pivot column
-            clean_pivot(repr, &mut clifford_tableau, row, row);
+            clean_naive_pivot(repr, &mut clifford_tableau, row, row);
 
             let checked_rows = (row + 1..num_qubits).collect::<Vec<_>>();
 
