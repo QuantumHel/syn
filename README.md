@@ -6,21 +6,16 @@
 
 ### Python
 
-We currently use python for pre-commit hooks. We herefore have a pyenv setup, after having pyenv and pyenv-virtualenv installed, simply run:
-
-```
-make python_setup
-```
-
-and
+To run the basic python setup, run:
 
 ```
 make python_project_setup
 ```
 
-### Rust
+This will install the required dependencies.
+*It is recommended to do this in a virtual environment*.
 
-This project requires [rust](), please follow the guidelines for installation.
+### Rust
 
 To run the basic rust setup, run:
 
