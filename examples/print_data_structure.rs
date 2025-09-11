@@ -24,7 +24,7 @@ fn main() {
     let my_tableaux = CliffordTableau::from_parts(vec![pauli_1, pauli_2, pauli_3], signs);
     println!("Test clifford tableaux small");
     println!("{}", my_tableaux);
-    let big_tableaux = CliffordTableau::new(10);
+    let big_tableaux = CliffordTableau::new(20);
     println!("Test clifford tableaux big");
     println!("{}", big_tableaux);
 

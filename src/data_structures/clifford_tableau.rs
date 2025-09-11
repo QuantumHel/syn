@@ -382,7 +382,10 @@ impl fmt::Display for CliffordTableau {
             //beginning of line string
             out.push_str("QB");
             out.push_str(&i.to_string());
-            out.push_str(" || ");
+            if i < 10 {
+                out.push(' ');
+            }
+            out.push_str("|| ");
             out.push_str(&self.get_line_string(i));
             writeln!(f, "{}", out)?;
         }

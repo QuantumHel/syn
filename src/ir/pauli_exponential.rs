@@ -43,7 +43,10 @@ impl fmt::Display for PauliExponential {
         for i in 0..ct.column(0).len() / 2 {
             out.push_str("QB");
             out.push_str(&i.to_string());
-            out.push_str("    || ");
+            if i < 10 {
+                out.push(' ');
+            }
+            out.push_str("   || ");
             for pp in &self.pauli_polynomials {
                 out.push_str(pp.get_line_string(i).as_str());
                 out.push_str("| ");
