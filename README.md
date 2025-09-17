@@ -1,4 +1,4 @@
-# SYN
+# synIR
 
 
 
@@ -20,7 +20,7 @@ make python_project_setup
 
 ### Rust
 
-This project requires [rust](), please follow the guidelines for installation.
+This project requires rust, please follow the guidelines for installation.
 
 To run the basic rust setup, run:
 
