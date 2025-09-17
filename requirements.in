@@ -3,3 +3,4 @@ pip-tools
 pytest
 qiskit
 bandit
+pauliopt
