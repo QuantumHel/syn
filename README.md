@@ -1,4 +1,4 @@
-# SYN
+# synIR
 
 
 
