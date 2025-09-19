@@ -18,7 +18,8 @@ fn setup_sample_ct() -> CliffordTableau {
     // qubit 2z: XII
     let pauli_2 = PauliString::from_text("ZIXXII");
 
-    // qubit 3x: ZYY
+    // qubit 3x: ZY
+
     // qubit 3z: IIZ
     let pauli_3 = PauliString::from_text("ZYYIIZ");
 
