@@ -55,7 +55,7 @@ impl CliffordTableau {
 
     pub(crate) fn destabilizer(&self, qubit: usize, index: usize) -> PauliLetter {
         let n = self.size();
-        assert!(index < n && qubit < n);
+        assert!(index < n && qubit < n, "Given index: ${index} or qubit: ${qubit}$ out of bounds for clifford tableau of size ${n}$");
 
         PauliLetter::new(
             self.pauli_columns[qubit].x(index),
@@ -65,7 +65,7 @@ impl CliffordTableau {
 
     pub(crate) fn stabilizer(&self, qubit: usize, index: usize) -> PauliLetter {
         let n = self.size();
-        assert!(index < n && qubit < n);
+        assert!(index < n && qubit < n, "Given index: ${index} or qubit: ${qubit}$ out of bounds for clifford tableau of size ${n}$");
 
         PauliLetter::new(
             self.pauli_columns[qubit].x(index + n),
