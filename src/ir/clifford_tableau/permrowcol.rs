@@ -19,7 +19,7 @@ pub struct PermRowColCliffordSynthesizer {
 
 impl PermRowColCliffordSynthesizer {
     pub fn new(connectivity: Connectivity) -> Self {
-        let size = connectivity.node_bound();
+        let size = connectivity.node_count();
 
         Self {
             connectivity,
@@ -38,7 +38,7 @@ where
 {
     fn synthesize_adjoint(&mut self, mut clifford_tableau: CliffordTableau, repr: &mut G) {
         let num_qubits = clifford_tableau.size();
-        let machine_size = self.connectivity.node_bound();
+        let machine_size = self.connectivity.node_count();
         assert!(
             num_qubits <= machine_size,
             "Number of qubits {} exceeds machine size {}",
