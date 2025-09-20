@@ -110,11 +110,11 @@ impl Connectivity {
             .collect()
     }
 
-    pub fn node_bound(&self) -> usize {
+    pub fn node_count(&self) -> usize {
         self.graph.node_count()
     }
 
-    pub fn edge_bound(&self) -> usize {
+    pub fn edge_count(&self) -> usize {
         self.graph.edge_count()
     }
 
