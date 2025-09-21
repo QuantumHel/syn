@@ -12,3 +12,6 @@ target/
 # Ideas
 .idea/
 .vscode/
+
+# Pyenv
+.python-version
