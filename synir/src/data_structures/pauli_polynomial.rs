@@ -43,7 +43,7 @@ impl PauliPolynomial {
         }
         let chains = chain_strings
             .iter()
-            .map(|gadget| (PauliString::from_text(gadget)))
+            .map(|gadget| PauliString::from_text(gadget))
             .collect::<Vec<_>>();
 
         PauliPolynomial {
