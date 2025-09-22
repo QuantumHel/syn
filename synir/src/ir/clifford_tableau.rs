@@ -6,7 +6,7 @@ pub use naive::NaiveCliffordSynthesizer;
 
 mod custom_callback;
 mod helper;
-mod naive;
+pub mod naive;
 
 #[derive(Default)]
 pub enum CliffordTableauSynthStrategy {
