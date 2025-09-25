@@ -10,5 +10,5 @@ crate-type = ["cdylib"]
 
 [dependencies]
 bitvec = "1.0.1"
-pyo3 = "0.23.3"
+pyo3 = "0.24.2"
 synir = { path = "../synir" }
