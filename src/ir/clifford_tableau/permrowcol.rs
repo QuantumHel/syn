@@ -34,7 +34,7 @@ impl PermRowColCliffordSynthesizer {
 
 impl<G> AdjointSynthesizer<CliffordTableau, G> for PermRowColCliffordSynthesizer
 where
-    G: CliffordGates + Debug,
+    G: CliffordGates,
 {
     fn synthesize_adjoint(&mut self, mut clifford_tableau: CliffordTableau, repr: &mut G) {
         let num_qubits = clifford_tableau.size();
