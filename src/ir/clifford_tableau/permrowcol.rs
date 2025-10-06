@@ -11,10 +11,23 @@ use crate::{
 
 use super::helper::clean_signs;
 
-#[derive(Default)]
+// #[derive(Default)]
 pub struct PermRowColCliffordSynthesizer {
     connectivity: Connectivity,
     permutation: Vec<usize>,
+    row_strategy: fn(&CliffordTableau, &Connectivity, &[usize]) -> usize,
+    column_strategy: fn(&CliffordTableau, &Connectivity) -> usize,
+}
+
+impl Default for PermRowColCliffordSynthesizer {
+    fn default() -> Self {
+        PermRowColCliffordSynthesizer {
+            connectivity: Connectivity::default(),
+            permutation: Vec::<usize>::default(),
+            row_strategy: pick_row,
+            column_strategy: pick_column,
+        }
+    }
 }
 
 impl PermRowColCliffordSynthesizer {
@@ -24,11 +37,27 @@ impl PermRowColCliffordSynthesizer {
         Self {
             connectivity,
             permutation: (0..size).collect(),
+            row_strategy: pick_row,
+            column_strategy: pick_column,
         }
     }
 
     pub fn permutation(&self) -> &[usize] {
         &self.permutation
+    }
+
+    pub fn set_row_strategy(
+        &mut self,
+        row_strategy: fn(&CliffordTableau, &Connectivity, &[usize]) -> usize,
+    ) {
+        (self.row_strategy) = row_strategy;
+    }
+
+    pub fn set_column_strategy(
+        &mut self,
+        column_strategy: fn(&CliffordTableau, &Connectivity) -> usize,
+    ) {
+        (self.column_strategy) = column_strategy;
     }
 }
 
@@ -53,8 +82,9 @@ where
         let mut remaining_rows = (0..num_qubits).collect::<Vec<_>>();
 
         while !remaining_columns.is_empty() {
-            let pivot_row = pick_row(&clifford_tableau, &self.connectivity, &remaining_rows);
-            let pivot_column = pick_column(&clifford_tableau, &self.connectivity);
+            let pivot_row =
+                (self.row_strategy)(&clifford_tableau, &self.connectivity, &remaining_rows);
+            let pivot_column = (self.column_strategy)(&clifford_tableau, &self.connectivity);
             let column = clifford_tableau.column(pivot_column);
             let x_weight = column.x_weight();
             let z_weight = column.z_weight();
