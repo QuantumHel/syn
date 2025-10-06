@@ -5,6 +5,7 @@ import pytest
 from pauliopt.pauli.pauli_gadget import PauliGadget, PPhase
 from pauliopt.pauli.pauli_polynomial import PauliPolynomial
 from pauliopt.pauli_strings import I, X, Y, Z
+# from pauliopt.pauli.utils import X, Y, Z, I
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import Operator
 
@@ -22,7 +23,8 @@ def create_random_phase_gadget(num_qubits: int, min_legs: int, max_legs: int, al
     """
     angle = np.random.choice(allowed_angels)
     nr_legs = np.random.randint(min_legs, max_legs)
-    legs = np.random.choice([i for i in range(num_qubits)], size=nr_legs, replace=False)
+    legs = np.random.choice(
+        [i for i in range(num_qubits)], size=nr_legs, replace=False)
     phase_gadget = [I for _ in range(num_qubits)]
     for leg in legs:
         phase_gadget[leg] = np.random.choice([X, Y, Z])
@@ -46,11 +48,25 @@ def generate_random_pauli_polynomial(
     if max_legs is None:
         max_legs = num_qubits
     if allowed_angles is None:
-        allowed_angles = [2 * np.pi, np.pi, 0.5 * np.pi, 0.25 * np.pi, 0.125 * np.pi]
+        allowed_angles = [2 * np.pi, np.pi, 0.5 *
+                          np.pi, 0.25 * np.pi, 0.125 * np.pi]
 
     pp = PauliPolynomial(num_qubits)
     for _ in range(num_gadgets):
-        pp >>= create_random_phase_gadget(num_qubits, min_legs, max_legs, allowed_angles)
+        pp >>= create_random_phase_gadget(
+            num_qubits, min_legs, max_legs, allowed_angles)
+
+    return pp
+
+
+def generate_syn_example() -> PauliPolynomial:
+    """
+    Generate pauli polynomial use in syn tests.
+    """
+    pp = PauliPolynomial(4)
+    pp >>= PPhase(0.3) @ [I, X, Y, Z]
+    pp >>= PPhase(0.7) @ [X, X, I, I]
+    pp >>= PPhase(0.12) @ [Y, Y, I, I]
 
     return pp
 
@@ -69,7 +85,16 @@ class TestBasicSyn:
     @pytest.mark.parametrize("nr_qubits", [3, 6])
     @pytest.mark.parametrize("nr_gadgets", [100, 200, 500, 1000])
     def test_naive_synthesis(self, nr_qubits: int, nr_gadgets: int) -> None:
-        pauli_polynomial = generate_random_pauli_polynomial(nr_qubits, nr_gadgets)
+        pauli_polynomial = generate_random_pauli_polynomial(
+            nr_qubits, nr_gadgets)
+        qc = pauli_polynomial.copy().to_qiskit()
+
+        qc_syn = PauliOptSynthesizer().synthesize(pauli_polynomial).to_qiskit()
+
+        assert verify_equality(qc, qc_syn)
+
+    def test_example_synthesis(self) -> None:
+        pauli_polynomial = generate_syn_example()
         qc = pauli_polynomial.copy().to_qiskit()
 
         qc_syn = PauliOptSynthesizer().synthesize(pauli_polynomial).to_qiskit()
