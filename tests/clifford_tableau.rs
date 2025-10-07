@@ -111,10 +111,7 @@ fn test_v_synthesis() {
     assert_eq!(
         mock.commands(),
         &vec![
-            MockCommand::S(1),
-            MockCommand::H(1),
-            MockCommand::S(1),
-            MockCommand::X(1)
+            MockCommand::V(1),
         ]
     );
 }
@@ -132,7 +129,7 @@ fn test_v_adjoint_synthesis() {
 
     assert_eq!(
         mock.commands(),
-        &vec![MockCommand::S(1), MockCommand::H(1), MockCommand::S(1),]
+        &vec![MockCommand::V(1), MockCommand::X(1)]
     );
 }
 

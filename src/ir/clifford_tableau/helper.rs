@@ -13,6 +13,40 @@ fn get_pauli(pauli_string: &PauliString, row: usize) -> PauliLetter {
     PauliLetter::new(pauli_string.x(row), pauli_string.z(row))
 }
 
+#[allow(dead_code)]
+fn is_i(pauli_letter: PauliLetter) -> bool {
+    pauli_letter == PauliLetter::I
+}
+
+fn is_not_i(pauli_letter: PauliLetter) -> bool {
+    pauli_letter != PauliLetter::I
+}
+
+fn is_x(pauli_letter: PauliLetter) -> bool {
+    pauli_letter == PauliLetter::X
+}
+
+fn is_not_x(pauli_letter: PauliLetter) -> bool {
+    pauli_letter != PauliLetter::X
+}
+
+fn is_y(pauli_letter: PauliLetter) -> bool {
+    pauli_letter == PauliLetter::Y
+}
+
+#[allow(dead_code)]
+fn is_not_y(pauli_letter: PauliLetter) -> bool {
+    pauli_letter != PauliLetter::Y
+}
+
+fn is_z(pauli_letter: PauliLetter) -> bool {
+    pauli_letter == PauliLetter::Z
+}
+
+fn is_not_z(pauli_letter: PauliLetter) -> bool {
+    pauli_letter != PauliLetter::Z
+}
+
 pub(super) fn clean_naive_pivot<G>(
     repr: &mut G,
     ct: &mut CliffordTableau,

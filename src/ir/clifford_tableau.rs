@@ -14,6 +14,7 @@ mod permrowcol;
 pub enum CliffordTableauSynthStrategy {
     #[default]
     Naive,
+    PermRowCol,
     Custom(Vec<usize>, Vec<usize>),
 }
 
