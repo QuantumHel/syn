@@ -3,12 +3,12 @@ mod common;
 use bitvec::bitvec;
 use bitvec::prelude::Lsb0;
 use common::{parse_clifford_commands, MockCircuit, MockCommand};
-use syn::architecture::connectivity::Connectivity;
-use syn::data_structures::{CliffordTableau, PauliString, PropagateClifford};
-use syn::ir::clifford_tableau::{
+use synir::architecture::connectivity::Connectivity;
+use synir::data_structures::{CliffordTableau, PauliString, PropagateClifford};
+use synir::ir::clifford_tableau::{
     CallbackCliffordSynthesizer, NaiveCliffordSynthesizer, PermRowColCliffordSynthesizer,
 };
-use syn::ir::{AdjointSynthesizer, Synthesizer};
+use synir::ir::{AdjointSynthesizer, Synthesizer};
 
 fn setup_sample_ct() -> CliffordTableau {
     // Stab: ZZZ, -YIY, XIX
@@ -108,12 +108,7 @@ fn test_v_synthesis() {
     let mut synthesizer = NaiveCliffordSynthesizer::default();
     synthesizer.synthesize(clifford_tableau.clone(), &mut mock);
 
-    assert_eq!(
-        mock.commands(),
-        &vec![
-            MockCommand::V(1),
-        ]
-    );
+    assert_eq!(mock.commands(), &vec![MockCommand::V(1),]);
 }
 
 #[test]
@@ -127,10 +122,7 @@ fn test_v_adjoint_synthesis() {
     let ref_ct = parse_clifford_commands(2, mock.commands());
     assert_eq!(clifford_tableau * ref_ct, CliffordTableau::new(2));
 
-    assert_eq!(
-        mock.commands(),
-        &vec![MockCommand::V(1), MockCommand::X(1)]
-    );
+    assert_eq!(mock.commands(), &vec![MockCommand::V(1), MockCommand::X(1)]);
 }
 
 #[test]

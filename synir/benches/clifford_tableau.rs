@@ -2,12 +2,13 @@ use crate::connectivity::connectivity_benchmark;
 use bitvec::bitvec;
 use bitvec::prelude::Lsb0;
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
-use syn::data_structures::CliffordTableau;
-use syn::data_structures::PauliString;
-use syn::ir::clifford_tableau::CallbackCliffordSynthesizer;
-use syn::ir::clifford_tableau::NaiveCliffordSynthesizer;
-use syn::ir::CliffordGates;
-use syn::ir::Synthesizer;
+use synir::data_structures::CliffordTableau;
+use synir::data_structures::PauliString;
+use synir::ir::clifford_tableau::CallbackCliffordSynthesizer;
+use synir::ir::clifford_tableau::NaiveCliffordSynthesizer;
+use synir::ir::CliffordGates;
+use synir::ir::Synthesizer;
+use synir::IndexType;
 
 mod connectivity;
 

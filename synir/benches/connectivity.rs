@@ -2,8 +2,8 @@ use criterion::{black_box, criterion_group, Criterion};
 use rand::prelude::IndexedRandom;
 use rand::seq::SliceRandom;
 use rand::{rng, Rng};
-use syn::architecture::connectivity::Connectivity;
-use syn::architecture::Architecture;
+use synir::architecture::connectivity::Connectivity;
+use synir::architecture::Architecture;
 
 fn random_connected_connectivity(
     num_nodes: usize,
