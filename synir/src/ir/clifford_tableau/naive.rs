@@ -4,8 +4,7 @@ use crate::{
 };
 
 use super::helper::{
-    clean_pivot, clean_naive_pivot, clean_signs, clean_x_observables, clean_z_observables, naive_pivot_search,
-    swap,
+    clean_pivot, clean_signs, clean_x_observables, clean_z_observables, naive_pivot_search, swap,
 };
 
 use crate::data_structures::PauliLetter;
@@ -37,7 +36,7 @@ where
             clean_x_observables(repr, &mut clifford_tableau, &checked_rows, row, row);
 
             clean_pivot(repr, &mut clifford_tableau, row, row, PauliLetter::Z);
-            
+
             // Use the pivot to remove all other terms in the Z observable.
             clean_z_observables(repr, &mut clifford_tableau, &checked_rows, row, row);
         }
