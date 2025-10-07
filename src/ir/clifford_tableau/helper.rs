@@ -13,65 +13,6 @@ fn get_pauli(pauli_string: &PauliString, row: usize) -> PauliLetter {
     PauliLetter::new(pauli_string.x(row), pauli_string.z(row))
 }
 
-#[allow(dead_code)]
-fn is_i(pauli_letter: PauliLetter) -> bool {
-    pauli_letter == PauliLetter::I
-}
-
-fn is_not_i(pauli_letter: PauliLetter) -> bool {
-    pauli_letter != PauliLetter::I
-}
-
-fn is_x(pauli_letter: PauliLetter) -> bool {
-    pauli_letter == PauliLetter::X
-}
-
-fn is_not_x(pauli_letter: PauliLetter) -> bool {
-    pauli_letter != PauliLetter::X
-}
-
-fn is_y(pauli_letter: PauliLetter) -> bool {
-    pauli_letter == PauliLetter::Y
-}
-
-#[allow(dead_code)]
-fn is_not_y(pauli_letter: PauliLetter) -> bool {
-    pauli_letter != PauliLetter::Y
-}
-
-fn is_z(pauli_letter: PauliLetter) -> bool {
-    pauli_letter == PauliLetter::Z
-}
-
-fn is_not_z(pauli_letter: PauliLetter) -> bool {
-    pauli_letter != PauliLetter::Z
-}
-
-pub(super) fn clean_naive_pivot<G>(
-    repr: &mut G,
-    ct: &mut CliffordTableau,
-    pivot_column: usize,
-    pivot_row: usize,
-) where
-    G: CliffordGates,
-{
-    let num_qubits = ct.size();
-    if check_pauli(&*ct, pivot_row, pivot_column + num_qubits, is_y) {
-        ct.s(pivot_row);
-        repr.s(pivot_row);
-    }
-
-    if check_pauli(&*ct, pivot_row, pivot_column + num_qubits, is_not_z) {
-        ct.h(pivot_row);
-        repr.h(pivot_row);
-    }
-
-    if check_pauli(&*ct, pivot_row, pivot_column, is_not_x) {
-        ct.s(pivot_row);
-        repr.s(pivot_row);
-    }
-}
-
 pub(super) fn clean_pivot<G>(
     repr: &mut G,
     clifford_tableau: &mut CliffordTableau,
