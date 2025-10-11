@@ -19,17 +19,6 @@ pub struct PermRowColCliffordSynthesizer {
     column_strategy: fn(&CliffordTableau, &Connectivity) -> usize,
 }
 
-impl Default for PermRowColCliffordSynthesizer {
-    fn default() -> Self {
-        PermRowColCliffordSynthesizer {
-            connectivity: Connectivity::default(),
-            permutation: Vec::<usize>::default(),
-            row_strategy: pick_row,
-            column_strategy: pick_column,
-        }
-    }
-}
-
 impl PermRowColCliffordSynthesizer {
     pub fn new(connectivity: Connectivity) -> Self {
         let size = connectivity.node_count();
