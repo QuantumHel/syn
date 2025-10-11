@@ -14,7 +14,7 @@ pub struct PermRowColCliffordSynthesizer {
     connectivity: Connectivity,
     permutation: Vec<usize>,
     row_strategy: fn(&CliffordTableau, &Connectivity, &[usize]) -> usize,
-    column_strategy: fn(&CliffordTableau, &Connectivity) -> usize,
+    column_strategy: fn(&CliffordTableau, &Connectivity, usize) -> usize,
 }
 
 impl PermRowColCliffordSynthesizer {
@@ -42,7 +42,7 @@ impl PermRowColCliffordSynthesizer {
 
     pub fn set_column_strategy(
         &mut self,
-        column_strategy: fn(&CliffordTableau, &Connectivity) -> usize,
+        column_strategy: fn(&CliffordTableau, &Connectivity, usize) -> usize,
     ) {
         (self.column_strategy) = column_strategy;
     }
@@ -71,7 +71,8 @@ where
         while !remaining_columns.is_empty() {
             let pivot_row =
                 (self.row_strategy)(&clifford_tableau, &self.connectivity, &remaining_rows);
-            let pivot_column = (self.column_strategy)(&clifford_tableau, &self.connectivity);
+            let pivot_column =
+                (self.column_strategy)(&clifford_tableau, &self.connectivity, pivot_row);
             let column = clifford_tableau.column(pivot_column);
             let x_weight = column.x_weight();
             let z_weight = column.z_weight();

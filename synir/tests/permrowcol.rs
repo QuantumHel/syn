@@ -67,3 +67,28 @@ fn test_prc_clifford_synthesis_simple() {
     clifford_tableau.permute(synthesizer.permutation());
     assert_eq!(clifford_tableau, ref_ct);
 }
+
+#[test]
+fn test_prc_swap_to_identity() {
+    let num_qubits = 2;
+    let mut clifford_tableau = CliffordTableau::new(num_qubits);
+
+    clifford_tableau.cx(0, 1);
+    clifford_tableau.cx(1, 0);
+    clifford_tableau.cx(0, 1);
+    println!("clifford_tableau: {}", clifford_tableau);
+    let mut mock = MockCircuit::new();
+
+    let connectivity = Connectivity::line(num_qubits);
+
+    let mut synthesizer = PermRowColCliffordSynthesizer::new(connectivity);
+    synthesizer.synthesize(clifford_tableau.clone(), &mut mock);
+
+    let ref_ct = parse_clifford_commands(2, mock.commands());
+
+    clifford_tableau.permute(synthesizer.permutation());
+    // Check that the synthesized circuit and original are the same
+    assert_eq!(clifford_tableau, ref_ct);
+    // Check that the resulting circuit is empty
+    assert_eq!(mock.commands().len(), 0);
+}

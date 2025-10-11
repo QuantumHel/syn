@@ -368,6 +368,7 @@ pub(super) fn pick_row(
 pub(super) fn pick_column(
     clifford_tableau: &CliffordTableau,
     connectivity: &Connectivity,
+    pivot_row: usize,
 ) -> usize {
     let mut column_weights = vec![usize::MAX; clifford_tableau.size()];
 
@@ -376,15 +377,16 @@ pub(super) fn pick_column(
     for qubit in non_cutting {
         column_weights[*qubit] = 0;
         for interaction in connectivity.nodes() {
-            let mult = (clifford_tableau.stabilizer(*qubit, interaction) != PauliLetter::I)
-                as usize
-                + (clifford_tableau.destabilizer(*qubit, interaction) != PauliLetter::I) as usize;
-            if mult > 0 {
-                column_weights[*qubit] += connectivity.distance(*qubit, interaction) * mult;
+            if interaction != pivot_row {
+                let mult_z =
+                    (clifford_tableau.stabilizer(*qubit, interaction) != PauliLetter::I) as usize;
+                let mult_x =
+                    (clifford_tableau.destabilizer(*qubit, interaction) != PauliLetter::I) as usize;
+                column_weights[*qubit] +=
+                    connectivity.distance(*qubit, interaction) * (mult_x + mult_z);
             }
         }
     }
-
     column_weights
         .iter()
         .enumerate()
