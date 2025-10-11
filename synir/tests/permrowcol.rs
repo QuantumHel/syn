@@ -124,3 +124,51 @@ fn test_prc_swap_to_identity() {
     // Check that the resulting circuit is empty
     assert_eq!(mock.commands().len(), 0);
 }
+
+#[test]
+fn test_prc_2_cnot_reduction_v1() {
+    // Check that 2 CNOTs get reduced to 1 CNOT + permutation
+    let num_qubits = 2;
+    let mut clifford_tableau = CliffordTableau::new(num_qubits);
+
+    clifford_tableau.cx(0, 1);
+    clifford_tableau.cx(1, 0);
+    let mut mock = MockCircuit::new();
+
+    let connectivity = Connectivity::line(num_qubits);
+
+    let mut synthesizer = PermRowColCliffordSynthesizer::new(connectivity);
+    synthesizer.synthesize(clifford_tableau.clone(), &mut mock);
+
+    let ref_ct = parse_clifford_commands(2, mock.commands());
+
+    clifford_tableau.permute(synthesizer.permutation());
+    // Check that the synthesized circuit and original are the same
+    assert_eq!(clifford_tableau, ref_ct);
+    // Check that the resulting circuit is empty
+    assert_eq!(mock.commands().len(), 1);
+}
+
+#[test]
+fn test_prc_2_cnot_reduction_v2() {
+    // Check that 2 CNOTs get reduced to 1 CNOT + permutation
+    let num_qubits = 2;
+    let mut clifford_tableau = CliffordTableau::new(num_qubits);
+
+    clifford_tableau.cx(1, 0);
+    clifford_tableau.cx(0, 1);
+    let mut mock = MockCircuit::new();
+
+    let connectivity = Connectivity::line(num_qubits);
+
+    let mut synthesizer = PermRowColCliffordSynthesizer::new(connectivity);
+    synthesizer.synthesize(clifford_tableau.clone(), &mut mock);
+
+    let ref_ct = parse_clifford_commands(2, mock.commands());
+
+    clifford_tableau.permute(synthesizer.permutation());
+    // Check that the synthesized circuit and original are the same
+    assert_eq!(clifford_tableau, ref_ct);
+    // Check that the resulting circuit is empty
+    assert_eq!(mock.commands().len(), 1);
+}
