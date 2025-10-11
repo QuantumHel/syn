@@ -3,15 +3,18 @@ use crate::data_structures::{CliffordTableau, HasAdjoint};
 
 pub use custom_callback::CallbackCliffordSynthesizer;
 pub use naive::NaiveCliffordSynthesizer;
+pub use permrowcol::PermRowColCliffordSynthesizer;
 
 mod custom_callback;
 mod helper;
-pub mod naive;
+mod naive;
+mod permrowcol;
 
 #[derive(Default)]
 pub enum CliffordTableauSynthStrategy {
     #[default]
     Naive,
+    PermRowCol,
     Custom(Vec<usize>, Vec<usize>),
 }
 

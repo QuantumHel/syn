@@ -9,10 +9,12 @@ use super::{
     pauli_string::{cx, PauliString},
     IndexType, PropagateClifford,
 };
+use crate::data_structures::PauliLetter;
 
 #[derive(PartialEq, Eq, Debug, Clone, Default)]
 pub struct CliffordTableau {
     // We keep track of the pauli letters per qubit not per stabilizer
+    // Each Pauli Column contains 2 BitStrings of length 2 * n and corresponds to all operators on one qubit (vertical)
     pauli_columns: Vec<PauliString>,
     signs: BitVec,
     size: usize, // https://quantumcomputing.stackexchange.com/questions/28740/tracking-the-signs-of-the-inverse-tableau
@@ -51,8 +53,38 @@ impl CliffordTableau {
         self.signs[n..].to_bitvec()
     }
 
+    pub(crate) fn destabilizer(&self, qubit: usize, index: usize) -> PauliLetter {
+        let n = self.size();
+        assert!(
+            index < n && qubit < n,
+            "Given index: {index} or qubit: {qubit} out of bounds for clifford tableau of size {n}"
+        );
+
+        PauliLetter::new(
+            self.pauli_columns[qubit].x(index),
+            self.pauli_columns[qubit].z(index),
+        )
+    }
+
+    pub(crate) fn stabilizer(&self, qubit: usize, index: usize) -> PauliLetter {
+        let n = self.size();
+        assert!(
+            index < n && qubit < n,
+            "Given index: {index} or qubit: {qubit} out of bounds for clifford tableau of size {n}"
+        );
+
+        PauliLetter::new(
+            self.pauli_columns[qubit].x(index + n),
+            self.pauli_columns[qubit].z(index + n),
+        )
+    }
+
     pub(crate) fn column(&self, i: usize) -> &PauliString {
         &self.pauli_columns[i]
+    }
+
+    pub(crate) fn columns(&self) -> &Vec<PauliString> {
+        &self.pauli_columns
     }
 
     pub fn compose(&self, rhs: &Self) -> Self {

@@ -105,15 +105,7 @@ fn test_v_synthesis() {
     let mut synthesizer = NaiveCliffordSynthesizer::default();
     synthesizer.synthesize(clifford_tableau.clone(), &mut mock);
 
-    assert_eq!(
-        mock.commands(),
-        &vec![
-            MockCommand::S(1),
-            MockCommand::H(1),
-            MockCommand::S(1),
-            MockCommand::X(1)
-        ]
-    );
+    assert_eq!(mock.commands(), &vec![MockCommand::V(1),]);
 }
 
 #[test]
@@ -127,10 +119,7 @@ fn test_v_adjoint_synthesis() {
     let ref_ct = parse_clifford_commands(2, mock.commands());
     assert_eq!(clifford_tableau * ref_ct, CliffordTableau::new(2));
 
-    assert_eq!(
-        mock.commands(),
-        &vec![MockCommand::S(1), MockCommand::H(1), MockCommand::S(1),]
-    );
+    assert_eq!(mock.commands(), &vec![MockCommand::V(1), MockCommand::X(1)]);
 }
 
 #[test]

@@ -7,6 +7,8 @@ use super::helper::{
     clean_pivot, clean_signs, clean_x_observables, clean_z_observables, naive_pivot_search, swap,
 };
 
+use crate::data_structures::PauliLetter;
+
 #[derive(Default)]
 pub struct NaiveCliffordSynthesizer {}
 
@@ -25,12 +27,15 @@ where
             }
 
             // Cleanup pivot column
-            clean_pivot(repr, &mut clifford_tableau, row, row);
+            // clean_naive_pivot(repr, &mut clifford_tableau, row, row);
+            clean_pivot(repr, &mut clifford_tableau, row, row, PauliLetter::X);
 
             let checked_rows = (row + 1..num_qubits).collect::<Vec<_>>();
 
             // Use the pivot to remove all other terms in the X observable.
             clean_x_observables(repr, &mut clifford_tableau, &checked_rows, row, row);
+
+            clean_pivot(repr, &mut clifford_tableau, row, row, PauliLetter::Z);
 
             // Use the pivot to remove all other terms in the Z observable.
             clean_z_observables(repr, &mut clifford_tableau, &checked_rows, row, row);
