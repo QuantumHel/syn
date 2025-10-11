@@ -8,6 +8,25 @@ use synir::data_structures::{CliffordTableau, PauliString, PropagateClifford};
 use synir::ir::clifford_tableau::PermRowColCliffordSynthesizer;
 use synir::ir::Synthesizer;
 
+fn setup_sample_ct() -> CliffordTableau {
+    // Stab: ZZZ, -YIY, XIX
+    // Destab: -IXI, XXI, IYY
+    // qubit 1x: ZYI
+    // qubit 1z: IZZ
+    let pauli_1 = PauliString::from_text("ZYIIZZ");
+
+    // qubit 2x: ZIX
+    // qubit 2z: XII
+    let pauli_2 = PauliString::from_text("ZIXXII");
+
+    // qubit 3x: ZYY
+    // qubit 3z: IIZ
+    let pauli_3 = PauliString::from_text("ZYYIIZ");
+
+    let signs = bitvec![0, 1, 0, 1, 0, 0];
+    CliffordTableau::from_parts(vec![pauli_1, pauli_2, pauli_3], signs)
+}
+
 fn setup_sample_inverse_ct() -> CliffordTableau {
     // Stab: -ZIYZ, -ZZYZ, -XZXI, IZXX
     // Destab: -YYIZ, -YYXZ, ZIXX, -XZXZ
@@ -69,6 +88,21 @@ fn test_prc_clifford_synthesis_simple() {
 }
 
 #[test]
+fn test_prc_clifford_synthesis() {
+    let mut clifford_tableau = setup_sample_ct();
+    let num_qubits = clifford_tableau.size();
+    let mut mock = MockCircuit::new();
+    let connectivity = Connectivity::complete(num_qubits);
+    let mut synthesizer = PermRowColCliffordSynthesizer::new(connectivity);
+    synthesizer.synthesize(clifford_tableau.clone(), &mut mock);
+
+    let ref_ct = parse_clifford_commands(3, mock.commands());
+    clifford_tableau.permute(synthesizer.permutation());
+
+    assert_eq!(clifford_tableau, ref_ct);
+}
+
+#[test]
 fn test_prc_swap_to_identity() {
     let num_qubits = 2;
     let mut clifford_tableau = CliffordTableau::new(num_qubits);
@@ -76,16 +110,14 @@ fn test_prc_swap_to_identity() {
     clifford_tableau.cx(0, 1);
     clifford_tableau.cx(1, 0);
     clifford_tableau.cx(0, 1);
-    println!("clifford_tableau: {}", clifford_tableau);
-    let mut mock = MockCircuit::new();
 
+    let mut mock = MockCircuit::new();
     let connectivity = Connectivity::line(num_qubits);
 
     let mut synthesizer = PermRowColCliffordSynthesizer::new(connectivity);
     synthesizer.synthesize(clifford_tableau.clone(), &mut mock);
 
     let ref_ct = parse_clifford_commands(2, mock.commands());
-
     clifford_tableau.permute(synthesizer.permutation());
     // Check that the synthesized circuit and original are the same
     assert_eq!(clifford_tableau, ref_ct);

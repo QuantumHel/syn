@@ -231,18 +231,3 @@ fn test_custom_clifford_synthesis_simple() {
     let ref_ct = parse_clifford_commands(3, mock.commands());
     assert_eq!(clifford_tableau, ref_ct);
 }
-
-#[test]
-fn test_prc_clifford_synthesis() {
-    let clifford_tableau = setup_sample_ct();
-    let num_qubits = clifford_tableau.size();
-    let mut mock = MockCircuit::new();
-    let connectivity = Connectivity::complete(num_qubits);
-    let mut synthesizer = PermRowColCliffordSynthesizer::new(connectivity);
-    synthesizer.synthesize(clifford_tableau.clone(), &mut mock);
-
-    let mut ref_ct = parse_clifford_commands(3, mock.commands());
-    ref_ct.permute(synthesizer.permutation());
-
-    assert_eq!(clifford_tableau, ref_ct);
-}
