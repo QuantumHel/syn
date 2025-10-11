@@ -145,6 +145,7 @@ pub(super) fn clean_z_pivot<G>(
 {
     let num_qubits = clifford_tableau.size();
 
+    // These are switched around because of implementation
     if check_pauli(
         &*clifford_tableau,
         pivot_column,
@@ -155,6 +156,7 @@ pub(super) fn clean_z_pivot<G>(
         repr.v(pivot_column);
     }
 
+    // These are switched around because of implementation
     if check_pauli(
         &*clifford_tableau,
         pivot_column,
