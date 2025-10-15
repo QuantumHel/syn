@@ -12,11 +12,15 @@ use crate::data_structures::PauliLetter;
 #[derive(Default)]
 pub struct NaiveCliffordSynthesizer {}
 
-impl<G> AdjointSynthesizer<CliffordTableau, G> for NaiveCliffordSynthesizer
+impl<G> AdjointSynthesizer<CliffordTableau, G, CliffordTableau> for NaiveCliffordSynthesizer
 where
     G: CliffordGates,
 {
-    fn synthesize_adjoint(&mut self, mut clifford_tableau: CliffordTableau, repr: &mut G) {
+    fn synthesize_adjoint(
+        &mut self,
+        mut clifford_tableau: CliffordTableau,
+        repr: &mut G,
+    ) -> CliffordTableau {
         let num_qubits = clifford_tableau.size();
 
         for row in 0..num_qubits {
@@ -41,10 +45,7 @@ where
             clean_z_observables(repr, &mut clifford_tableau, &checked_rows, row, row);
         }
 
-        clean_signs(
-            repr,
-            &mut clifford_tableau,
-            &(0..num_qubits).collect::<Vec<_>>(),
-        );
+        clean_signs(repr, &mut clifford_tableau);
+        return clifford_tableau;
     }
 }

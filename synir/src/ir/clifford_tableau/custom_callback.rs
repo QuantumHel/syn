@@ -51,11 +51,11 @@ impl CallbackCliffordSynthesizer {
     }
 }
 
-impl<G> AdjointSynthesizer<CliffordTableau, G> for CallbackCliffordSynthesizer
+impl<G> AdjointSynthesizer<CliffordTableau, G, CliffordTableau> for CallbackCliffordSynthesizer
 where
     G: CliffordGates,
 {
-    fn synthesize_adjoint(&mut self, mut clifford_tableau: CliffordTableau, repr: &mut G) {
+    fn synthesize_adjoint(&mut self, mut clifford_tableau: CliffordTableau, repr: &mut G) -> CliffordTableau {
         let num_qubits = clifford_tableau.size();
 
         let mut remaining_columns = (0..num_qubits).collect::<Vec<_>>();
@@ -96,11 +96,8 @@ where
                 );
             }
         }
-        let final_permutation = zip(custom_columns, custom_rows)
-            .sorted_by_key(|a| a.1)
-            .map(|a| a.0)
-            .collect::<Vec<_>>();
 
-        clean_signs(repr, &mut clifford_tableau, &final_permutation);
+        clean_signs(repr, &mut clifford_tableau);
+        return clifford_tableau;
     }
 }

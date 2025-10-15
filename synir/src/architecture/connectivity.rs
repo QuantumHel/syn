@@ -38,14 +38,11 @@ pub struct Connectivity {
 
 impl Connectivity {
     pub fn new(num_qubits: usize) -> Self {
-        let graph = StableUnGraph::with_capacity(num_qubits, 0);
-
-        Connectivity {
-            graph,
-            non_cutting: Default::default(),
-            prev: Default::default(),
-            distance: HashMap::new(),
+        let mut graph = StableUnGraph::with_capacity(num_qubits, 0);
+        for _ in 0..num_qubits {
+            graph.add_node(());
         }
+        Connectivity::from_graph(graph)
     }
 
     pub fn line(num_qubits: usize) -> Self {
@@ -80,14 +77,22 @@ impl Connectivity {
     }
 
     pub fn from_edges(edges: &[(GraphIndex, GraphIndex)]) -> Self {
-        let mut graph = StableUnGraph::from_edges(edges);
-        graph.edge_weights_mut().for_each(|weight| *weight = 1); // Default weight of 1 for unweighted edges
-        Connectivity::from_graph(graph)
+        if edges.len() > 0 {
+            let mut graph = StableUnGraph::from_edges(edges);
+            graph.edge_weights_mut().for_each(|weight| *weight = 1); // Default weight of 1 for unweighted edges
+            Connectivity::from_graph(graph)
+        } else {
+            Connectivity::new(1)
+        }
     }
 
     pub fn from_weighted_edges(edges: &[(GraphIndex, GraphIndex, EdgeWeight)]) -> Self {
-        let graph = StableUnGraph::from_edges(edges);
-        Connectivity::from_graph(graph)
+        if edges.len() > 0 {
+            let graph = StableUnGraph::from_edges(edges);
+            Connectivity::from_graph(graph)
+        } else {
+            Connectivity::new(1)
+        }
     }
 
     pub fn from_graph(graph: StableUnGraph<NodeWeight, EdgeWeight, GraphIndex>) -> Self {

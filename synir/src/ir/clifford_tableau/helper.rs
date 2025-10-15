@@ -1,5 +1,7 @@
 use std::iter::zip;
 
+use itertools::Itertools;
+
 use crate::{
     architecture::{connectivity::Connectivity, Architecture},
     data_structures::{CliffordTableau, PauliLetter, PauliString, PropagateClifford},
@@ -246,16 +248,21 @@ pub(super) fn clean_z_observables<G>(
     }
 }
 
-pub(super) fn clean_signs<G>(
-    repr: &mut G,
-    clifford_tableau: &mut CliffordTableau,
-    row_permutation: &[usize],
-) where
+pub(super) fn clean_signs<G>(repr: &mut G, clifford_tableau: &mut CliffordTableau)
+where
     G: CliffordGates,
 {
     let z_signs = clifford_tableau.z_signs();
-
-    for (sign, row) in zip(z_signs, row_permutation) {
+    let inv_perm = match clifford_tableau.get_permutation() {
+        None => panic!("Cleaning signs but tableau is not a permutation matrix: \n{}", clifford_tableau),
+        Some(perm) => perm
+    };
+    let row_permutation = (0..clifford_tableau.size())
+        .into_iter()
+        .map(|i| inv_perm.iter().find_position(|&&x| x == i))
+        .map(|x| x.unwrap().0)
+        .collect_vec();
+    for (sign, row) in zip(z_signs, row_permutation.iter()) {
         if sign {
             repr.x(*row);
             clifford_tableau.x(*row);
@@ -264,7 +271,7 @@ pub(super) fn clean_signs<G>(
 
     let x_signs = clifford_tableau.x_signs();
 
-    for (sign, row) in zip(x_signs, row_permutation) {
+    for (sign, row) in zip(x_signs, row_permutation.iter()) {
         if sign {
             repr.z(*row);
             clifford_tableau.z(*row);

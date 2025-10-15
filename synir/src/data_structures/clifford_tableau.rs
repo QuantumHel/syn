@@ -1,4 +1,5 @@
 use bitvec::prelude::BitVec;
+use bitvec::vec;
 use itertools::{izip, Itertools};
 use std::fmt;
 use std::iter::zip;
@@ -190,7 +191,7 @@ impl CliffordTableau {
         }
     }
 
-    pub fn permute(&mut self, permutation_vector: &[usize]) {
+    pub fn permute(&mut self, permutation_vector: Vec<usize>) {
         assert_eq!(
             permutation_vector
                 .iter()
@@ -205,6 +206,24 @@ impl CliffordTableau {
             .map(|a| a.0)
             .collect::<Vec<_>>();
         self.pauli_columns = sorted_pauli_columns;
+    }
+
+    pub fn get_permutation(&self) -> Option<Vec<usize>> {
+        let mut row_permutation = Vec::new();
+        //let mut col_permutation = Vec::new();
+        for pauli_column in self.pauli_columns.iter() {
+            if pauli_column.x_weight() != 1 || pauli_column.z_weight() != 1 {
+                return None;
+            }
+            //col_permutation.push(pauli_column.z.first_one().unwrap() - self.size);
+            row_permutation.push(pauli_column.x.first_one().unwrap());
+        }
+        let inverse_perm: Vec<usize> = (0..self.size)
+            .into_iter()
+            .map(|i| row_permutation.iter().find_position(|&&x| x == i))
+            .map(|x| x.unwrap().0)
+            .collect_vec();
+        return Some(row_permutation);
     }
 }
 

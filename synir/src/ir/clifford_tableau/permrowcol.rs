@@ -12,7 +12,6 @@ use super::helper::clean_signs;
 // #[derive(Default)]
 pub struct PermRowColCliffordSynthesizer {
     connectivity: Connectivity,
-    permutation: Vec<usize>,
     row_strategy: fn(&CliffordTableau, &Connectivity, &[usize]) -> usize,
     column_strategy: fn(&CliffordTableau, &Connectivity, usize) -> usize,
 }
@@ -23,14 +22,9 @@ impl PermRowColCliffordSynthesizer {
 
         Self {
             connectivity,
-            permutation: (0..size).collect(),
             row_strategy: pick_row,
             column_strategy: pick_column,
         }
-    }
-
-    pub fn permutation(&self) -> &[usize] {
-        &self.permutation
     }
 
     pub fn set_row_strategy(
@@ -48,11 +42,15 @@ impl PermRowColCliffordSynthesizer {
     }
 }
 
-impl<G> AdjointSynthesizer<CliffordTableau, G> for PermRowColCliffordSynthesizer
+impl<G> AdjointSynthesizer<CliffordTableau, G, CliffordTableau> for PermRowColCliffordSynthesizer
 where
     G: CliffordGates,
 {
-    fn synthesize_adjoint(&mut self, mut clifford_tableau: CliffordTableau, repr: &mut G) {
+    fn synthesize_adjoint(
+        &mut self,
+        mut clifford_tableau: CliffordTableau,
+        repr: &mut G,
+    ) -> CliffordTableau {
         let num_qubits = clifford_tableau.size();
         let machine_size = self.connectivity.node_count();
         assert!(
@@ -61,8 +59,6 @@ where
             num_qubits,
             machine_size
         );
-        // Mapping between logical qubit to physical qubit
-        let mut permutation = (0..num_qubits).collect::<Vec<_>>();
         // logical qubit remaining to be disconnected
         let mut remaining_columns = (0..num_qubits).collect::<Vec<_>>();
         // stabilizers / destabilizers that are not yet identity rows
@@ -126,13 +122,10 @@ where
             }
 
             // If the pivot row is now an identity row, we can remove it from the tableau.
-
-            permutation[pivot_row] = pivot_column;
             self.connectivity.remove_node(pivot_column);
         }
 
-        clean_signs(repr, &mut clifford_tableau, &permutation);
-
-        self.permutation = permutation;
+        clean_signs(repr, &mut clifford_tableau);
+        return clifford_tableau;
     }
 }

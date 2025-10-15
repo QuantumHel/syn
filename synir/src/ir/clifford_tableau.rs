@@ -18,9 +18,11 @@ pub enum CliffordTableauSynthStrategy {
     Custom(Vec<usize>, Vec<usize>),
 }
 
-impl<T: AdjointSynthesizer<CliffordTableau, To>, To> Synthesizer<CliffordTableau, To> for T {
-    fn synthesize(&mut self, ir: CliffordTableau, repr: &mut To) {
+impl<T: AdjointSynthesizer<CliffordTableau, To, Returns>, To, Returns>
+    Synthesizer<CliffordTableau, To, Returns> for T
+{
+    fn synthesize(&mut self, ir: CliffordTableau, repr: &mut To) -> Returns {
         let ir = ir.adjoint();
-        self.synthesize_adjoint(ir, repr)
+        return self.synthesize_adjoint(ir, repr);
     }
 }
