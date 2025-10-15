@@ -254,8 +254,11 @@ where
 {
     let z_signs = clifford_tableau.z_signs();
     let inv_perm = match clifford_tableau.get_permutation() {
-        None => panic!("Cleaning signs but tableau is not a permutation matrix: \n{}", clifford_tableau),
-        Some(perm) => perm
+        None => panic!(
+            "Cleaning signs but tableau is not a permutation matrix: \n{}",
+            clifford_tableau
+        ),
+        Some(perm) => perm,
     };
     let row_permutation = (0..clifford_tableau.size())
         .into_iter()

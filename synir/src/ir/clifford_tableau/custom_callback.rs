@@ -55,7 +55,11 @@ impl<G> AdjointSynthesizer<CliffordTableau, G, CliffordTableau> for CallbackClif
 where
     G: CliffordGates,
 {
-    fn synthesize_adjoint(&mut self, mut clifford_tableau: CliffordTableau, repr: &mut G) -> CliffordTableau {
+    fn synthesize_adjoint(
+        &mut self,
+        mut clifford_tableau: CliffordTableau,
+        repr: &mut G,
+    ) -> CliffordTableau {
         let num_qubits = clifford_tableau.size();
 
         let mut remaining_columns = (0..num_qubits).collect::<Vec<_>>();
