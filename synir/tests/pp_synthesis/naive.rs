@@ -1,15 +1,13 @@
 use std::collections::VecDeque;
 
-use crate::common::{parse_clifford_commands, MockCircuit, MockCommand};
+use crate::common::mock_circuit::{parse_clifford_commands, MockCircuit, MockCommand};
 use crate::common::sample_pauli_poly::{setup_simple_pp, setup_complex_pp};
-use syn::architecture::connectivity::Connectivity;
-use syn::data_structures::{CliffordTableau, PauliPolynomial};
-use syn::ir::pauli_polynomial::psgs::PSGSPauliPolynomialSynthesizer;
-use syn::ir::pauli_polynomial::NaivePauliPolynomialSynthesizer;
-use syn::ir::Synthesizer;
+use synir::data_structures::{CliffordTableau, PauliPolynomial};
+use synir::ir::pauli_polynomial::NaivePauliPolynomialSynthesizer;
+use synir::ir::Synthesizer;
 
-fn run_synthesizer(pp: PauliPolynomial) -> (MockCircuit, CliffordTableau){
-    let mut mock = MockCircuit::new();
+fn run_synthesizer(pp: VecDeque<PauliPolynomial>) -> (MockCircuit, CliffordTableau){
+    let mut mock: MockCircuit = MockCircuit::new();
     let mut synthesizer = NaivePauliPolynomialSynthesizer::default();
     synthesizer.set_clifford_tableau(CliffordTableau::new(4));
     let ct = synthesizer.synthesize(pp, &mut mock);

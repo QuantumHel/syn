@@ -1,8 +1,8 @@
 use std::collections::VecDeque;
 
-use syn::data_structures::{PauliPolynomial};
+use synir::data_structures::{PauliPolynomial};
 
-fn setup_complex_pp() -> VecDeque<PauliPolynomial> {
+pub fn setup_complex_pp() -> VecDeque<PauliPolynomial> {
     let ham_1 = vec![("IZZZ", 0.3)];
     let ham_2 = vec![("XXII", 0.7)];
 
@@ -11,7 +11,7 @@ fn setup_complex_pp() -> VecDeque<PauliPolynomial> {
     VecDeque::from([pp_1, pp_2])
 }
 
-fn setup_simple_pp() -> VecDeque<PauliPolynomial> {
+pub fn setup_simple_pp() -> VecDeque<PauliPolynomial> {
     let ham = vec![("IXYZ", 0.3)];
 
     let pauli_polynomial = PauliPolynomial::from_hamiltonian(ham);

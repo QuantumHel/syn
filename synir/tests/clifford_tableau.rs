@@ -2,7 +2,7 @@ mod common;
 
 use bitvec::bitvec;
 use bitvec::prelude::Lsb0;
-use common::{parse_clifford_commands, MockCircuit, MockCommand};
+use common::mock_circuit::{parse_clifford_commands, MockCircuit, MockCommand};
 use synir::architecture::connectivity::Connectivity;
 use synir::data_structures::{CliffordTableau, PauliString, PropagateClifford};
 use synir::ir::clifford_tableau::{
