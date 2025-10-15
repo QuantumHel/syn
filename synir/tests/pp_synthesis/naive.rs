@@ -1,37 +1,23 @@
-mod common;
-
 use std::collections::VecDeque;
 
-use common::{parse_clifford_commands, MockCircuit, MockCommand};
+use crate::common::mock_circuit::{parse_clifford_commands, MockCircuit, MockCommand};
+use crate::common::sample_pauli_poly::{setup_simple_pp, setup_complex_pp};
 use synir::data_structures::{CliffordTableau, PauliPolynomial};
 use synir::ir::pauli_polynomial::NaivePauliPolynomialSynthesizer;
 use synir::ir::Synthesizer;
 
-fn setup_complex_pp() -> VecDeque<PauliPolynomial> {
-    let ham_1 = vec![("IZZZ", 0.3)];
-    let ham_2 = vec![("XXII", 0.7)];
-
-    let pp_1 = PauliPolynomial::from_hamiltonian(ham_1);
-    let pp_2 = PauliPolynomial::from_hamiltonian(ham_2);
-    VecDeque::from([pp_1, pp_2])
-}
-
-fn setup_simple_pp() -> VecDeque<PauliPolynomial> {
-    let ham = vec![("IXYZ", 0.3)];
-
-    let pauli_polynomial = PauliPolynomial::from_hamiltonian(ham);
-
-    VecDeque::from([pauli_polynomial])
+fn run_synthesizer(pp: VecDeque<PauliPolynomial>) -> (MockCircuit, CliffordTableau){
+    let mut mock: MockCircuit = MockCircuit::new();
+    let mut synthesizer = NaivePauliPolynomialSynthesizer::default();
+    synthesizer.set_clifford_tableau(CliffordTableau::new(4));
+    let ct = synthesizer.synthesize(pp, &mut mock);
+    return (mock, ct)
 }
 
 #[test]
 fn test_naive_pauli_exponential_synthesis() {
     let pp = setup_simple_pp();
-    let mut mock = MockCircuit::new();
-    let mut synthesizer = NaivePauliPolynomialSynthesizer::default();
-    synthesizer.set_clifford_tableau(CliffordTableau::new(4));
-    let ct = synthesizer.synthesize(pp, &mut mock);
-
+    let (mock, ct) = run_synthesizer(pp);
     let ref_commands = [
         MockCommand::H(1),
         MockCommand::V(2),

@@ -3,10 +3,9 @@ use std::iter::zip;
 use bitvec::vec::BitVec;
 use itertools::zip_eq;
 
-use super::{pauli_string::PauliString, IndexType, MaskedPropagateClifford, PropagateClifford};
+use crate::data_structures::Angle;
 
-// todo: Make this into a union / type Angle
-type Angle = f64;
+use super::{pauli_string::PauliString, IndexType, MaskedPropagateClifford, PropagateClifford};
 
 #[derive(Debug, Clone, Default)]
 pub struct PauliPolynomial {
@@ -36,10 +35,22 @@ impl PauliPolynomial {
             .map(|gadget| PauliString::from_text(gadget))
             .collect::<Vec<_>>();
 
-        PauliPolynomial {
+        Self {
             chains,
             angles,
             size: num_qubits,
+        }
+    }
+
+    pub fn from_components(
+        chains: Vec<PauliString>,
+        angles: Vec<Angle>,
+        size: usize,
+    ) -> Self {
+        Self {
+            chains,
+            angles,
+            size,
         }
     }
 
@@ -51,16 +62,32 @@ impl PauliPolynomial {
         self.angles.len()
     }
 
-    pub fn chain(&self, i: usize) -> &PauliString {
-        &self.chains[i]
+    pub fn angle(&self, i: usize) -> Angle {
+        self.angles[i]
+    }
+
+    pub fn angles(&self) -> &Vec<Angle> {
+        &self.angles
+    }
+
+    pub fn mut_angles(&mut self) -> &mut Vec<Angle> {
+        &mut self.angles
+    }
+
+    pub fn chain(&self, index: usize) -> &PauliString {
+        &self.chains[index]
     }
 
     pub fn chains(&self) -> &Vec<PauliString> {
         &self.chains
     }
 
-    pub fn angle(&self, i: usize) -> Angle {
-        self.angles[i]
+    pub fn mut_chains(&mut self) -> &mut Vec<PauliString> {
+        &mut self.chains
+    }
+
+    pub fn mut_chains_and_angles(&mut self) -> (&mut Vec<PauliString>, &mut Vec<Angle>) {
+        (&mut self.chains, &mut self.angles)
     }
 }
 

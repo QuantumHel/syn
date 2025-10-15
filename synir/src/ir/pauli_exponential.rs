@@ -1,11 +1,13 @@
 use std::collections::VecDeque;
 
+use crate::architecture::connectivity::Connectivity;
 use crate::data_structures::{CliffordTableau, HasAdjoint, PauliPolynomial};
 
+use crate::ir::pauli_polynomial::psgs::PSGSPauliPolynomialSynthesizer;
 use crate::ir::{CliffordGates, Gates, Synthesizer};
 
-use crate::ir::clifford_tableau::CallbackCliffordSynthesizer;
 use crate::ir::clifford_tableau::NaiveCliffordSynthesizer;
+use crate::ir::clifford_tableau::{CallbackCliffordSynthesizer, PermRowColCliffordSynthesizer};
 use crate::ir::{
     clifford_tableau::CliffordTableauSynthStrategy,
     pauli_polynomial::{naive::NaivePauliPolynomialSynthesizer, PauliPolynomialSynthStrategy},
@@ -72,11 +74,17 @@ where
             pauli_polynomials,
             clifford_tableau,
         } = pauli_exponential;
-
+        let num_qubits = clifford_tableau.size();
         let clifford_tableau = match self.pauli_strategy {
             PauliPolynomialSynthStrategy::Naive => {
                 let mut pauli_synthesizer = NaivePauliPolynomialSynthesizer::default();
                 pauli_synthesizer.set_clifford_tableau(clifford_tableau);
+                pauli_synthesizer.synthesize(pauli_polynomials, repr)
+            }
+            PauliPolynomialSynthStrategy::PSGS => {
+                let mut pauli_synthesizer = PSGSPauliPolynomialSynthesizer::default();
+                pauli_synthesizer.set_clifford_tableau(clifford_tableau);
+                pauli_synthesizer.set_connectivity(Connectivity::complete(num_qubits));
                 pauli_synthesizer.synthesize(pauli_polynomials, repr)
             }
         };
@@ -91,6 +99,12 @@ where
                     custom_columns.to_owned(),
                     custom_rows.to_owned(),
                 );
+                clifford_synthesizer.synthesize(clifford_tableau.adjoint(), repr);
+            }
+            CliffordTableauSynthStrategy::PermRowCol => {
+                let size = clifford_tableau.size();
+                let mut clifford_synthesizer =
+                    PermRowColCliffordSynthesizer::new(Connectivity::complete(size));
                 clifford_synthesizer.synthesize(clifford_tableau.adjoint(), repr);
             }
         };
