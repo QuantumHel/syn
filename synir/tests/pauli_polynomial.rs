@@ -2,7 +2,7 @@ mod common;
 
 use std::collections::VecDeque;
 
-use common::{parse_clifford_commands, MockCircuit, MockCommand};
+use common::mock_circuit::{parse_clifford_commands, MockCircuit, MockCommand};
 use synir::data_structures::{CliffordTableau, PauliPolynomial};
 use synir::ir::pauli_polynomial::NaivePauliPolynomialSynthesizer;
 use synir::ir::Synthesizer;

@@ -1,8 +1,7 @@
 use criterion::{black_box, criterion_group, Criterion};
-use petgraph::visit::Walker;
 use rand::prelude::IndexedRandom;
 use rand::seq::SliceRandom;
-use rand::Rng;
+use rand::{rng, Rng};
 use synir::architecture::connectivity::Connectivity;
 use synir::architecture::Architecture;
 
@@ -11,7 +10,7 @@ fn random_connected_connectivity(
     extra_edges: usize,
     subset_length: usize,
 ) -> (Connectivity, Vec<usize>, usize) {
-    let mut rng = rand::thread_rng();
+    let mut rng = rng();
     let mut edges = Vec::new();
 
     let mut nodes: Vec<usize> = (0..num_nodes).collect();
@@ -22,8 +21,8 @@ fn random_connected_connectivity(
 
     // Add extra random edges:
     while edges.len() < (num_nodes - 1) + extra_edges {
-        let a = rng.gen_range(0..num_nodes);
-        let b = rng.gen_range(0..num_nodes);
+        let a = rng.random_range(0..num_nodes);
+        let b = rng.random_range(0..num_nodes);
         if a != b && !edges.contains(&(a, b)) && !edges.contains(&(b, a)) {
             edges.push((a, b));
         }
@@ -39,7 +38,7 @@ fn random_connected_connectivity(
 }
 
 fn get_cx_ladder_connectivity((connectivity, nodes, root): &(Connectivity, Vec<usize>, usize)) {
-    let _ = connectivity.get_cx_ladder(&nodes, &root);
+    let _ = connectivity.get_cx_ladder(nodes, root);
 }
 
 pub fn connectivity_bench(c: &mut Criterion) {

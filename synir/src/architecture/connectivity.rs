@@ -38,14 +38,11 @@ pub struct Connectivity {
 
 impl Connectivity {
     pub fn new(num_qubits: usize) -> Self {
-        let graph = StableUnGraph::with_capacity(num_qubits, 0);
-
-        Connectivity {
-            graph,
-            non_cutting: Default::default(),
-            prev: Default::default(),
-            distance: HashMap::new(),
+        let mut graph = StableUnGraph::with_capacity(num_qubits, 0);
+        for _ in 0..num_qubits {
+            graph.add_node(());
         }
+        Connectivity::from_graph(graph)
     }
 
     pub fn line(num_qubits: usize) -> Self {
@@ -80,13 +77,22 @@ impl Connectivity {
     }
 
     pub fn from_edges(edges: &[(GraphIndex, GraphIndex)]) -> Self {
-        let graph = StableUnGraph::from_edges(edges);
-        Connectivity::from_graph(graph)
+        if edges.len() > 0 {
+            let mut graph = StableUnGraph::from_edges(edges);
+            graph.edge_weights_mut().for_each(|weight| *weight = 1); // Default weight of 1 for unweighted edges
+            Connectivity::from_graph(graph)
+        } else {
+            Connectivity::new(1)
+        }
     }
 
     pub fn from_weighted_edges(edges: &[(GraphIndex, GraphIndex, EdgeWeight)]) -> Self {
-        let graph = StableUnGraph::from_edges(edges);
-        Connectivity::from_graph(graph)
+        if edges.len() > 0 {
+            let graph = StableUnGraph::from_edges(edges);
+            Connectivity::from_graph(graph)
+        } else {
+            Connectivity::new(1)
+        }
     }
 
     pub fn from_graph(graph: StableUnGraph<NodeWeight, EdgeWeight, GraphIndex>) -> Self {
@@ -107,6 +113,14 @@ impl Connectivity {
             .node_references()
             .map(|(node, _)| node.id().index())
             .collect()
+    }
+
+    pub fn node_count(&self) -> usize {
+        self.graph.node_count()
+    }
+
+    pub fn edge_count(&self) -> usize {
+        self.graph.edge_count()
     }
 
     pub fn edges(&self) -> Vec<(GraphIndex, GraphIndex)> {
@@ -158,41 +172,21 @@ impl Connectivity {
 
 impl Architecture for Connectivity {
     fn best_path(&self, i: GraphIndex, j: GraphIndex) -> Vec<GraphIndex> {
-        assert!(
-            i < self.graph.node_count(),
-            "architecture does not contain node {i}"
-        );
-        assert!(
-            j < self.graph.node_count(),
-            "architecture does not contain node {j}"
-        );
         self.path_from_shortest_path_tree(i, j)
     }
 
     fn distance(&self, i: GraphIndex, j: GraphIndex) -> usize {
-        assert!(
-            i < self.graph.node_count(),
-            "architecture does not contain node {i}"
-        );
-        assert!(
-            j < self.graph.node_count(),
-            "architecture does not contain node {j}"
-        );
         self.distance[&(self.graph.from_index(i), self.graph.from_index(j))]
     }
 
     fn neighbors(&self, i: GraphIndex) -> Vec<GraphIndex> {
-        assert!(
-            i < self.graph.node_count(),
-            "architecture does not contain node {i}"
-        );
         self.graph
             .neighbors(self.graph.from_index(i))
             .map(|neighbor| neighbor.index())
             .collect()
     }
 
-    fn non_cutting(&mut self) -> &Vec<GraphIndex> {
+    fn non_cutting(&self) -> &Vec<GraphIndex> {
         &self.non_cutting
     }
 
@@ -429,7 +423,7 @@ mod tests {
     fn test_best_simple_path() {
         let new_architecture = Connectivity::from_edges(&setup_simple());
 
-        assert_eq!(new_architecture.best_path(0, 4), vec![0, 1, 2, 4]);
+        assert_eq!(new_architecture.best_path(0, 4), vec![0, 5, 4]);
     }
 
     #[test]
@@ -440,7 +434,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic = "architecture does not contain node 6"]
+    #[should_panic = "index out of bounds: the len is 6 but the index is 6"]
     fn test_best_path_missing() {
         let new_architecture = Connectivity::from_edges(&setup_simple());
         new_architecture.best_path(5, 6);
@@ -455,7 +449,14 @@ mod tests {
     }
 
     #[test]
-    #[should_panic = "architecture does not contain node 6"]
+    fn test_simple_distance() {
+        let new_architecture = Connectivity::from_edges(&setup_simple());
+        assert_eq!(1, new_architecture.distance(0, 1));
+        assert_eq!(2, new_architecture.distance(1, 4));
+    }
+
+    #[test]
+    #[should_panic = "no entry found for key"]
     fn test_distance_missing() {
         let new_architecture = Connectivity::from_edges(&setup_simple());
         new_architecture.distance(5, 6);
@@ -468,7 +469,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic = "architecture does not contain node 7"]
+    #[should_panic = "no entry found for key"]
     fn test_neighbor_missing() {
         let new_architecture = Connectivity::from_edges(&setup_simple());
         new_architecture.distance(2, 7);
@@ -476,19 +477,19 @@ mod tests {
 
     #[test]
     fn test_non_cutting() {
-        let mut new_architecture = Connectivity::from_edges(&setup_simple());
+        let new_architecture = Connectivity::from_edges(&setup_simple());
         assert_eq!(&new_architecture.nodes(), new_architecture.non_cutting());
     }
 
     #[test]
     fn test_non_cutting_line() {
-        let mut line_architecture = Connectivity::line(5);
+        let line_architecture = Connectivity::line(5);
         assert_eq!(*line_architecture.non_cutting(), vec![0, 4]);
     }
 
     #[test]
     fn test_non_cutting_grid() {
-        let mut line_architecture = Connectivity::grid(3, 3);
+        let line_architecture = Connectivity::grid(3, 3);
         assert_eq!(
             *line_architecture.non_cutting(),
             vec![0, 1, 2, 3, 4, 5, 6, 7, 8]
@@ -497,7 +498,7 @@ mod tests {
 
     #[test]
     fn test_non_cutting_complete() {
-        let mut line_architecture = Connectivity::complete(3);
+        let line_architecture = Connectivity::complete(3);
         assert_eq!(*line_architecture.non_cutting(), vec![0, 1, 2]);
     }
 
