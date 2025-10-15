@@ -3,12 +3,12 @@ mod common;
 use std::collections::VecDeque;
 
 use common::{parse_clifford_commands, MockCircuit, MockCommand};
-use syn::data_structures::{CliffordTableau, HasAdjoint, PauliPolynomial};
-use syn::ir::clifford_tableau::{CliffordTableauSynthStrategy, NaiveCliffordSynthesizer};
-use syn::ir::pauli_exponential::PauliExponential;
-use syn::ir::pauli_exponential::PauliExponentialSynthesizer;
-use syn::ir::pauli_polynomial::PauliPolynomialSynthStrategy;
-use syn::ir::Synthesizer;
+use synir::data_structures::{CliffordTableau, HasAdjoint, PauliPolynomial};
+use synir::ir::clifford_tableau::{CliffordTableauSynthStrategy, NaiveCliffordSynthesizer};
+use synir::ir::pauli_exponential::PauliExponential;
+use synir::ir::pauli_exponential::PauliExponentialSynthesizer;
+use synir::ir::pauli_polynomial::PauliPolynomialSynthStrategy;
+use synir::ir::Synthesizer;
 
 fn setup_simple_pe() -> PauliExponential {
     let ham = vec![("IZZZ", 0.3)];

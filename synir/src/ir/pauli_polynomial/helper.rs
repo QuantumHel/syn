@@ -37,9 +37,9 @@ impl PropagateClifford for VecDeque<PauliPolynomial> {
 }
 
 impl MaskedPropagateClifford for VecDeque<PauliPolynomial> {
-    fn masked_cx(&self, control: usize, target: usize, mask: &BitVec) -> &Self {
+    fn masked_cx(&mut self, control: usize, target: usize, mask: &BitVec) -> &mut Self {
         self[0].masked_cx(control, target, mask);
-        for pauli_polynomial in self.iter().skip(1) {
+        for pauli_polynomial in self.iter_mut().skip(1) {
             pauli_polynomial.masked_cx(
                 control,
                 target,
@@ -49,17 +49,17 @@ impl MaskedPropagateClifford for VecDeque<PauliPolynomial> {
         self
     }
 
-    fn masked_s(&self, target: usize, mask: &BitVec) -> &Self {
+    fn masked_s(&mut self, target: usize, mask: &BitVec) -> &mut Self {
         self[0].masked_s(target, mask);
-        for pauli_polynomial in self.iter().skip(1) {
+        for pauli_polynomial in self.iter_mut().skip(1) {
             pauli_polynomial.masked_s(target, &bitvec![usize, Lsb0; 1; pauli_polynomial.length()]);
         }
         self
     }
 
-    fn masked_v(&self, target: usize, mask: &BitVec) -> &Self {
+    fn masked_v(&mut self, target: usize, mask: &BitVec) -> &mut Self {
         self[0].masked_v(target, mask);
-        for pauli_polynomial in self.iter().skip(1) {
+        for pauli_polynomial in self.iter_mut().skip(1) {
             pauli_polynomial.masked_v(target, &bitvec![usize, Lsb0; 1; pauli_polynomial.length()]);
         }
         self
@@ -70,7 +70,7 @@ pub(super) fn push_down_pauli_polynomial_update<G>(
     pauli_polynomials: &mut VecDeque<PauliPolynomial>,
     repr: &mut G,
     clifford_tableau: &mut CliffordTableau,
-    pauli_polynomial: PauliPolynomial,
+    mut pauli_polynomial: PauliPolynomial,
     num_gadgets: usize,
     mut mask: BitVec,
 ) where
@@ -78,7 +78,8 @@ pub(super) fn push_down_pauli_polynomial_update<G>(
 {
     for col in 0..num_gadgets {
         let mut affected_qubits = Vec::new();
-        for (i, row) in pauli_polynomial.chains().iter().enumerate() {
+        for i in 0..pauli_polynomial.size() {
+            let row = pauli_polynomial.chain(i);
             match row.pauli(col) {
                 PauliLetter::I => {}
                 PauliLetter::X => {
@@ -159,12 +160,7 @@ pub(super) fn check_columns<G>(
         invalid
     };
     let length = pauli_polynomial.length();
-    let PauliPolynomial {
-        ref mut chains,
-        angles,
-        ..
-    } = pauli_polynomial;
-    let mut angles = angles.write().unwrap();
+    let (chains, angles) = pauli_polynomial.mut_chains_and_angles();
     for index in (0..length).rev() {
         if !invalid[index] && polynomial_mask[index] {
             polynomial_mask.swap_remove(index);
