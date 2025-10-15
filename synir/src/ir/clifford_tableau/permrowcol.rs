@@ -81,45 +81,44 @@ where
 
             remaining_columns.retain(|&x| x != pivot_column);
             remaining_rows.retain(|&x| x != pivot_row);
-            {
-                clean_pivot(
-                    repr,
-                    &mut clifford_tableau,
-                    pivot_column,
-                    pivot_row,
-                    first_letter,
-                );
 
-                // Use the pivot to remove all other terms in the X observable.
-                clean_prc(
-                    repr,
-                    &mut clifford_tableau,
-                    &self.connectivity,
-                    &remaining_columns,
-                    pivot_column,
-                    pivot_row,
-                    first_letter,
-                );
+            clean_pivot(
+                repr,
+                &mut clifford_tableau,
+                pivot_column,
+                pivot_row,
+                first_letter,
+            );
 
-                clean_pivot(
-                    repr,
-                    &mut clifford_tableau,
-                    pivot_column,
-                    pivot_row,
-                    second_letter,
-                );
+            // Use the pivot to remove all other terms in the X observable.
+            clean_prc(
+                repr,
+                &mut clifford_tableau,
+                &self.connectivity,
+                &remaining_columns,
+                pivot_column,
+                pivot_row,
+                first_letter,
+            );
 
-                // Use the pivot to remove all other terms in the Z observable.
-                clean_prc(
-                    repr,
-                    &mut clifford_tableau,
-                    &self.connectivity,
-                    &remaining_columns,
-                    pivot_column,
-                    pivot_row,
-                    second_letter,
-                );
-            }
+            clean_pivot(
+                repr,
+                &mut clifford_tableau,
+                pivot_column,
+                pivot_row,
+                second_letter,
+            );
+
+            // Use the pivot to remove all other terms in the Z observable.
+            clean_prc(
+                repr,
+                &mut clifford_tableau,
+                &self.connectivity,
+                &remaining_columns,
+                pivot_column,
+                pivot_row,
+                second_letter,
+            );
 
             // If the pivot row is now an identity row, we can remove it from the tableau.
             self.connectivity.remove_node(pivot_column);
