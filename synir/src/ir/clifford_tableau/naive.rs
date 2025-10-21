@@ -9,8 +9,14 @@ use super::helper::{
 
 use crate::data_structures::PauliLetter;
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct NaiveCliffordSynthesizer {}
+
+impl NaiveCliffordSynthesizer {
+    pub fn name(&self) -> &str {
+        return "naive";
+    }
+}
 
 impl<G> AdjointSynthesizer<CliffordTableau, G, CliffordTableau> for NaiveCliffordSynthesizer
 where

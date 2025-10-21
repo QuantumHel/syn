@@ -47,6 +47,10 @@ pub fn setup_sample_inverse_ct() -> CliffordTableau {
     CliffordTableau::from_parts(vec![pauli_1, pauli_2, pauli_3, pauli_4], signs)
 }
 
+pub fn identity_2qb_ct() -> CliffordTableau {
+    return CliffordTableau::new(2);
+}
+
 pub fn sample_swap_ct() -> CliffordTableau {
     let mut clifford_tableau = CliffordTableau::new(2);
 
