@@ -43,4 +43,48 @@ fn main() {
 
     println!("Test pauli exponential");
     println!("{}", pe);
+    print!("\n\n");
+    println!("Testing empty data structures");
+    let result = std::panic::catch_unwind(|| {
+        test_empty_clifford_tableau();
+    });
+    if result.is_err() {
+        println!("test_empty_clifford_tableau panicked");
+    }
+
+    println!("Next test");
+    let result = std::panic::catch_unwind(|| {
+        test_empty_pauli_polynomial();
+    });
+    if result.is_err() {
+        println!("test_empty_pauli_polynomial panicked");
+    }
+    println!(" Next test");
+
+    let result = std::panic::catch_unwind(|| {
+        test_empty_pauli_exponential();
+    });
+    if result.is_err() {
+        println!("test_empty_pauli_exponential panicked");
+    }
+}
+
+fn test_empty_clifford_tableau() {
+    let empty_tableau = CliffordTableau::new(0);
+    println!("Empty Clifford Tableau:");
+    println!("{}", empty_tableau);
+}
+
+fn test_empty_pauli_polynomial() {
+    let empty_pauli_polynomial = PauliPolynomial::from_hamiltonian(vec![]);
+    println!("Empty Pauli Polynomial:");
+    println!("{}", empty_pauli_polynomial);
+}
+
+fn test_empty_pauli_exponential() {
+    let empty_ct = CliffordTableau::new(0);
+    let empty_pp = PauliPolynomial::from_hamiltonian(vec![]);
+    let empty_pe = PauliExponential::new(VecDeque::from([empty_pp]), empty_ct);
+    println!("Empty Pauli Exponential:");
+    print!("{}", empty_pe);
 }
