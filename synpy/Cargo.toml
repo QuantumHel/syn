@@ -2,6 +2,7 @@
 name = "synpy"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
 
 [lib]
 name = "synpy_rust"
@@ -9,5 +10,5 @@ crate-type = ["cdylib"]
 
 [dependencies]
 bitvec = "1.0.1"
-pyo3 = "0.23.3"
-syn = { path = "../" }
+pyo3 = "0.24.2"
+synir = { path = "../synir" }

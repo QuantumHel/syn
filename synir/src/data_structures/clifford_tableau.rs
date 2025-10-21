@@ -133,21 +133,20 @@ impl CliffordTableau {
     /// Implements algorithms from https://doi.org/10.22331/q-2022-06-13-734 and Qiskit Clifford implementation
     pub(crate) fn prepend(&self, lhs: &Self) -> Self {
         let size = self.size();
-        let pauli_columns = vec![PauliString::from_text(&"I".repeat(2 * size)); size];
+        let mut pauli_columns = vec![PauliString::from_text(&"I".repeat(2 * size)); size];
         // Matrix-multiplication for M(rhs o self) = M(self) * M(rhs) as this is a row-permutation.
         // Loop re-order to be (k, i, j) as j ordering is contiguous.
         for (k, rhs_pauli_column) in self.pauli_columns.iter().enumerate() {
             for i in 0..size {
-                let mut x = pauli_columns[k].x.write().unwrap();
-                let mut z = pauli_columns[k].z.write().unwrap();
-                *x ^= BitVec::repeat(rhs_pauli_column.x(i), 2 * size)
-                    & lhs.pauli_columns[i].x.read().unwrap().as_bitslice();
+                let column = &mut pauli_columns[k];
+                let x = &mut column.x;
+                let z = &mut column.z;
+                *x ^= BitVec::repeat(rhs_pauli_column.x(i), 2 * size) & &lhs.pauli_columns[i].x;
                 *x ^= BitVec::repeat(rhs_pauli_column.x(i + size), 2 * size)
-                    & lhs.pauli_columns[i].z.read().unwrap().as_bitslice();
-                *z ^= BitVec::repeat(rhs_pauli_column.z(i), 2 * size)
-                    & lhs.pauli_columns[i].x.read().unwrap().as_bitslice();
+                    & &lhs.pauli_columns[i].z;
+                *z ^= BitVec::repeat(rhs_pauli_column.z(i), 2 * size) & &lhs.pauli_columns[i].x;
                 *z ^= BitVec::repeat(rhs_pauli_column.z(i + size), 2 * size)
-                    & lhs.pauli_columns[i].z.read().unwrap().as_bitslice();
+                    & &lhs.pauli_columns[i].z;
             }
         }
 
@@ -210,10 +209,8 @@ impl CliffordTableau {
         // Contribution of combination of signs in rhs basis.
         // Calculate matrix vector M(lhs) * sign(rhs)
         for (j, lhs_pauli_column) in lhs.pauli_columns.iter().enumerate() {
-            new_signs ^= BitVec::repeat(self.signs[j], 2 * size)
-                & lhs_pauli_column.x.read().unwrap().as_bitslice();
-            new_signs ^= BitVec::repeat(self.signs[j + size], 2 * size)
-                & lhs_pauli_column.z.read().unwrap().as_bitslice();
+            new_signs ^= BitVec::repeat(self.signs[j], 2 * size) & &lhs_pauli_column.x;
+            new_signs ^= BitVec::repeat(self.signs[j + size], 2 * size) & &lhs_pauli_column.z;
         }
 
         // Get rid of `i` factors and convert to sign flips
@@ -256,7 +253,7 @@ impl HasAdjoint for CliffordTableau {
         let size = self.size();
         // Create new CliffordTableau entries
 
-        let new_columns = vec![PauliString::from_text(&"I".repeat(2 * size)); size];
+        let mut new_columns = vec![PauliString::from_text(&"I".repeat(2 * size)); size];
         (0..size).for_each(|i| {
             for (j, pauli_column) in self.pauli_columns.iter().enumerate() {
                 let ((x1, z1), (x2, z2)) = reverse_flow(
@@ -266,8 +263,9 @@ impl HasAdjoint for CliffordTableau {
                     pauli_column.z(i + size),
                 );
 
-                let mut x = new_columns[i].x.write().unwrap();
-                let mut z = new_columns[i].z.write().unwrap();
+                let new_column = &mut new_columns[i];
+                let x = &mut new_column.x;
+                let z = &mut new_column.z;
                 x.replace(j, x1);
                 z.replace(j, z1);
                 x.replace(j + size, x2);
@@ -321,10 +319,10 @@ impl PropagateClifford for CliffordTableau {
             .unwrap();
 
         let mut scratch = BitVec::repeat(true, 2 * n);
-        scratch ^= target.x.read().unwrap().as_bitslice();
-        scratch ^= control.z.read().unwrap().as_bitslice();
-        scratch &= control.x.read().unwrap().as_bitslice();
-        scratch &= target.z.read().unwrap().as_bitslice();
+        scratch ^= &target.x;
+        scratch ^= &control.z;
+        scratch &= &control.x;
+        scratch &= &target.z;
         self.signs ^= scratch;
 
         cx(control, target);

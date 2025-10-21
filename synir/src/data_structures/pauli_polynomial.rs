@@ -1,6 +1,8 @@
+// use std::iter::zip;
+
 use bitvec::vec::BitVec;
 use itertools::zip_eq;
-use itertools::Itertools;
+// use itertools::Itertools;
 use std::fmt;
 use std::{iter::zip, sync::RwLock};
 
@@ -9,21 +11,11 @@ use super::{pauli_string::PauliString, IndexType, MaskedPropagateClifford, Propa
 // todo: Make this into a union / type Angle
 type Angle = f64;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct PauliPolynomial {
     chains: Vec<PauliString>,
-    angles: RwLock<Vec<Angle>>,
+    angles: Vec<Angle>,
     size: usize,
-}
-
-impl Clone for PauliPolynomial {
-    fn clone(&self) -> Self {
-        PauliPolynomial {
-            chains: self.chains.clone(),
-            angles: RwLock::new(self.angles.read().unwrap().clone()),
-            size: self.size,
-        }
-    }
 }
 
 impl PauliPolynomial {
@@ -44,12 +36,12 @@ impl PauliPolynomial {
         }
         let chains = chain_strings
             .iter()
-            .map(|gadget| (PauliString::from_text(gadget)))
+            .map(|gadget| PauliString::from_text(gadget))
             .collect::<Vec<_>>();
 
         PauliPolynomial {
             chains,
-            angles: RwLock::new(angles),
+            angles,
             size: num_qubits,
         }
     }
@@ -59,7 +51,11 @@ impl PauliPolynomial {
     }
 
     pub fn length(&self) -> usize {
-        self.angles.read().unwrap().len()
+        self.angles.len()
+    }
+
+    pub fn chain(&self, i: usize) -> &PauliString {
+        &self.chains[i]
     }
 
     pub fn chains(&self) -> &Vec<PauliString> {
@@ -67,7 +63,7 @@ impl PauliPolynomial {
     }
 
     pub fn angle(&self, i: usize) -> Angle {
-        self.angles.read().unwrap()[i]
+        self.angles[i]
     }
 
     pub fn get_line_string(&self, i: usize) -> String {
@@ -84,8 +80,8 @@ impl PauliPolynomial {
 
     pub fn get_first_line_string(&self) -> String {
         let mut out = String::new();
-        let angles = self.angles.read().unwrap();
-        for angle in angles.iter() {
+        // let angles = self.angles.read().unwrap();
+        for angle in self.angles.iter() {
             out.push_str(&format!(" {:.3}", angle)); //force 3 decimal place for formatting
             out.push_str(" |");
         }
@@ -99,13 +95,13 @@ impl PropagateClifford for PauliPolynomial {
 
         let [control, target] = self.chains.get_disjoint_mut([control, target]).unwrap();
 
-        bit_mask ^= control.z.read().unwrap().as_bitslice();
-        bit_mask ^= target.x.read().unwrap().as_bitslice();
-        bit_mask &= control.x.read().unwrap().as_bitslice();
-        bit_mask &= target.z.read().unwrap().as_bitslice();
+        bit_mask ^= &control.z;
+        bit_mask ^= &target.x;
+        bit_mask &= &control.x;
+        bit_mask &= &target.z;
 
         super::pauli_string::cx(control, target);
-        for (angle, flip) in zip(self.angles.write().unwrap().iter_mut(), bit_mask.iter()) {
+        for (angle, flip) in zip(self.angles.iter_mut(), bit_mask.iter()) {
             if *flip {
                 *angle *= -1.0;
             }
@@ -118,7 +114,7 @@ impl PropagateClifford for PauliPolynomial {
         let chains_target = self.chains.get_mut(target).unwrap();
         // Update angles
         let y_vec = chains_target.y_bitmask();
-        for (angle, flip) in zip(self.angles.write().unwrap().iter_mut(), y_vec.iter()) {
+        for (angle, flip) in zip(self.angles.iter_mut(), y_vec.iter()) {
             if *flip {
                 *angle *= -1.0;
             }
@@ -132,7 +128,7 @@ impl PropagateClifford for PauliPolynomial {
         chains_target.v();
         // Update angles
         let y_vec = chains_target.y_bitmask();
-        for (angle, flip) in zip(self.angles.write().unwrap().iter_mut(), y_vec.iter()) {
+        for (angle, flip) in zip(self.angles.iter_mut(), y_vec.iter()) {
             if *flip {
                 *angle *= -1.0;
             }
@@ -142,20 +138,18 @@ impl PropagateClifford for PauliPolynomial {
 }
 
 impl MaskedPropagateClifford for PauliPolynomial {
-    fn masked_cx(&self, control: IndexType, target: IndexType, mask: &BitVec) -> &Self {
-        let mut bit_mask = BitVec::repeat(true, self.angles.read().unwrap().len());
-        // let [control, target] = self.chains.get_many([control, target]).unwrap();
-        let control = self.chains.get(control).unwrap();
-        let target = self.chains.get(target).unwrap();
+    fn masked_cx(&mut self, control: IndexType, target: IndexType, mask: &BitVec) -> &mut Self {
+        let mut bit_mask = BitVec::repeat(true, self.length());
+        let [control, target] = self.chains.get_disjoint_mut([control, target]).unwrap();
 
-        bit_mask ^= control.z.read().unwrap().as_bitslice();
-        bit_mask ^= target.x.read().unwrap().as_bitslice();
-        bit_mask &= control.x.read().unwrap().as_bitslice();
-        bit_mask &= target.z.read().unwrap().as_bitslice();
+        bit_mask ^= &control.z;
+        bit_mask ^= &target.x;
+        bit_mask &= &control.x;
+        bit_mask &= &target.z;
         bit_mask &= mask;
 
         super::pauli_string::masked_cx(control, target, mask);
-        for (angle, flip) in zip(self.angles.write().unwrap().iter_mut(), bit_mask.iter()) {
+        for (angle, flip) in zip(self.angles.iter_mut(), bit_mask.iter()) {
             if *flip {
                 *angle *= -1.0;
             }
@@ -164,12 +158,12 @@ impl MaskedPropagateClifford for PauliPolynomial {
         self
     }
 
-    fn masked_s(&self, target: IndexType, mask: &BitVec) -> &Self {
-        let chains_target = self.chains.get(target).unwrap();
+    fn masked_s(&mut self, target: IndexType, mask: &BitVec) -> &mut Self {
+        let chains_target = &mut self.chains[target];
 
         // Update angles
         let y_vec = chains_target.masked_y_bitmask(mask);
-        for (angle, flip) in zip(self.angles.write().unwrap().iter_mut(), y_vec.iter()) {
+        for (angle, flip) in zip(self.angles.iter_mut(), y_vec.iter()) {
             if *flip {
                 *angle *= -1.0;
             }
@@ -178,12 +172,12 @@ impl MaskedPropagateClifford for PauliPolynomial {
         self
     }
 
-    fn masked_v(&self, target: IndexType, mask: &BitVec) -> &Self {
-        let chains_target = self.chains.get(target).unwrap();
+    fn masked_v(&mut self, target: IndexType, mask: &BitVec) -> &mut Self {
+        let chains_target = &mut self.chains[target];
         chains_target.masked_v(mask);
         // Update angles
         let y_vec = chains_target.masked_y_bitmask(mask);
-        for (angle, flip) in zip(self.angles.write().unwrap().iter_mut(), y_vec.iter()) {
+        for (angle, flip) in zip(self.angles.iter_mut(), y_vec.iter()) {
             if *flip {
                 *angle *= -1.0;
             }
@@ -220,8 +214,7 @@ mod tests {
 
     impl PartialEq for PauliPolynomial {
         fn eq(&self, other: &Self) -> bool {
-            self.chains == other.chains
-                && *self.angles.read().unwrap() == *other.angles.read().unwrap()
+            self.chains == other.chains && self.angles == other.angles
         }
     }
 
@@ -240,7 +233,7 @@ mod tests {
 
         let pp_ref = PauliPolynomial {
             chains: vec![pg1_ref, pg2_ref, pg3_ref, pg4_ref],
-            angles: RwLock::new(angles_ref),
+            angles: angles_ref,
             size,
         };
         assert_eq!(pp, pp_ref);
@@ -268,7 +261,7 @@ mod tests {
         let angles_ref = vec![0.3, 0.7, 0.12];
         PauliPolynomial {
             chains: vec![pg1_ref, pg2_ref, pg3_ref],
-            angles: RwLock::new(angles_ref),
+            angles: angles_ref,
             size,
         }
     }
@@ -294,7 +287,7 @@ mod tests {
         let angles_ref = vec![0.3, -0.7, -0.12];
         let pp_ref = PauliPolynomial {
             chains: vec![pg1_ref, pg2_ref, pg3_ref],
-            angles: RwLock::new(angles_ref),
+            angles: angles_ref,
             size,
         };
         assert_eq!(pp, pp_ref);
@@ -319,7 +312,7 @@ mod tests {
         let angles_ref = vec![-0.3, 0.7, 0.12];
         let pp_ref = PauliPolynomial {
             chains: vec![pg1_ref, pg2_ref, pg3_ref],
-            angles: RwLock::new(angles_ref),
+            angles: angles_ref,
             size,
         };
         assert_eq!(pp, pp_ref);
@@ -344,7 +337,7 @@ mod tests {
         let angles_ref = vec![0.3, 0.7, 0.12];
         let pp_ref = PauliPolynomial {
             chains: vec![pg1_ref, pg2_ref, pg3_ref],
-            angles: RwLock::new(angles_ref),
+            angles: angles_ref,
             size,
         };
         assert_eq!(pp, pp_ref);
@@ -369,7 +362,7 @@ mod tests {
         let angles_ref = vec![-0.3, -0.7, 0.12];
         let pp_ref = PauliPolynomial {
             chains: vec![pg1_ref, pg2_ref, pg3_ref],
-            angles: RwLock::new(angles_ref),
+            angles: angles_ref,
             size,
         };
         assert_eq!(pp, pp_ref);
@@ -394,7 +387,7 @@ mod tests {
         let angles_ref = vec![0.3, -0.7, -0.12];
         let pp_ref = PauliPolynomial {
             chains: vec![pg1_ref, pg2_ref, pg3_ref],
-            angles: RwLock::new(angles_ref),
+            angles: angles_ref,
             size,
         };
         assert_eq!(pp, pp_ref);
@@ -417,7 +410,7 @@ mod tests {
 
         PauliPolynomial {
             chains: vec![pg1_ref, pg2_ref, pg3_ref],
-            angles: RwLock::new(angles_ref),
+            angles: angles_ref,
             size,
         }
     }
@@ -443,7 +436,7 @@ mod tests {
         let angles_ref = vec![0.3, 0.7, 0.12, 0.15];
         let pp_ref = PauliPolynomial {
             chains: vec![pg1_ref, pg2_ref, pg3_ref],
-            angles: RwLock::new(angles_ref),
+            angles: angles_ref,
             size,
         };
         assert_eq!(pp, pp_ref);
@@ -469,7 +462,7 @@ mod tests {
         let angles_ref = vec![0.3, 0.7, 0.12, -0.15];
         let pp_ref = PauliPolynomial {
             chains: vec![pg1_ref, pg2_ref, pg3_ref],
-            angles: RwLock::new(angles_ref),
+            angles: angles_ref,
             size,
         };
         assert_eq!(pp, pp_ref);
@@ -495,7 +488,7 @@ mod tests {
         let angles_ref = vec![0.3, 0.7, -0.12, 0.15];
         let pp_ref = PauliPolynomial {
             chains: vec![pg1_ref, pg2_ref, pg3_ref],
-            angles: RwLock::new(angles_ref),
+            angles: angles_ref,
             size,
         };
         assert_eq!(pp, pp_ref);
@@ -521,7 +514,7 @@ mod tests {
         let angles_ref = vec![0.3, 0.7, 0.12, 0.15];
         let pp_ref = PauliPolynomial {
             chains: vec![pg1_ref, pg2_ref, pg3_ref],
-            angles: RwLock::new(angles_ref),
+            angles: angles_ref,
             size,
         };
         assert_eq!(pp, pp_ref);
@@ -548,7 +541,7 @@ mod tests {
         let angles_ref = vec![0.3, 0.7, 0.12, 0.15];
         let pp_ref = PauliPolynomial {
             chains: vec![pg1_ref, pg2_ref, pg3_ref],
-            angles: RwLock::new(angles_ref),
+            angles: angles_ref,
             size,
         };
         assert_eq!(pp, pp_ref);
@@ -574,7 +567,7 @@ mod tests {
         let angles_ref = vec![0.3, 0.7, -0.12, 0.15];
         let pp_ref = PauliPolynomial {
             chains: vec![pg1_ref, pg2_ref, pg3_ref],
-            angles: RwLock::new(angles_ref),
+            angles: angles_ref,
             size,
         };
         assert_eq!(pp, pp_ref);
@@ -600,7 +593,7 @@ mod tests {
         let angles_ref = vec![0.3, -0.7, 0.12, 0.15];
         let pp_ref = PauliPolynomial {
             chains: vec![pg1_ref, pg2_ref, pg3_ref],
-            angles: RwLock::new(angles_ref),
+            angles: angles_ref,
             size,
         };
         assert_eq!(pp, pp_ref);
@@ -626,7 +619,7 @@ mod tests {
         let angles_ref = vec![0.3, 0.7, 0.12, 0.15];
         let pp_ref = PauliPolynomial {
             chains: vec![pg1_ref, pg2_ref, pg3_ref],
-            angles: RwLock::new(angles_ref),
+            angles: angles_ref,
             size,
         };
         assert_eq!(pp, pp_ref);

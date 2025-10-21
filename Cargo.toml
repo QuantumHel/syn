@@ -1,21 +1,6 @@
-[package]
-name = "syn"
-version = "0.1.0"
-edition = "2021"
-
-[lib]
-path = "src/lib.rs"
-
-[dependencies]
-bitvec = "1.0.1"
-itertools = "0.13.0"
-petgraph = { version = "0.8.2", features = ["stable_graph"], git = "https://github.com/keefehuang/petgraph" }
-typenum = "1.17.0"
-
-[dev-dependencies]
-criterion = "0.5.1"
-rand = "0.9.0"
-
-[[bench]]
-name = "clifford_tableau"
-harness = false
+[workspace]
+resolver = "2"
+members = [
+  "synir",
+  "synpy"
+]
