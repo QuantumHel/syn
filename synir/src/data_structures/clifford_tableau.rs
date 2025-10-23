@@ -1290,7 +1290,7 @@ mod tests {
         let ct = setup_sample_ct();
         assert_eq!(
             ct.to_string(),
-            "    || Stabilizers | Destabilizers |\nQB0 || + Z Z Z     | - I X I       |\nQB1 || - Y I Y     | + Z I I       |\nQB2 || + I X Y     | + Z I Z       |\n\n"
+            "    || Destabilizers | Stabilizers |\nQB0 || + Z Z Z     | - I X I       |\nQB1 || - Y I Y     | + Z I I       |\nQB2 || + I X Y     | + Z I Z       |\n\n"
         );
     }
 }
