@@ -371,23 +371,29 @@ impl Mul for CliffordTableau {
 impl fmt::Display for CliffordTableau {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut out: String = String::new();
-        out.push_str("    ||");
-        out.push_str(&self.get_first_line_string());
-        write!(f, "{}", out)?;
-        let column0 = self.pauli_columns[0].len();
-        for i in 0..column0 / 2 {
-            let mut out = String::new();
-            //beginning of line string
-            out.push_str("QB");
-            out.push_str(&i.to_string());
-            if i < 10 {
-                out.push(' ');
-            }
-            out.push_str("|| ");
-            out.push_str(&self.get_line_string(i));
+        if self.pauli_columns.len() == 0 {
+            out.push_str("Destabilizers | Stabilizers |\n");
             writeln!(f, "{}", out)?;
+            writeln!(f)
+        } else {
+            out.push_str("    ||");
+            out.push_str(&self.get_first_line_string());
+            write!(f, "{}", out)?;
+            let column0 = self.pauli_columns[0].len();
+            for i in 0..column0 / 2 {
+                let mut out = String::new();
+                //beginning of line string
+                out.push_str("QB");
+                out.push_str(&i.to_string());
+                if i < 10 {
+                    out.push(' ');
+                }
+                out.push_str("|| ");
+                out.push_str(&self.get_line_string(i));
+                writeln!(f, "{}", out)?;
+            }
+            writeln!(f)
         }
-        writeln!(f)
     }
 }
 

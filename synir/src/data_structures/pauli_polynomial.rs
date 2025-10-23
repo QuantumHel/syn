@@ -80,12 +80,19 @@ impl PauliPolynomial {
 
     pub fn get_first_line_string(&self) -> String {
         let mut out = String::new();
-        // let angles = self.angles.read().unwrap();
         for angle in self.angles.iter() {
             out.push_str(&format!(" {:.3}", angle)); //force 3 decimal place for formatting
             out.push_str(" |");
         }
         out
+    }
+
+    pub fn empty(i: usize) -> Self {
+        PauliPolynomial {
+            chains: vec![],
+            angles: vec![],
+            size: i,
+        }
     }
 }
 
@@ -188,22 +195,34 @@ impl MaskedPropagateClifford for PauliPolynomial {
 
 impl fmt::Display for PauliPolynomial {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        // write first line
         let mut out = String::new();
-        out.push_str("Angles ||"); // I take this out from get_first_line_string because I want to reuse that function for pauli exponential
-        out.push_str(&self.get_first_line_string());
-        writeln!(f, "{}", out)?;
-
-        // write subsequent lines
-        let chains = self.chains();
-        for (i, _) in chains.iter().enumerate() {
-            let mut out = String::new();
-            out.push_str("QB"); //same here
-            out.push_str(&i.to_string());
-            out.push_str("    || ");
-            out.push_str(&self.get_line_string(i));
+        if self.angles.is_empty() {
+            out.push_str("Angles || None|\n");
+            for i in 0..self.size() {
+                out.push_str("QB");
+                out.push_str(&i.to_string());
+                out.push_str("    || ");
+                out.push_str("_   |\n");
+            }
             writeln!(f, "{}", out)?;
+        } else {
+            // write first line
+            out.push_str("Angles ||"); // I take this out from get_first_line_string because I want to reuse that function for pauli exponential
+            out.push_str(&self.get_first_line_string());
+            writeln!(f, "{}", out)?;
+
+            // write subsequent lines
+            let chains = self.chains();
+            for (i, _) in chains.iter().enumerate() {
+                let mut out = String::new();
+                out.push_str("QB");
+                out.push_str(&i.to_string());
+                out.push_str("    || ");
+                out.push_str(&self.get_line_string(i));
+                writeln!(f, "{}", out)?;
+            }
         }
+
         writeln!(f)
     }
 }

@@ -76,7 +76,7 @@ fn test_empty_clifford_tableau() {
 }
 
 fn test_empty_pauli_polynomial() {
-    let empty_pauli_polynomial = PauliPolynomial::from_hamiltonian(vec![]);
+    let empty_pauli_polynomial = PauliPolynomial::empty(5);
     println!("Empty Pauli Polynomial:");
     println!("{}", empty_pauli_polynomial);
 }
