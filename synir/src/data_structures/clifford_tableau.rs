@@ -81,7 +81,7 @@ impl CliffordTableau {
         }
 
         if number_of_column <= 5 {
-            let space_left = 10 - 2 * number_of_column;
+            let space_left = 12 - 2 * number_of_column;
             for _ in 0..space_left {
                 out.push(' ');
             }
@@ -103,7 +103,7 @@ impl CliffordTableau {
 
         //add space due to the length of "destabilizers" string
         if number_of_column <= 6 {
-            let space_left = 12 - 2 * self.pauli_columns.len();
+            let space_left = 10 - 2 * self.pauli_columns.len();
             for _ in 0..space_left {
                 out.push(' ');
             }
@@ -116,14 +116,14 @@ impl CliffordTableau {
         let number_of_column = self.pauli_columns.len();
         let mut out = String::new();
         if number_of_column <= 5 {
-            out.push_str(" Stabilizers | Destabilizers |\n");
+            out.push_str(" Destabilizers | Stabilizers |\n");
         } else {
-            out.push_str(" Stabilizers");
-            for _ in 0..number_of_column - 5 {
+            out.push_str(" Destabilizers");
+            for _ in 0..number_of_column - 6 {
                 out.push_str("  ");
             }
-            out.push_str(" | Destabilizers");
-            for _ in 0..number_of_column - 6 {
+            out.push_str(" | Stabilizers");
+            for _ in 0..number_of_column - 5 {
                 out.push_str("  ");
             }
             out.push_str(" |\n");
