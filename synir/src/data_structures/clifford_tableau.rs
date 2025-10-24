@@ -208,6 +208,8 @@ impl CliffordTableau {
         self.pauli_columns = sorted_pauli_columns;
     }
 
+    /// Calculates the row permutation of a Clifford tableau if it is a permutation of identity.
+    /// The permutation indicates perm[physical] = logical, such that the for [1, 0, 2], physical qubit 0 stores logical qubit 1.
     pub fn get_permutation(&self) -> Option<Vec<usize>> {
         let mut row_permutation = Vec::new();
         //let mut col_permutation = Vec::new();
@@ -218,12 +220,11 @@ impl CliffordTableau {
             //col_permutation.push(pauli_column.z.first_one().unwrap() - self.size);
             row_permutation.push(pauli_column.x.first_one().unwrap());
         }
-        let inverse_perm: Vec<usize> = (0..self.size)
-            .into_iter()
+        let _ = (0..self.size)
             .map(|i| row_permutation.iter().find_position(|&&x| x == i))
             .map(|x| x.unwrap().0)
             .collect_vec();
-        return Some(row_permutation);
+        Some(row_permutation)
     }
 }
 
