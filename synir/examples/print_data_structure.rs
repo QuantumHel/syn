@@ -67,6 +67,13 @@ fn main() {
     if result.is_err() {
         println!("test_empty_pauli_exponential panicked");
     }
+
+    let result = std::panic::catch_unwind(|| {
+        test_pauli_exponential_with_empty_polynomial();
+    });
+    if result.is_err() {
+        println!("test_pauli_exponential_with_empty_polynomial panicked");
+    }
 }
 
 fn test_empty_clifford_tableau() {
@@ -82,9 +89,19 @@ fn test_empty_pauli_polynomial() {
 }
 
 fn test_empty_pauli_exponential() {
-    let empty_ct = CliffordTableau::new(0);
-    let empty_pp = PauliPolynomial::from_hamiltonian(vec![]);
+    let empty_ct = CliffordTableau::new(5);
+    let empty_pp = PauliPolynomial::empty(5);
     let empty_pe = PauliExponential::new(VecDeque::from([empty_pp]), empty_ct);
     println!("Empty Pauli Exponential:");
     print!("{}", empty_pe);
+}
+
+fn test_pauli_exponential_with_empty_polynomial() {
+    let ct = CliffordTableau::new(5);
+    let empty_pp = PauliPolynomial::empty(5);
+    let ham2 = vec![("XIIIY", 0.7)];
+    let pp2 = PauliPolynomial::from_hamiltonian(ham2);
+    let pe = PauliExponential::new(VecDeque::from([empty_pp, pp2]), ct);
+    println!("Pauli Exponential with empty and non-empty pp:");
+    print!("{}", pe);
 }
