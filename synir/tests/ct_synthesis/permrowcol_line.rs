@@ -1,8 +1,8 @@
 use crate::common::mock_circuit::{check_mock_equals_clifford_tableau, MockCircuit, MockCommand};
 use crate::common::sample_clifford_tableaus::{
-    half_swap_0_1, half_swap_1_0, sample_2cnot_ladder, sample_cnot_gate, sample_cnot_reverse_gate,
-    sample_s_dgr_gate, sample_s_gate, sample_swap_ct, sample_v_dgr_gate, sample_v_gate,
-    setup_sample_ct, setup_sample_inverse_ct, identity_2qb_ct
+    half_swap_0_1, half_swap_1_0, identity_2qb_ct, sample_2cnot_ladder, sample_cnot_gate,
+    sample_cnot_reverse_gate, sample_s_dgr_gate, sample_s_gate, sample_swap_ct, sample_v_dgr_gate,
+    sample_v_gate, setup_sample_ct, setup_sample_inverse_ct,
 };
 use synir::architecture::connectivity::Connectivity;
 use synir::data_structures::CliffordTableau;
@@ -18,7 +18,6 @@ fn run_synthesizer(clifford_tableau: &CliffordTableau) -> (MockCircuit, Clifford
     let new_ct = synthesizer.synthesize(clifford_tableau.clone(), &mut mock);
     return (mock, new_ct);
 }
-
 
 macro_rules! test_clifford {
     ($fun:ident, $expected:expr) => {
