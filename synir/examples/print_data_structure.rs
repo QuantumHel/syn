@@ -91,7 +91,7 @@ fn test_empty_pauli_polynomial() {
 fn test_empty_pauli_exponential() {
     let empty_ct = CliffordTableau::new(5);
     let empty_pp = PauliPolynomial::empty(5);
-    let empty_pe = PauliExponential::new(VecDeque::from([empty_pp]), empty_ct);
+    let empty_pe = PauliExponential::new(VecDeque::from([]), empty_ct);
     println!("Empty Pauli Exponential:");
     print!("{}", empty_pe);
 }
