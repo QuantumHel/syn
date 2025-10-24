@@ -116,6 +116,7 @@ pub(super) fn clean_observables<G>(
     }
 }
 
+/// Sets destabilizer entry at (pivot_column, pivot_row) to X if it is not I, leaves I terms unchanged.
 pub(super) fn clean_x_pivot<G>(
     repr: &mut G,
     clifford_tableau: &mut CliffordTableau,
@@ -137,6 +138,7 @@ pub(super) fn clean_x_pivot<G>(
     }
 }
 
+/// Sets destabilizer entry at (pivot_column, pivot_row) to Z if it is not I, leaves I terms unchanged.
 pub(super) fn clean_z_pivot<G>(
     repr: &mut G,
     clifford_tableau: &mut CliffordTableau,
@@ -170,6 +172,10 @@ pub(super) fn clean_z_pivot<G>(
     }
 }
 
+/// Cleans the destabilizer observables for `pivot_row` in the Clifford tableau using (pivot_column, pivot_row) as the entry for elimination..
+/// Assumes that (pivot_column, pivot_row) is either an I term or a X term.
+/// Only removes entries from columns in `remaining_columns` and assumes `pivot_column` has already been removed from `remaining_columns`.
+/// If (pivot_column, pivot_row) is an I term, set it to X first using a non-I term in (pivot_row, remaining_columns).
 pub(super) fn clean_x_observables<G>(
     repr: &mut G,
     clifford_tableau: &mut CliffordTableau,
@@ -198,12 +204,21 @@ pub(super) fn clean_x_observables<G>(
     let affected_cols =
         check_across_columns(&*clifford_tableau, remaining_columns, pivot_row, is_not_i);
 
+    if check_pauli(clifford_tableau, pivot_column, pivot_row, is_i) {
+        repr.cx(affected_cols[0], pivot_column);
+        clifford_tableau.cx(affected_cols[0], pivot_column);
+    }
+
     for col in affected_cols {
         repr.cx(pivot_column, col);
         clifford_tableau.cx(pivot_column, col);
     }
 }
 
+/// Cleans the destabilizer observables for `pivot_row` in the Clifford tableau using (pivot_column, pivot_row) as the entry for elimination..
+/// Assumes that (pivot_column, pivot_row) is either an I term or a X term.
+/// Only removes entries from columns in `remaining_columns` and assumes `pivot_column` has already been removed from `remaining_columns`.
+/// If (pivot_column, pivot_row) is an I term, set it to X first using a non-I term in (pivot_row, remaining_columns).
 pub(super) fn clean_z_observables<G>(
     repr: &mut G,
     clifford_tableau: &mut CliffordTableau,
@@ -242,6 +257,12 @@ pub(super) fn clean_z_observables<G>(
         pivot_row + num_qubits,
         is_not_i,
     );
+
+    if check_pauli(clifford_tableau, pivot_column, pivot_row + num_qubits, is_i) {
+        repr.cx(pivot_column, affected_cols[0]);
+        clifford_tableau.cx(pivot_column, affected_cols[0]);
+    }
+
     for col in affected_cols {
         repr.cx(col, pivot_column);
         clifford_tableau.cx(col, pivot_column);
@@ -261,7 +282,6 @@ where
         Some(perm) => perm,
     };
     let row_permutation = (0..clifford_tableau.size())
-        .into_iter()
         .map(|i| inv_perm.iter().find_position(|&&x| x == i))
         .map(|x| x.unwrap().0)
         .collect_vec();

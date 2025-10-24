@@ -1,7 +1,3 @@
-use std::iter::zip;
-
-use itertools::Itertools;
-
 use crate::{
     data_structures::CliffordTableau,
     ir::{
@@ -65,16 +61,12 @@ where
         let mut remaining_columns = (0..num_qubits).collect::<Vec<_>>();
         let mut remaining_rows = (0..num_qubits).collect::<Vec<_>>();
 
-        let mut custom_columns = vec![];
-        let mut custom_rows = vec![];
+        // let mut custom_columns = vec![];
+        // let mut custom_rows = vec![];
 
-        // for (&pivot_column, &pivot_row) in zip(custom_columns, custom_rows) {
         while !remaining_columns.is_empty() {
             let (pivot_column, pivot_row) =
                 (self.custom_callback)(&remaining_columns, &remaining_rows, &clifford_tableau);
-            // Cleanup pivot column
-            custom_columns.push(pivot_column);
-            custom_rows.push(pivot_row);
 
             remaining_columns.retain(|&x| x != pivot_column);
             remaining_rows.retain(|&x| x != pivot_row);
@@ -100,8 +92,7 @@ where
                 );
             }
         }
-
         clean_signs(repr, &mut clifford_tableau);
-        return clifford_tableau;
+        clifford_tableau
     }
 }

@@ -6,9 +6,9 @@ use crate::common::mock_circuit::{
     check_mock_equals_clifford_tableau, parse_clifford_commands, MockCircuit, MockCommand,
 };
 use crate::common::sample_clifford_tableaus::{
-    half_swap_0_1, half_swap_1_0, sample_2cnot_ladder, sample_cnot_gate, sample_cnot_reverse_gate,
-    sample_s_dgr_gate, sample_s_gate, sample_swap_ct, sample_v_dgr_gate, sample_v_gate,
-    setup_sample_ct, setup_sample_inverse_ct, identity_2qb_ct
+    half_swap_0_1, half_swap_1_0, identity_2qb_ct, sample_2cnot_ladder, sample_cnot_gate,
+    sample_cnot_reverse_gate, sample_s_dgr_gate, sample_s_gate, sample_swap_ct, sample_v_dgr_gate,
+    sample_v_gate, setup_sample_ct, setup_sample_inverse_ct,
 };
 use itertools::Itertools;
 use synir::data_structures::{CliffordTableau, PropagateClifford};
@@ -24,10 +24,8 @@ fn run_synthesizer(clifford_tableau: &CliffordTableau) -> (MockCircuit, Clifford
     println!("Shuffled rows: {:?}", custom_rows);
     let mut synthesizer = CallbackCliffordSynthesizer::custom_pivot(custom_columns, custom_rows);
     let new_ct = synthesizer.synthesize(clifford_tableau.clone(), &mut mock);
-    return (mock, new_ct);
+    (mock, new_ct)
 }
-
-
 
 macro_rules! test_clifford {
     ($fun:ident, $expected:expr) => {
@@ -65,13 +63,10 @@ test_clifford!(setup_sample_inverse_ct, None::<&Vec<MockCommand>>);
 // CNOT synthesis
 test_clifford!(sample_cnot_gate, None::<&Vec<MockCommand>>);
 test_clifford!(sample_cnot_reverse_gate, None::<&Vec<MockCommand>>);
-test_clifford!(
-    sample_2cnot_ladder,None::<&Vec<MockCommand>>
-);
+test_clifford!(sample_2cnot_ladder, None::<&Vec<MockCommand>>);
 test_clifford!(sample_swap_ct, None::<&Vec<MockCommand>>);
 test_clifford!(half_swap_0_1, None::<&Vec<MockCommand>>);
 test_clifford!(half_swap_1_0, None::<&Vec<MockCommand>>);
-
 
 #[test]
 fn test_custom_clifford_synthesis_old() {
