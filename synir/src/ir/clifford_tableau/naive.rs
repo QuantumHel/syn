@@ -52,6 +52,6 @@ where
         }
 
         clean_signs(repr, &mut clifford_tableau);
-        return clifford_tableau;
+        clifford_tableau
     }
 }

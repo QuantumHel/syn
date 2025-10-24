@@ -414,6 +414,11 @@ pub(super) fn pick_column(
                     (clifford_tableau.destabilizer(*qubit, interaction) != PauliLetter::I) as usize;
                 column_weights[*qubit] +=
                     connectivity.distance(*qubit, interaction) * (mult_x + mult_z);
+            } else {
+                column_weights[*qubit] +=
+                    (clifford_tableau.stabilizer(*qubit, interaction) == PauliLetter::I) as usize;
+                column_weights[*qubit] +=
+                    (clifford_tableau.destabilizer(*qubit, interaction) == PauliLetter::I) as usize;
             }
         }
     }
