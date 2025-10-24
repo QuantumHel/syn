@@ -23,6 +23,9 @@ impl PyCliffordTableau {
             tableau: CliffordTableau::new(n),
         }
     }
+    fn __str__(&self) -> PyResult<String> {
+        Ok(self.tableau.to_string())
+    }
 
     #[staticmethod]
     pub fn from_parts(pauli_strings: Vec<String>, signs: Vec<bool>) -> Self {
