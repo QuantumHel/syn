@@ -44,7 +44,7 @@ macro_rules! test_clifford {
 }
 
 // Single qubit gates
-test_clifford!(identity_2qb_ct, Some::<&Vec<MockCommand>>(&vec![]));
+test_clifford!(identity_2qb_ct, None::<&Vec<MockCommand>>);
 test_clifford!(sample_s_gate, Some(&vec![MockCommand::S(0)]));
 test_clifford!(
     sample_s_dgr_gate,
