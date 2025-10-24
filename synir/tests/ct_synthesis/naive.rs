@@ -12,7 +12,7 @@ fn run_synthesizer(clifford_tableau: &CliffordTableau) -> (MockCircuit, Clifford
     let mut mock = MockCircuit::new();
     let mut synthesizer = NaiveCliffordSynthesizer::default();
     let new_ct = synthesizer.synthesize(clifford_tableau.clone(), &mut mock);
-    return (mock, new_ct);
+    (mock, new_ct)
 }
 
 macro_rules! test_clifford {

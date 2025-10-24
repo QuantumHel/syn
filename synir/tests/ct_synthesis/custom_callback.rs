@@ -21,7 +21,7 @@ fn run_synthesizer(clifford_tableau: &CliffordTableau) -> (MockCircuit, Clifford
     let custom_columns = (0..clifford_tableau.size()).collect_vec();
     let mut custom_rows = (0..clifford_tableau.size()).collect_vec();
     custom_rows.shuffle(&mut rng);
-    println!("Shuffled rows: {:?}", custom_rows);
+
     let mut synthesizer = CallbackCliffordSynthesizer::custom_pivot(custom_columns, custom_rows);
     let new_ct = synthesizer.synthesize(clifford_tableau.clone(), &mut mock);
     (mock, new_ct)

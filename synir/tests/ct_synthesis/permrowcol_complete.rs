@@ -16,7 +16,7 @@ fn run_synthesizer(clifford_tableau: &CliffordTableau) -> (MockCircuit, Clifford
     println!("size {}, qpu {}", num_qubits, connectivity.node_count());
     let mut synthesizer = PermRowColCliffordSynthesizer::new(connectivity);
     let new_ct = synthesizer.synthesize(clifford_tableau.clone(), &mut mock);
-    return (mock, new_ct);
+    (mock, new_ct)
 }
 
 macro_rules! test_clifford {
