@@ -1,3 +1,5 @@
+use std::cell::RefMut;
+
 use synir::{
     data_structures::{CliffordTableau, PropagateClifford},
     ir::{CliffordGates, Gates},
@@ -122,4 +124,23 @@ pub fn parse_clifford_commands(size: usize, commands: &[MockCommand]) -> Cliffor
         }
     }
     tableau
+}
+
+pub fn check_mock_equals_clifford_tableau(
+    clifford_tableau: &CliffordTableau,
+    mock: &MockCircuit,
+    permutation: Option<Vec<usize>>,
+) {
+    assert!(
+        permutation.is_some(),
+        "Tableau was not a permutation matrix"
+    );
+    println!("perm: {:?}", permutation.as_ref().unwrap());
+    let mut ref_ct = parse_clifford_commands(clifford_tableau.size(), mock.commands());
+    ref_ct.permute(permutation.unwrap());
+    print!(
+        "Original tableau:\n{}\nReconstructed tableau:\n{}",
+        *clifford_tableau, ref_ct
+    );
+    assert_eq!(*clifford_tableau, ref_ct);
 }

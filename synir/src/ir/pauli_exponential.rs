@@ -1,11 +1,12 @@
 use std::collections::VecDeque;
 
+use crate::architecture::connectivity::Connectivity;
 use crate::data_structures::{CliffordTableau, HasAdjoint, PauliPolynomial};
 
 use crate::ir::{CliffordGates, Gates, Synthesizer};
 
-use crate::ir::clifford_tableau::CallbackCliffordSynthesizer;
 use crate::ir::clifford_tableau::NaiveCliffordSynthesizer;
+use crate::ir::clifford_tableau::{CallbackCliffordSynthesizer, PermRowColCliffordSynthesizer};
 use crate::ir::{
     clifford_tableau::CliffordTableauSynthStrategy,
     pauli_polynomial::{naive::NaivePauliPolynomialSynthesizer, PauliPolynomialSynthStrategy},
@@ -91,6 +92,12 @@ where
                     custom_columns.to_owned(),
                     custom_rows.to_owned(),
                 );
+                clifford_synthesizer.synthesize(clifford_tableau.adjoint(), repr);
+            }
+            CliffordTableauSynthStrategy::PermRowCol => {
+                let size = clifford_tableau.size();
+                let mut clifford_synthesizer =
+                    PermRowColCliffordSynthesizer::new(Connectivity::complete(size));
                 clifford_synthesizer.synthesize(clifford_tableau.adjoint(), repr);
             }
         };

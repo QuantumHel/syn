@@ -5,6 +5,8 @@ import pytest
 from pauliopt.pauli.pauli_gadget import PauliGadget, PPhase
 from pauliopt.pauli.pauli_polynomial import PauliPolynomial
 from pauliopt.pauli_strings import I, X, Y, Z
+
+# from pauliopt.pauli.utils import X, Y, Z, I
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import Operator
 
@@ -55,6 +57,18 @@ def generate_random_pauli_polynomial(
     return pp
 
 
+def generate_syn_example() -> PauliPolynomial:
+    """
+    Generate pauli polynomial use in syn tests.
+    """
+    pp = PauliPolynomial(4)
+    pp >>= PPhase(0.3) @ [I, X, Y, Z]
+    pp >>= PPhase(0.7) @ [X, X, I, I]
+    pp >>= PPhase(0.12) @ [Y, Y, I, I]
+
+    return pp
+
+
 def verify_equality(qc_in: QuantumCircuit, qc_out: QuantumCircuit) -> bool:
     """
     Verify the equality up to a global phase
@@ -70,6 +84,14 @@ class TestBasicSyn:
     @pytest.mark.parametrize("nr_gadgets", [100, 200, 500, 1000])
     def test_naive_synthesis(self, nr_qubits: int, nr_gadgets: int) -> None:
         pauli_polynomial = generate_random_pauli_polynomial(nr_qubits, nr_gadgets)
+        qc = pauli_polynomial.copy().to_qiskit()
+
+        qc_syn = PauliOptSynthesizer().synthesize(pauli_polynomial).to_qiskit()
+
+        assert verify_equality(qc, qc_syn)
+
+    def test_example_synthesis(self) -> None:
+        pauli_polynomial = generate_syn_example()
         qc = pauli_polynomial.copy().to_qiskit()
 
         qc_syn = PauliOptSynthesizer().synthesize(pauli_polynomial).to_qiskit()

@@ -1,4 +1,5 @@
 use bitvec::prelude::BitVec;
+use bitvec::vec;
 use itertools::{izip, Itertools};
 use std::fmt;
 use std::iter::zip;
@@ -9,10 +10,12 @@ use super::{
     pauli_string::{cx, PauliString},
     IndexType, PropagateClifford,
 };
+use crate::data_structures::PauliLetter;
 
 #[derive(PartialEq, Eq, Debug, Clone, Default)]
 pub struct CliffordTableau {
     // We keep track of the pauli letters per qubit not per stabilizer
+    // Each Pauli Column contains 2 BitStrings of length 2 * n and corresponds to all operators on one qubit (vertical)
     pauli_columns: Vec<PauliString>,
     signs: BitVec,
     size: usize, // https://quantumcomputing.stackexchange.com/questions/28740/tracking-the-signs-of-the-inverse-tableau
@@ -51,8 +54,38 @@ impl CliffordTableau {
         self.signs[n..].to_bitvec()
     }
 
+    pub(crate) fn destabilizer(&self, qubit: usize, index: usize) -> PauliLetter {
+        let n = self.size();
+        assert!(
+            index < n && qubit < n,
+            "Given index: {index} or qubit: {qubit} out of bounds for clifford tableau of size {n}"
+        );
+
+        PauliLetter::new(
+            self.pauli_columns[qubit].x(index),
+            self.pauli_columns[qubit].z(index),
+        )
+    }
+
+    pub(crate) fn stabilizer(&self, qubit: usize, index: usize) -> PauliLetter {
+        let n = self.size();
+        assert!(
+            index < n && qubit < n,
+            "Given index: {index} or qubit: {qubit} out of bounds for clifford tableau of size {n}"
+        );
+
+        PauliLetter::new(
+            self.pauli_columns[qubit].x(index + n),
+            self.pauli_columns[qubit].z(index + n),
+        )
+    }
+
     pub(crate) fn column(&self, i: usize) -> &PauliString {
         &self.pauli_columns[i]
+    }
+
+    pub(crate) fn columns(&self) -> &Vec<PauliString> {
+        &self.pauli_columns
     }
 
     pub fn compose(&self, rhs: &Self) -> Self {
@@ -158,7 +191,7 @@ impl CliffordTableau {
         }
     }
 
-    pub fn permute(&mut self, permutation_vector: &[usize]) {
+    pub fn permute(&mut self, permutation_vector: Vec<usize>) {
         assert_eq!(
             permutation_vector
                 .iter()
@@ -173,6 +206,25 @@ impl CliffordTableau {
             .map(|a| a.0)
             .collect::<Vec<_>>();
         self.pauli_columns = sorted_pauli_columns;
+    }
+
+    /// Calculates the row permutation of a Clifford tableau if it is a permutation of identity.
+    /// The permutation indicates perm[physical] = logical, such that the for [1, 0, 2], physical qubit 0 stores logical qubit 1.
+    pub fn get_permutation(&self) -> Option<Vec<usize>> {
+        let mut row_permutation = Vec::new();
+        //let mut col_permutation = Vec::new();
+        for pauli_column in self.pauli_columns.iter() {
+            if pauli_column.x_weight() != 1 || pauli_column.z_weight() != 1 {
+                return None;
+            }
+            //col_permutation.push(pauli_column.z.first_one().unwrap() - self.size);
+            row_permutation.push(pauli_column.x.first_one().unwrap());
+        }
+        let _ = (0..self.size)
+            .map(|i| row_permutation.iter().find_position(|&&x| x == i))
+            .map(|x| x.unwrap().0)
+            .collect_vec();
+        Some(row_permutation)
     }
 }
 

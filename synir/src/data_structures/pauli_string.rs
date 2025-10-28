@@ -53,6 +53,14 @@ impl PauliString {
         self.x[i]
     }
 
+    pub fn x_weight(&self) -> usize {
+        self.x.count_ones()
+    }
+
+    pub fn z_weight(&self) -> usize {
+        self.z.count_ones()
+    }
+
     pub fn z(&self, i: usize) -> bool {
         self.z[i]
     }

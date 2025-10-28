@@ -7,14 +7,26 @@ use super::helper::{
     clean_pivot, clean_signs, clean_x_observables, clean_z_observables, naive_pivot_search, swap,
 };
 
-#[derive(Default)]
+use crate::data_structures::PauliLetter;
+
+#[derive(Default, Debug)]
 pub struct NaiveCliffordSynthesizer {}
 
-impl<G> AdjointSynthesizer<CliffordTableau, G> for NaiveCliffordSynthesizer
+impl NaiveCliffordSynthesizer {
+    pub fn name(&self) -> &str {
+        return "naive";
+    }
+}
+
+impl<G> AdjointSynthesizer<CliffordTableau, G, CliffordTableau> for NaiveCliffordSynthesizer
 where
     G: CliffordGates,
 {
-    fn synthesize_adjoint(&mut self, mut clifford_tableau: CliffordTableau, repr: &mut G) {
+    fn synthesize_adjoint(
+        &mut self,
+        mut clifford_tableau: CliffordTableau,
+        repr: &mut G,
+    ) -> CliffordTableau {
         let num_qubits = clifford_tableau.size();
 
         for row in 0..num_qubits {
@@ -25,21 +37,21 @@ where
             }
 
             // Cleanup pivot column
-            clean_pivot(repr, &mut clifford_tableau, row, row);
+            // clean_naive_pivot(repr, &mut clifford_tableau, row, row);
+            clean_pivot(repr, &mut clifford_tableau, row, row, PauliLetter::X);
 
             let checked_rows = (row + 1..num_qubits).collect::<Vec<_>>();
 
             // Use the pivot to remove all other terms in the X observable.
             clean_x_observables(repr, &mut clifford_tableau, &checked_rows, row, row);
 
+            clean_pivot(repr, &mut clifford_tableau, row, row, PauliLetter::Z);
+
             // Use the pivot to remove all other terms in the Z observable.
             clean_z_observables(repr, &mut clifford_tableau, &checked_rows, row, row);
         }
 
-        clean_signs(
-            repr,
-            &mut clifford_tableau,
-            &(0..num_qubits).collect::<Vec<_>>(),
-        );
+        clean_signs(repr, &mut clifford_tableau);
+        clifford_tableau
     }
 }
