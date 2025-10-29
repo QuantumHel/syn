@@ -165,7 +165,6 @@ pub(super) fn check_columns<G>(
         angles,
         ..
     } = pauli_polynomial;
-    let mut angles = angles.write().unwrap();
     for index in (0..length).rev() {
         if !invalid[index] && polynomial_mask[index] {
             polynomial_mask.swap_remove(index);

@@ -1,2 +1,2 @@
-mod pp_synthesis;
 mod common;
+mod pp_synthesis;

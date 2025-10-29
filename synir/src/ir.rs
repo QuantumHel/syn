@@ -1,7 +1,6 @@
 use crate::{data_structures::HasAdjoint, IndexType};
 
 pub mod clifford_tableau;
-pub(crate) mod helper;
 pub mod pauli_exponential;
 pub mod pauli_polynomial;
 

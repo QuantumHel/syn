@@ -9,8 +9,8 @@ use super::{pauli_string::PauliString, IndexType, MaskedPropagateClifford, Propa
 
 #[derive(Debug, Clone, Default)]
 pub struct PauliPolynomial {
-    chains: Vec<PauliString>,
-    angles: Vec<Angle>,
+    pub(crate) chains: Vec<PauliString>,
+    pub(crate) angles: Vec<Angle>,
     size: usize,
 }
 
@@ -42,11 +42,7 @@ impl PauliPolynomial {
         }
     }
 
-    pub fn from_components(
-        chains: Vec<PauliString>,
-        angles: RwLock<Vec<Angle>>,
-        size: usize,
-    ) -> Self {
+    pub fn from_components(chains: Vec<PauliString>, angles: Vec<Angle>, size: usize) -> Self {
         Self {
             chains,
             angles,
@@ -70,16 +66,12 @@ impl PauliPolynomial {
         &self.chains
     }
 
-    pub fn angles(&self) -> &RwLock<std::vec::Vec<f64>> {
+    pub fn angles(&self) -> &Vec<f64> {
         &self.angles
     }
 
     pub fn angle(&self, i: usize) -> Angle {
         self.angles[i]
-    }
-
-    pub fn chain(&self, index: usize) -> &PauliString {
-        &self.chains[index]
     }
 
     pub fn mut_chains(&mut self) -> &mut Vec<PauliString> {
