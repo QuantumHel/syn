@@ -12,16 +12,10 @@ use bitvec::{bitvec, order::Lsb0};
 
 #[derive(Default)]
 pub struct PSGSPauliPolynomialSynthesizer {
-    clifford_tableau: CliffordTableau,
     connectivity: Connectivity,
 }
 
 impl PSGSPauliPolynomialSynthesizer {
-    pub fn set_clifford_tableau(&mut self, clifford_tableau: CliffordTableau) -> &mut Self {
-        self.clifford_tableau = clifford_tableau;
-        self
-    }
-
     pub fn set_connectivity(&mut self, connectivity: Connectivity) -> &mut Self {
         self.connectivity = connectivity;
         self
@@ -38,7 +32,7 @@ where
         mut pauli_polynomials: VecDeque<PauliPolynomial>,
         repr: &mut G,
     ) -> CliffordTableau {
-        let mut clifford_tableau = std::mem::take(&mut self.clifford_tableau);
+        let mut clifford_tableau = CliffordTableau::new(pauli_polynomials[0].size());
         while !pauli_polynomials.is_empty() {
             let mut pauli_polynomial = pauli_polynomials.pop_front().unwrap();
             let num_gadgets: usize = pauli_polynomial.length();

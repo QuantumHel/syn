@@ -9,7 +9,6 @@ use synir::ir::Synthesizer;
 fn run_synthesizer(pp: VecDeque<PauliPolynomial>) -> (MockCircuit, CliffordTableau) {
     let mut mock: MockCircuit = MockCircuit::new();
     let mut synthesizer = NaivePauliPolynomialSynthesizer::default();
-    synthesizer.set_clifford_tableau(CliffordTableau::new(4));
     let ct = synthesizer.synthesize(pp, &mut mock);
     return (mock, ct);
 }
@@ -42,7 +41,6 @@ fn test_naive_pauli_exponential_synthesis_complex() {
     let pp = setup_complex_pp();
     let mut mock = MockCircuit::new();
     let mut synthesizer = NaivePauliPolynomialSynthesizer::default();
-    synthesizer.set_clifford_tableau(CliffordTableau::new(4));
     let ct = synthesizer.synthesize(pp, &mut mock);
 
     let ref_commands = [

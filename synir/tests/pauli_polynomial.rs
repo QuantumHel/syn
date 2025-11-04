@@ -4,7 +4,7 @@ use std::collections::VecDeque;
 
 use common::mock_circuit::{parse_clifford_commands, MockCircuit, MockCommand};
 use synir::architecture::connectivity::Connectivity;
-use synir::data_structures::{CliffordTableau, PauliPolynomial};
+use synir::data_structures::PauliPolynomial;
 use synir::ir::pauli_polynomial::psgs::PSGSPauliPolynomialSynthesizer;
 use synir::ir::pauli_polynomial::NaivePauliPolynomialSynthesizer;
 use synir::ir::Synthesizer;
@@ -31,7 +31,6 @@ fn test_naive_pauli_exponential_synthesis() {
     let pp = setup_simple_pp();
     let mut mock = MockCircuit::new();
     let mut synthesizer = NaivePauliPolynomialSynthesizer::default();
-    synthesizer.set_clifford_tableau(CliffordTableau::new(4));
     let ct = synthesizer.synthesize(pp, &mut mock);
 
     let ref_commands = [
@@ -58,7 +57,6 @@ fn test_naive_pauli_exponential_synthesis_complex() {
     let pp = setup_complex_pp();
     let mut mock = MockCircuit::new();
     let mut synthesizer = NaivePauliPolynomialSynthesizer::default();
-    synthesizer.set_clifford_tableau(CliffordTableau::new(4));
     let ct = synthesizer.synthesize(pp, &mut mock);
 
     let ref_commands = [
@@ -96,7 +94,6 @@ fn test_psgs_pauli_exponential_synthesis_simple() {
     let pp = setup_simple_pp();
     let mut mock = MockCircuit::new();
     let mut synthesizer = PSGSPauliPolynomialSynthesizer::default();
-    synthesizer.set_clifford_tableau(CliffordTableau::new(4));
     synthesizer.set_connectivity(Connectivity::complete(4));
     let ct = synthesizer.synthesize(pp, &mut mock);
 
@@ -124,7 +121,6 @@ fn test_psgs_pauli_exponential_synthesis_complex() {
     let pp = setup_complex_pp();
     let mut mock = MockCircuit::new();
     let mut synthesizer = PSGSPauliPolynomialSynthesizer::default();
-    synthesizer.set_clifford_tableau(CliffordTableau::new(4));
     synthesizer.set_connectivity(Connectivity::complete(4));
     let ct = synthesizer.synthesize(pp, &mut mock);
 
