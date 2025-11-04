@@ -1,5 +1,6 @@
 mod helper;
 pub mod naive;
+pub mod psgs;
 
 pub use naive::NaivePauliPolynomialSynthesizer;
 
@@ -7,4 +8,5 @@ pub use naive::NaivePauliPolynomialSynthesizer;
 pub enum PauliPolynomialSynthStrategy {
     #[default]
     Naive,
+    PSGS,
 }
