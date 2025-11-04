@@ -103,19 +103,20 @@ impl PropagateClifford for PauliPolynomial {
     fn s(&mut self, target: IndexType) -> &mut Self {
         let chains_target = self.chains.get_mut(target).unwrap();
         // Update angles
+        chains_target.s();
         let y_vec = chains_target.y_bitmask();
         for (angle, flip) in zip(self.angles.iter_mut(), y_vec.iter()) {
             if *flip {
                 *angle *= -1.0;
             }
         }
-        chains_target.s();
+
         self
     }
 
     fn v(&mut self, target: IndexType) -> &mut Self {
         let chains_target = self.chains.get_mut(target).unwrap();
-        chains_target.v();
+
         // Update angles
         let y_vec = chains_target.y_bitmask();
         for (angle, flip) in zip(self.angles.iter_mut(), y_vec.iter()) {
@@ -123,6 +124,7 @@ impl PropagateClifford for PauliPolynomial {
                 *angle *= -1.0;
             }
         }
+        chains_target.v();
         self
     }
 }
@@ -220,140 +222,124 @@ mod tests {
         let _ = PauliPolynomial::from_hamiltonian(ham);
     }
 
-    fn setup_sample_pp() -> PauliPolynomial {
-        let size = 3;
-        let pg1_ref = PauliString::from_text("IXY");
-        let pg2_ref = PauliString::from_text("ZYX");
-        let pg3_ref = PauliString::from_text("YIX");
-        let angles_ref = vec![0.3, 0.7, 0.12];
+    fn setup_basic_pp() -> PauliPolynomial {
+        let size = 1;
+        let pg_ref = PauliString::from_text("IXYZ");
+
+        let angles_ref = vec![0.3, 0.7, 0.12, 0.15];
         PauliPolynomial {
-            chains: vec![pg1_ref, pg2_ref, pg3_ref],
+            chains: vec![pg_ref],
             angles: angles_ref,
             size,
         }
     }
 
     #[test]
-    fn test_pauli_polynomial_s() {
-        // Polynomials: IZY, XYI, YXX
-        let size = 3;
-        let mut pp = setup_sample_pp();
+    fn test_basic_pauli_polynomial_h() {
+        let size = 1;
+        let mut pp = setup_basic_pp();
 
-        // Apply S to qubits 0 and 1.
-        pp.s(0);
-        pp.s(1);
-
-        // Polynomials: IZY, -YXI, -XYX
-
-        // IXY -> IY(-X)
-        let pg1_ref = PauliString::from_text("IYX");
-        // ZYX -> Z(-X)Y
-        let pg2_ref = PauliString::from_text("ZXY");
-        // YIX
-        let pg3_ref = PauliString::from_text("YIX");
-        let angles_ref = vec![0.3, -0.7, -0.12];
-        let pp_ref = PauliPolynomial {
-            chains: vec![pg1_ref, pg2_ref, pg3_ref],
-            angles: angles_ref,
-            size,
-        };
-        assert_eq!(pp, pp_ref);
-    }
-
-    #[test]
-    fn test_pauli_polynomial_v() {
-        // Polynomials: IZY, XYI, YXX
-        let size = 3;
-        let mut pp = setup_sample_pp();
-
-        // Apply V to qubits 0 and 1.
-        pp.v(1);
-        pp.v(2);
-
-        // IXY
-        let pg1_ref = PauliString::from_text("IXY");
-        // ZYX -> (-Y)ZX
-        let pg2_ref = PauliString::from_text("YZX");
-        // YIX -> ZIX
-        let pg3_ref = PauliString::from_text("ZIX");
-        let angles_ref = vec![-0.3, 0.7, 0.12];
-        let pp_ref = PauliPolynomial {
-            chains: vec![pg1_ref, pg2_ref, pg3_ref],
-            angles: angles_ref,
-            size,
-        };
-        assert_eq!(pp, pp_ref);
-    }
-
-    #[test]
-    fn test_pauli_polynomial_s_dgr() {
-        // Polynomials: IZY, XYI, YXX
-        let size = 3;
-        let mut pp = setup_sample_pp();
-
-        // Apply Sdgr to qubits 1 and 2.
-        pp.s_dgr(1);
-        pp.s_dgr(2);
-
-        // IXY
-        let pg1_ref = PauliString::from_text("IXY");
-        // ZYX -> ZX(-Y)
-        let pg2_ref = PauliString::from_text("ZXY");
-        // YIX -> XI(-Y)
-        let pg3_ref = PauliString::from_text("XIY");
-        let angles_ref = vec![0.3, 0.7, 0.12];
-        let pp_ref = PauliPolynomial {
-            chains: vec![pg1_ref, pg2_ref, pg3_ref],
-            angles: angles_ref,
-            size,
-        };
-        assert_eq!(pp, pp_ref);
-    }
-
-    #[test]
-    fn test_pauli_polynomial_v_dgr() {
-        // Polynomials: IZY, XYI, YXX
-        let size = 3;
-        let mut pp = setup_sample_pp();
-
-        // Apply Vdgr to qubits 1 and 2.
-        pp.v_dgr(1);
-        pp.v_dgr(2);
-
-        // IXY
-        let pg1_ref = PauliString::from_text("IXY");
-        // ZYX -> Y(-Z)X
-        let pg2_ref = PauliString::from_text("YZX");
-        // YIX -> (-Z)IX
-        let pg3_ref = PauliString::from_text("ZIX");
-        let angles_ref = vec![-0.3, -0.7, 0.12];
-        let pp_ref = PauliPolynomial {
-            chains: vec![pg1_ref, pg2_ref, pg3_ref],
-            angles: angles_ref,
-            size,
-        };
-        assert_eq!(pp, pp_ref);
-    }
-
-    #[test]
-    fn test_pauli_polynomial_h() {
-        // Polynomials: IZY, XYI, YXX
-        let size = 3;
-        let mut pp = setup_sample_pp();
-
-        // Apply H to qubits 0 and 1.
         pp.h(0);
-        pp.h(1);
 
-        // IXY -> IZ(-Y)
-        let pg1_ref = PauliString::from_text("IZY");
-        // ZYX -> X(-Y)Z
-        let pg2_ref = PauliString::from_text("XYZ");
-        // YIX -
-        let pg3_ref = PauliString::from_text("YIX");
-        let angles_ref = vec![0.3, -0.7, -0.12];
+        // I -> I
+        // X -> Z
+        // Y -> -Y
+        // Z -> X
+        let pg_ref = PauliString::from_text("IZYX");
+        let angles_ref = vec![0.3, 0.7, -0.12, 0.15];
+
         let pp_ref = PauliPolynomial {
-            chains: vec![pg1_ref, pg2_ref, pg3_ref],
+            chains: vec![pg_ref],
+            angles: angles_ref,
+            size,
+        };
+        assert_eq!(pp, pp_ref);
+    }
+
+    #[test]
+    fn test_basic_pauli_polynomial_s() {
+        let size = 1;
+        let mut pp = setup_basic_pp();
+        let pp = pp.s(0);
+
+        // I -> I
+        // X -> -Y
+        // Y -> X
+        // Z -> Z
+        let pg_ref = PauliString::from_text("IYXZ");
+
+        let angles_ref = vec![0.3, -0.7, 0.12, 0.15];
+
+        let pp_ref = PauliPolynomial {
+            chains: vec![pg_ref],
+            angles: angles_ref,
+            size,
+        };
+        assert_eq!(pp, &pp_ref);
+    }
+
+    #[test]
+    fn test_basic_pauli_polynomial_sdr() {
+        let size = 1;
+        let mut pp = setup_basic_pp();
+
+        pp.s_dgr(0);
+
+        // I -> I
+        // X -> -Y
+        // Y -> X
+        // Z -> Z
+        let pg_ref = PauliString::from_text("IYXZ");
+
+        let angles_ref = vec![0.3, 0.7, -0.12, 0.15];
+
+        let pp_ref = PauliPolynomial {
+            chains: vec![pg_ref],
+            angles: angles_ref,
+            size,
+        };
+        assert_eq!(pp, pp_ref);
+    }
+
+    #[test]
+    fn test_basic_pauli_polynomial_v() {
+        let size = 1;
+        let mut pp = setup_basic_pp();
+
+        pp.v(0);
+
+        // I -> I
+        // X -> X
+        // Y -> -Z
+        // Z -> Y
+        let pg_ref = PauliString::from_text("IXZY");
+
+        let angles_ref = vec![0.3, 0.7, -0.12, 0.15];
+
+        let pp_ref = PauliPolynomial {
+            chains: vec![pg_ref],
+            angles: angles_ref,
+            size,
+        };
+        assert_eq!(pp, pp_ref);
+    }
+
+    #[test]
+    fn test_basic_pauli_polynomial_vdgr() {
+        let size = 1;
+        let mut pp = setup_basic_pp();
+
+        pp.v_dgr(0);
+
+        // I -> I
+        // X -> X
+        // Y -> Z
+        // Z -> -Y
+        let pg_ref = PauliString::from_text("IXZY");
+        let angles_ref = vec![0.3, 0.7, 0.12, -0.15];
+
+        let pp_ref = PauliPolynomial {
+            chains: vec![pg_ref],
             angles: angles_ref,
             size,
         };

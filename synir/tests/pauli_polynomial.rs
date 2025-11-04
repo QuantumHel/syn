@@ -135,7 +135,7 @@ fn test_psgs_pauli_exponential_synthesis_complex() {
         MockCommand::H(1),
         MockCommand::S(0),
         MockCommand::CX(1, 0),
-        MockCommand::Ry(0, 0.7),
+        MockCommand::Ry(0, -0.7),
     ];
 
     let ref_clifford_commands = [
