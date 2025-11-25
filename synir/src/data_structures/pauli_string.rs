@@ -123,6 +123,21 @@ impl PauliString {
         mask &= &self.z;
         mask
     }
+
+    pub(crate) fn commutes_with(&self, other: &PauliString) -> bool {
+        assert!(self.len() == other.len());
+        let length = self.len();
+        let mut commutes = true;
+        for index in 0..length {
+            let p1 = self.pauli(index);
+            let p2 = other.pauli(index);
+            if p1 == PauliLetter::I || p2 == PauliLetter::I || p1 == p2 {
+                continue;
+            }
+            commutes = !commutes;
+        }
+        commutes
+    }
 }
 
 pub(crate) fn cx(control: &mut PauliString, target: &mut PauliString) {
@@ -164,6 +179,7 @@ mod tests {
     use super::*;
     use bitvec::prelude::Lsb0;
     use bitvec::{bits, bitvec};
+    use itertools::Itertools;
 
     #[test]
     fn test_from_basis_int() {
@@ -299,5 +315,50 @@ mod tests {
     fn test_pauli_string_display() {
         let pauli_string = PauliString::from_text("IXYZI");
         assert_eq!(pauli_string.to_string(), String::from("I X Y Z I"));
+    }
+
+    #[test]
+    fn test_check_commute_simple() {
+        let ps1 = vec![
+            PauliString::from_text("I"),
+            PauliString::from_text("X"),
+            PauliString::from_text("Y"),
+            PauliString::from_text("Z"),
+        ];
+
+        let ps2 = vec![
+            PauliString::from_text("I"),
+            PauliString::from_text("X"),
+            PauliString::from_text("Y"),
+            PauliString::from_text("Z"),
+        ];
+
+        for (p1, p2) in ps1.iter().cartesian_product(ps2.iter()) {
+            if p1 == &PauliString::from_text("I") || p2 == &PauliString::from_text("I") || p1 == p2
+            {
+                assert!(p1.commutes_with(p2));
+                continue;
+            }
+            assert!(!p1.commutes_with(p2));
+        }
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_bad_commute() {
+        let ps1 = PauliString::from_text("IXXYZ");
+        let ps2 = PauliString::from_text("IYZX");
+        assert!(!ps1.commutes_with(&ps2));
+    }
+
+    #[test]
+    fn test_check_commute() {
+        let ps1 = PauliString::from_text("IXYZ");
+        let ps2 = PauliString::from_text("IYZX");
+        assert!(!ps1.commutes_with(&ps2));
+
+        let ps3 = PauliString::from_text("IXYZ");
+        let ps4 = PauliString::from_text("IZXI");
+        assert!(ps3.commutes_with(&ps4));
     }
 }

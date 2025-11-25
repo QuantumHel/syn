@@ -1,7 +1,7 @@
 use std::iter::zip;
 
 use super::{pauli_string::PauliString, IndexType, MaskedPropagateClifford, PropagateClifford};
-use crate::data_structures::Angle;
+use crate::data_structures::{Angle, PauliLetter};
 use bitvec::vec::BitVec;
 use itertools::zip_eq;
 
@@ -60,6 +60,38 @@ impl PauliPolynomial {
 
     pub fn angle(&self, i: usize) -> Angle {
         self.angles[i]
+    }
+
+    pub fn commutes_with(&self, other: &PauliPolynomial) -> bool {
+        let size = self.size();
+        assert_eq!(size, other.size());
+
+        let self_length = self.length();
+        let other_length = other.length();
+
+        for index_1 in 0..self_length {
+            let mut pauli_string = Vec::with_capacity(size);
+            for q1 in 0..size {
+                pauli_string.push(self.chain(q1).pauli(index_1));
+            }
+            for index_2 in 0..other_length {
+                let mut other_pauli_string = Vec::with_capacity(size);
+                for q2 in 0..size {
+                    other_pauli_string.push(other.chain(q2).pauli(index_2));
+                }
+                let mut commutes = true;
+                for (p1, p2) in zip(&pauli_string, &other_pauli_string) {
+                    if *p1 == PauliLetter::I || *p2 == PauliLetter::I || p1 == p2 {
+                        continue;
+                    }
+                    commutes = !commutes;
+                }
+                if !commutes {
+                    return false;
+                }
+            }
+        }
+        true
     }
 }
 
@@ -163,6 +195,7 @@ impl MaskedPropagateClifford for PauliPolynomial {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use itertools::Itertools;
 
     impl PartialEq for PauliPolynomial {
         fn eq(&self, other: &Self) -> bool {
@@ -583,5 +616,58 @@ mod tests {
             size,
         };
         assert_eq!(pp, pp_ref);
+    }
+
+    #[test]
+    fn test_commutes_with_simple() {
+        let pp1s = vec![
+            vec![("I", Angle::from_angle(0.3))],
+            vec![("X", Angle::from_angle(0.5))],
+            vec![("Y", Angle::from_angle(0.7))],
+            vec![("Z", Angle::from_angle(0.9))],
+        ]
+        .into_iter()
+        .map(|ham| PauliPolynomial::from_hamiltonian(ham))
+        .collect::<Vec<_>>();
+
+        let pp2s = pp1s.clone();
+
+        for (i, (pp1, pp2)) in pp1s.iter().cartesian_product(pp2s.iter()).enumerate() {
+            if i <= 5 || i == 8 || i == 10 || i == 12 || i == 15 {
+                assert!(pp1.commutes_with(pp2));
+            } else {
+                assert!(!pp1.commutes_with(pp2));
+            }
+        }
+    }
+
+    #[test]
+    fn test_commutes_with() {
+        let pp1 = PauliPolynomial::from_hamiltonian(vec![
+            ("IYYX", Angle::from_angle(0.3)),
+            ("XXXI", Angle::from_angle(0.5)),
+        ]);
+
+        let pp2 = PauliPolynomial::from_hamiltonian(vec![
+            ("IYZZ", Angle::from_angle(0.7)),
+            ("ZZXI", Angle::from_angle(0.9)),
+        ]);
+
+        assert!(pp1.commutes_with(&pp2));
+    }
+
+    #[test]
+    fn test_not_commutes_with() {
+        let pp1 = PauliPolynomial::from_hamiltonian(vec![
+            ("IYYX", Angle::from_angle(0.3)),
+            ("XXXI", Angle::from_angle(0.5)),
+        ]);
+
+        let pp2 = PauliPolynomial::from_hamiltonian(vec![
+            ("IYZZ", Angle::from_angle(0.7)),
+            ("ZZXY", Angle::from_angle(0.9)),
+        ]);
+
+        assert!(!pp1.commutes_with(&pp2));
     }
 }
