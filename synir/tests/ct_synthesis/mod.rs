@@ -1,3 +1,4 @@
+pub mod ct_compose;
 pub mod custom_callback;
 pub mod naive;
 pub mod naive_adjoint;
