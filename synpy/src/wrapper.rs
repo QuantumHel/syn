@@ -7,12 +7,9 @@ use std::collections::VecDeque;
 
 use pyo3::prelude::*;
 use synir::{
-    data_structures::CliffordTableau,
+    data_structures::{CliffordTableau, PauliExponential},
     ir::{
-        clifford_tableau::CliffordTableauSynthStrategy,
-        pauli_exponential::{PauliExponential, PauliExponentialSynthesizer},
-        pauli_polynomial::PauliPolynomialSynthStrategy,
-        CliffordGates, Gates, Synthesizer,
+        CliffordGates, Gates, Synthesizer, clifford_tableau::CliffordTableauSynthStrategy, pauli_exponential::PauliExponentialSynthesizer, pauli_polynomial::PauliPolynomialSynthStrategy
     },
 };
 

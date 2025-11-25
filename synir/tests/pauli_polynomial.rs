@@ -3,13 +3,14 @@ mod common;
 use std::collections::VecDeque;
 
 use common::mock_circuit::{parse_clifford_commands, MockCircuit, MockCommand};
+use synir::data_structures::Angle;
 use synir::data_structures::{CliffordTableau, PauliPolynomial};
 use synir::ir::pauli_polynomial::NaivePauliPolynomialSynthesizer;
 use synir::ir::Synthesizer;
 
 fn setup_complex_pp() -> VecDeque<PauliPolynomial> {
-    let ham_1 = vec![("IZZZ", 0.3)];
-    let ham_2 = vec![("XXII", 0.7)];
+    let ham_1 = vec![("IZZZ", Angle::from_angle(0.3))];
+    let ham_2 = vec![("XXII", Angle::from_angle(0.7))];
 
     let pp_1 = PauliPolynomial::from_hamiltonian(ham_1);
     let pp_2 = PauliPolynomial::from_hamiltonian(ham_2);
@@ -17,7 +18,7 @@ fn setup_complex_pp() -> VecDeque<PauliPolynomial> {
 }
 
 fn setup_simple_pp() -> VecDeque<PauliPolynomial> {
-    let ham = vec![("IXYZ", 0.3)];
+    let ham = vec![("IXYZ", Angle::from_angle(0.3))];
 
     let pauli_polynomial = PauliPolynomial::from_hamiltonian(ham);
 

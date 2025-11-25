@@ -3,14 +3,14 @@ mod common;
 use std::collections::VecDeque;
 
 use common::mock_circuit::{parse_clifford_commands, MockCircuit, MockCommand};
-use synir::data_structures::{CliffordTableau, HasAdjoint, PauliExponential, PauliPolynomial};
+use synir::data_structures::{Angle, CliffordTableau, HasAdjoint, PauliExponential, PauliPolynomial};
 use synir::ir::clifford_tableau::{CliffordTableauSynthStrategy, NaiveCliffordSynthesizer};
 use synir::ir::pauli_exponential::PauliExponentialSynthesizer;
 use synir::ir::pauli_polynomial::PauliPolynomialSynthStrategy;
 use synir::ir::Synthesizer;
 
 fn setup_simple_pe() -> PauliExponential {
-    let ham = vec![("IZZZ", 0.3)];
+    let ham = vec![("IZZZ", Angle::from_angle(0.3))];
 
     let pauli_polynomial = PauliPolynomial::from_hamiltonian(ham);
     let clifford_tableau = CliffordTableau::new(4);
@@ -18,7 +18,11 @@ fn setup_simple_pe() -> PauliExponential {
 }
 
 fn setup_complex_pe() -> PauliExponential {
-    let ham = vec![("IXYZ", 0.3), ("XXII", 0.7), ("YYII", 0.12)];
+    let ham = vec![
+        ("IXYZ", Angle::from_angle(0.3)),
+        ("XXII", Angle::from_angle(0.7)),
+        ("YYII", Angle::from_angle(0.12)),
+    ];
 
     let pauli_polynomial = PauliPolynomial::from_hamiltonian(ham);
     let clifford_tableau = CliffordTableau::new(4);

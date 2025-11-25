@@ -1,5 +1,6 @@
 use pyo3::exceptions::PyException;
 use pyo3::{pyclass, pymethods, PyErr};
+use synir::data_structures::Angle;
 use std::ops::Deref;
 
 use pyo3::{pyfunction, PyRef, PyResult};
@@ -210,8 +211,14 @@ pub fn synthesize_pauli_exponential(
 ) -> PyResult<Vec<PyCommand>> {
     let converted_hamiltonian = hamiltonian
         .iter()
-        .map(|inner| inner.iter().map(PyPauliString::as_tuple).collect())
-        .map(|inner: Vec<(&str, f64)>| PauliPolynomial::from_hamiltonian(inner))
+        .map(|inner| {
+            inner
+                .iter()
+                .map(PyPauliString::as_tuple)
+                .map(|(pauli_str, phase)| (pauli_str, Angle::from_angle(phase)))
+                .collect::<Vec<(&str, Angle)>>()
+        })
+        .map(|inner: Vec<(&str, Angle)>| PauliPolynomial::from_hamiltonian(inner))
         .collect();
     let clifford_gates: Vec<PyCommand> = clifford_gates.iter().map(|cmd| *(cmd.deref())).collect();
 
