@@ -5,6 +5,8 @@ use itertools::zip_eq;
 
 use super::{pauli_string::PauliString, IndexType, MaskedPropagateClifford, PropagateClifford};
 
+mod simplify;
+
 // todo: Make this into a union / type Angle
 type Angle = f64;
 
@@ -160,6 +162,7 @@ impl MaskedPropagateClifford for PauliPolynomial {
         self
     }
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;
