@@ -53,6 +53,7 @@ pub fn merge_repeats(
 
 #[cfg(test)]
 mod tests {
+    use crate::data_structures::Angle;
     use crate::data_structures::PauliString;
 
     use super::*;
@@ -61,11 +62,11 @@ mod tests {
     fn test_simple_check_repeats() {
         // Combined reading from back -> 01 = 1
         let pp = PauliPolynomial::from_hamiltonian(vec![
-            ("I", 1.0),
-            ("X", 2.0),
-            ("Z", 3.0),
-            ("X", 4.0),
-            ("X", 5.0),
+            ("I", Angle::from_angle(1.0)),
+            ("X", Angle::from_angle(2.0)),
+            ("Z", Angle::from_angle(3.0)),
+            ("X", Angle::from_angle(4.0)),
+            ("X", Angle::from_angle(5.0)),
         ]);
         let repeats = check_repeats(&pp);
         assert!(repeats.len() == 1);
@@ -78,8 +79,11 @@ mod tests {
         // Z string -> 0011
         // X string -> 1001
         // Combined reading from back -> 11 10 00 01 = 225
-        let pp =
-            PauliPolynomial::from_hamiltonian(vec![("XIZY", 1.0), ("XIZY", 2.0), ("YZZI", 3.0)]);
+        let pp = PauliPolynomial::from_hamiltonian(vec![
+            ("XIZY", Angle::from_angle(1.0)),
+            ("XIZY", Angle::from_angle(2.0)),
+            ("YZZI", Angle::from_angle(3.0)),
+        ]);
         let repeats = check_repeats(&pp);
         assert!(repeats.len() == 1);
         assert_eq!(repeats, vec![(225, vec![0, 1])]);
@@ -89,11 +93,11 @@ mod tests {
     fn test_multiple_repeats() {
         // Combined reading from back -> 01 = 1
         let pp = PauliPolynomial::from_hamiltonian(vec![
-            ("II", 1.0),
-            ("IX", 2.0),
-            ("ZZ", 3.0),
-            ("IX", 4.0),
-            ("ZZ", 5.0),
+            ("II", Angle::from_angle(1.0)),
+            ("IX", Angle::from_angle(2.0)),
+            ("ZZ", Angle::from_angle(3.0)),
+            ("IX", Angle::from_angle(4.0)),
+            ("ZZ", Angle::from_angle(5.0)),
         ]);
         let repeats = check_repeats(&pp);
         assert!(repeats.len() == 2);
@@ -104,11 +108,11 @@ mod tests {
     fn test_simple_merge_repeats() {
         // Combined reading from back -> 01 = 1
         let pp = PauliPolynomial::from_hamiltonian(vec![
-            ("I", 1.0),
-            ("X", 2.0),
-            ("Z", 3.0),
-            ("X", 4.0),
-            ("X", 5.0),
+            ("I", Angle::from_angle(1.0)),
+            ("X", Angle::from_angle(2.0)),
+            ("Z", Angle::from_angle(3.0)),
+            ("X", Angle::from_angle(4.0)),
+            ("X", Angle::from_angle(5.0)),
         ]);
         let repeats = check_repeats(&pp);
 
@@ -116,13 +120,16 @@ mod tests {
 
         assert!(pp.chain(0).len() == 3);
         assert_eq!(pp.chain(0), &PauliString::from_text("IXZ"));
-        assert_eq!(pp.angles, &[1.0, 11.0, 3.0]);
+        assert_eq!(pp.angles, Angle::from_angles(&[1.0, 11.0, 3.0]));
     }
 
     #[test]
     fn test_merge_repeats() {
-        let pp =
-            PauliPolynomial::from_hamiltonian(vec![("XIZY", 1.0), ("XIZY", 2.0), ("YZZI", 3.0)]);
+        let pp = PauliPolynomial::from_hamiltonian(vec![
+            ("XIZY", Angle::from_angle(1.0)),
+            ("XIZY", Angle::from_angle(2.0)),
+            ("YZZI", Angle::from_angle(3.0)),
+        ]);
         let repeats = check_repeats(&pp);
         let pp = merge_repeats(pp, repeats);
 
@@ -131,18 +138,18 @@ mod tests {
         assert_eq!(pp.chain(1), &PauliString::from_text("IZ"));
         assert_eq!(pp.chain(2), &PauliString::from_text("ZZ"));
         assert_eq!(pp.chain(3), &PauliString::from_text("YI"));
-        assert_eq!(pp.angles, &[3.0, 3.0]);
+        assert_eq!(pp.angles, Angle::from_angles(&[3.0, 3.0]));
     }
 
     #[test]
     fn test_multiple_merge_repeats() {
         // Combined reading from back -> 01 = 1
         let pp = PauliPolynomial::from_hamiltonian(vec![
-            ("II", 1.0),
-            ("IX", 2.0),
-            ("ZZ", 3.0),
-            ("IX", 4.0),
-            ("ZZ", 5.0),
+            ("II", Angle::from_angle(1.0)),
+            ("IX", Angle::from_angle(2.0)),
+            ("ZZ", Angle::from_angle(3.0)),
+            ("IX", Angle::from_angle(4.0)),
+            ("ZZ", Angle::from_angle(5.0)),
         ]);
 
         let repeats = check_repeats(&pp);
@@ -151,6 +158,6 @@ mod tests {
         assert!(pp.chain(0).len() == 3);
         assert_eq!(pp.chain(0), &PauliString::from_text("IIZ"));
         assert_eq!(pp.chain(1), &PauliString::from_text("IXZ"));
-        assert_eq!(pp.angles, &[1.0, 6.0, 8.0]);
+        assert_eq!(pp.angles, Angle::from_angles(&[1.0, 6.0, 8.0]));
     }
 }
