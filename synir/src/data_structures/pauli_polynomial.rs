@@ -75,13 +75,10 @@ impl PauliPolynomial {
                 pauli_string.push(self.chain(q1).pauli(index_1));
             }
             for index_2 in 0..other_length {
-                let mut other_pauli_string = Vec::with_capacity(size);
-                for q2 in 0..size {
-                    other_pauli_string.push(other.chain(q2).pauli(index_2));
-                }
+                let other_pauli_string = (0..size).map(|q2| other.chain(q2).pauli(index_2));
                 let mut commutes = true;
-                for (p1, p2) in zip(&pauli_string, &other_pauli_string) {
-                    if *p1 == PauliLetter::I || *p2 == PauliLetter::I || p1 == p2 {
+                for (p1, p2) in zip(&pauli_string, other_pauli_string) {
+                    if *p1 == PauliLetter::I || p2 == PauliLetter::I || p1 == &p2 {
                         continue;
                     }
                     commutes = !commutes;
