@@ -47,7 +47,7 @@ fn compose_x_gadget() -> CliffordTableau {
     let mut ct = CliffordTableau::new(2);
     ct.compose_gadget((
         synir::data_structures::PauliString::from_text("XI"),
-        Angle::from_pi4_rotations(2),
+        Angle::from_pi4_rotation(2),
     ));
     ct
 }
@@ -56,7 +56,7 @@ fn compose_z_gadget() -> CliffordTableau {
     let mut ct = CliffordTableau::new(2);
     ct.compose_gadget((
         synir::data_structures::PauliString::from_text("ZI"),
-        Angle::from_pi4_rotations(4),
+        Angle::from_pi4_rotation(4),
     ));
     ct
 }
@@ -65,7 +65,7 @@ fn compose_y_gadget() -> CliffordTableau {
     let mut ct = CliffordTableau::new(2);
     ct.compose_gadget((
         synir::data_structures::PauliString::from_text("YI"),
-        Angle::from_pi4_rotations(6),
+        Angle::from_pi4_rotation(6),
     ));
     ct
 }
@@ -82,7 +82,7 @@ fn compose_xx_gadget() -> CliffordTableau {
     let mut ct = CliffordTableau::new(2);
     ct.compose_gadget((
         synir::data_structures::PauliString::from_text("XX"),
-        Angle::from_pi4_rotations(2),
+        Angle::from_pi4_rotation(2),
     ));
     ct
 }
@@ -91,7 +91,7 @@ fn compose_zz_gadget() -> CliffordTableau {
     let mut ct = CliffordTableau::new(2);
     ct.compose_gadget((
         synir::data_structures::PauliString::from_text("ZZ"),
-        Angle::from_pi4_rotations(2),
+        Angle::from_pi4_rotation(2),
     ));
     ct
 }
@@ -100,7 +100,7 @@ fn compose_yy_gadget() -> CliffordTableau {
     let mut ct = CliffordTableau::new(2);
     ct.compose_gadget((
         synir::data_structures::PauliString::from_text("YY"),
-        Angle::from_pi4_rotations(2),
+        Angle::from_pi4_rotation(2),
     ));
     ct
 }
@@ -148,7 +148,7 @@ fn compose_complex_gadget() -> CliffordTableau {
     let mut ct = CliffordTableau::new(3);
     ct.compose_gadget((
         synir::data_structures::PauliString::from_text("XYZ"),
-        Angle::from_pi4_rotations(2),
+        Angle::from_pi4_rotation(2),
     ));
     ct
 }
