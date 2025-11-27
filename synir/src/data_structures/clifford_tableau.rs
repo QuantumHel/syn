@@ -202,7 +202,7 @@ impl CliffordTableau {
             "Cannot compose Clifford tableau with PauliPolynomial of different size"
         );
         let pi2rotations = match angle {
-            Angle::Angle(angle) => panic!(
+            Angle::Arbitrary(angle) => panic!(
                 "Cannot compose Clifford tableau with non-Clifford angle: {}",
                 angle
             ),
