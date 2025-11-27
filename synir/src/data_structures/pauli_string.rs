@@ -125,7 +125,7 @@ impl PauliString {
     }
 
     pub(crate) fn commutes_with(&self, other: &PauliString) -> bool {
-        assert!(self.len() == other.len());
+        assert_eq!(self.len(), other.len());
         let length = self.len();
         let mut commutes = true;
         for index in 0..length {
