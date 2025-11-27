@@ -1,14 +1,14 @@
-use std::ops::{AddAssign, SubAssign, Add, Sub};
+use std::ops::{Add, AddAssign, Sub, SubAssign};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Angle {
-    Angle(f64),
-    Pi4Rotations(usize),
+    Arbitrary(f64),
+    Pi4Rotations(u8),
 }
 
 impl Angle {
     pub fn from_angle(rad: f64) -> Self {
-        Angle::Angle(rad)
+        Angle::Arbitrary(rad)
     }
 
     pub fn from_angles(angles: &[f64]) -> Vec<Self> {
@@ -18,11 +18,11 @@ impl Angle {
             .collect()
     }
 
-    pub fn from_pi4_rotation(n: usize) -> Self {
+    pub fn from_pi4_rotation(n: u8) -> Self {
         Angle::Pi4Rotations(n % 8)
     }
 
-    pub fn from_pi4_rotations(ns: &[usize]) -> Vec<Self> {
+    pub fn from_pi4_rotations(ns: &[u8]) -> Vec<Self> {
         ns.into_iter()
             .map(|n| Angle::from_pi4_rotation(*n))
             .collect()
@@ -30,14 +30,14 @@ impl Angle {
 
     pub fn to_radians(&self) -> f64 {
         match self {
-            Angle::Angle(rad) => *rad,
+            Angle::Arbitrary(rad) => *rad,
             Angle::Pi4Rotations(n) => (*n as f64) * (std::f64::consts::FRAC_PI_4),
         }
     }
 
     pub fn flip(&mut self) {
         match self {
-            Angle::Angle(rad) => *rad = -*rad,
+            Angle::Arbitrary(rad) => *rad = -*rad,
             Angle::Pi4Rotations(n) => *n = (8 - *n) % 8,
         }
     }
@@ -46,7 +46,7 @@ impl Angle {
 impl AddAssign for Angle {
     fn add_assign(&mut self, other: Self) {
         match (self, other) {
-            (Angle::Angle(rad1), Angle::Angle(rad2)) => {
+            (Angle::Arbitrary(rad1), Angle::Arbitrary(rad2)) => {
                 *rad1 += rad2;
             }
             (Angle::Pi4Rotations(n1), Angle::Pi4Rotations(n2)) => {
@@ -60,7 +60,7 @@ impl AddAssign for Angle {
 impl SubAssign for Angle {
     fn sub_assign(&mut self, other: Self) {
         match (self, other) {
-            (Angle::Angle(rad1), Angle::Angle(rad2)) => {
+            (Angle::Arbitrary(rad1), Angle::Arbitrary(rad2)) => {
                 *rad1 -= rad2;
             }
             (Angle::Pi4Rotations(n1), Angle::Pi4Rotations(n2)) => {
@@ -76,7 +76,7 @@ impl Add for Angle {
 
     fn add(self, other: Angle) -> Angle {
         match (self, other) {
-            (Angle::Angle(rad1), Angle::Angle(rad2)) => Angle::Angle(rad1 + rad2),
+            (Angle::Arbitrary(rad1), Angle::Arbitrary(rad2)) => Angle::Arbitrary(rad1 + rad2),
             (Angle::Pi4Rotations(n1), Angle::Pi4Rotations(n2)) => {
                 Angle::Pi4Rotations((n1 + n2) % 8)
             }
@@ -90,7 +90,7 @@ impl Sub for Angle {
 
     fn sub(self, other: Angle) -> Angle {
         match (self, other) {
-            (Angle::Angle(rad1), Angle::Angle(rad2)) => Angle::Angle(rad1 - rad2),
+            (Angle::Arbitrary(rad1), Angle::Arbitrary(rad2)) => Angle::Arbitrary(rad1 - rad2),
             (Angle::Pi4Rotations(n1), Angle::Pi4Rotations(n2)) => {
                 Angle::Pi4Rotations((n1 + 8 - n2) % 8)
             }
