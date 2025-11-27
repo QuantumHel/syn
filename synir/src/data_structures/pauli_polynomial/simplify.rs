@@ -2,7 +2,9 @@ use crate::data_structures::PauliPolynomial;
 use itertools::Itertools;
 use std::collections::HashMap;
 
-pub fn check_repeats(pp: &PauliPolynomial) -> Vec<(usize, Vec<usize>)> {
+/// Check for items in PauliPolynomial that has the same Pauli string
+/// Returns a vector of a tuple of Pauli string identifier and the locations of this repeated string
+pub(crate) fn check_repeats(pp: &PauliPolynomial) -> Vec<(usize, Vec<usize>)> {
     let size = pp.size();
     let length = pp.length();
     let mut repeats = HashMap::<usize, Vec<usize>>::new();
@@ -24,7 +26,9 @@ pub fn check_repeats(pp: &PauliPolynomial) -> Vec<(usize, Vec<usize>)> {
         .collect_vec()
 }
 
-pub fn merge_repeats(
+/// Takes output of check_repeats and merges items with the same Pauli string
+/// Assumes that all angles are of the same type
+pub(crate) fn _merge_repeats(
     mut pp: PauliPolynomial,
     merge_list: Vec<(usize, Vec<usize>)>,
 ) -> PauliPolynomial {
@@ -49,6 +53,12 @@ pub fn merge_repeats(
         }
     }
     pp
+}
+
+/// Merges all items in PauliPolynomial that share the same Pauli string
+pub fn merge_repeats(mut pp: PauliPolynomial) -> PauliPolynomial {
+    let repeats = check_repeats(&pp);
+    _merge_repeats(pp, repeats)
 }
 
 #[cfg(test)]
@@ -116,7 +126,7 @@ mod tests {
         ]);
         let repeats = check_repeats(&pp);
 
-        let pp = merge_repeats(pp, repeats);
+        let pp = _merge_repeats(pp, repeats);
 
         assert!(pp.chain(0).len() == 3);
         assert_eq!(pp.chain(0), &PauliString::from_text("IXZ"));
@@ -131,7 +141,7 @@ mod tests {
             ("YZZI", Angle::from_angle(3.0)),
         ]);
         let repeats = check_repeats(&pp);
-        let pp = merge_repeats(pp, repeats);
+        let pp = _merge_repeats(pp, repeats);
 
         assert!(pp.chain(0).len() == 2);
         assert_eq!(pp.chain(0), &PauliString::from_text("XY"));
@@ -153,7 +163,7 @@ mod tests {
         ]);
 
         let repeats = check_repeats(&pp);
-        let pp = merge_repeats(pp, repeats);
+        let pp = _merge_repeats(pp, repeats);
 
         assert!(pp.chain(0).len() == 3);
         assert_eq!(pp.chain(0), &PauliString::from_text("IIZ"));
