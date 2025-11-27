@@ -348,7 +348,7 @@ mod tests {
     fn test_bad_commute() {
         let ps1 = PauliString::from_text("IXXYZ");
         let ps2 = PauliString::from_text("IYZX");
-        assert!(!ps1.commutes_with(&ps2));
+        ps1.commutes_with(&ps2);
     }
 
     #[test]
