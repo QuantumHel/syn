@@ -1,4 +1,4 @@
-use std::ops::{AddAssign, SubAssign};
+use std::ops::{AddAssign, SubAssign, Add, Sub};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Angle {
@@ -71,7 +71,7 @@ impl SubAssign for Angle {
     }
 }
 
-impl std::ops::Add for Angle {
+impl Add for Angle {
     type Output = Angle;
 
     fn add(self, other: Angle) -> Angle {
@@ -85,7 +85,7 @@ impl std::ops::Add for Angle {
     }
 }
 
-impl std::ops::Sub for Angle {
+impl Sub for Angle {
     type Output = Angle;
 
     fn sub(self, other: Angle) -> Angle {
