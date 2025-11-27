@@ -18,13 +18,13 @@ impl Angle {
             .collect()
     }
 
-    pub fn from_pi4_rotations(n: usize) -> Self {
+    pub fn from_pi4_rotation(n: usize) -> Self {
         Angle::Pi4Rotations(n % 8)
     }
 
-    pub fn forpi4_rotations(ns: &[usize]) -> Vec<Self> {
+    pub fn from_pi4_rotations(ns: &[usize]) -> Vec<Self> {
         ns.into_iter()
-            .map(|n| Angle::from_pi4_rotations(*n))
+            .map(|n| Angle::from_pi4_rotation(*n))
             .collect()
     }
 
