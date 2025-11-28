@@ -3,15 +3,15 @@ use pyo3::{pyclass, pymethods, PyErr};
 use std::ops::Deref;
 
 use pyo3::{pyfunction, PyRef, PyResult};
-use synir::data_structures::PropagateClifford;
-use synir::data_structures::{CliffordTableau, PauliPolynomial};
-use synir::ir::clifford_tableau::CliffordTableauSynthStrategy;
-use synir::ir::pauli_exponential::{PauliExponential, PauliExponentialSynthesizer};
-use synir::ir::pauli_polynomial::PauliPolynomialSynthStrategy;
-use synir::ir::CliffordGates;
-use synir::ir::Gates;
-use synir::ir::Synthesizer;
-use synir::IndexType;
+use synir::{
+    data_structures::{CliffordTableau, PauliExponential, PauliPolynomial, PropagateClifford},
+    ir::{
+        clifford_tableau::CliffordTableauSynthStrategy,
+        pauli_exponential::PauliExponentialSynthesizer,
+        pauli_polynomial::PauliPolynomialSynthStrategy, CliffordGates, Gates, Synthesizer,
+    },
+    IndexType,
+};
 
 use crate::validation::validate;
 

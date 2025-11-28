@@ -1,7 +1,7 @@
-use std::collections::VecDeque;
-
-use crate::architecture::connectivity::Connectivity;
-use crate::data_structures::{CliffordTableau, HasAdjoint, PauliPolynomial};
+use crate::{
+    architecture::connectivity::Connectivity,
+    data_structures::{HasAdjoint, PauliExponential},
+};
 
 use crate::ir::{CliffordGates, Gates, Synthesizer};
 
@@ -11,24 +11,6 @@ use crate::ir::{
     clifford_tableau::CliffordTableauSynthStrategy,
     pauli_polynomial::{naive::NaivePauliPolynomialSynthesizer, PauliPolynomialSynthStrategy},
 };
-
-#[derive(Default)]
-pub struct PauliExponential {
-    pauli_polynomials: VecDeque<PauliPolynomial>,
-    clifford_tableau: CliffordTableau,
-}
-
-impl PauliExponential {
-    pub fn new(
-        pauli_polynomials: VecDeque<PauliPolynomial>,
-        clifford_tableau: CliffordTableau,
-    ) -> Self {
-        PauliExponential {
-            pauli_polynomials,
-            clifford_tableau,
-        }
-    }
-}
 
 #[derive(Default)]
 pub struct PauliExponentialSynthesizer {
