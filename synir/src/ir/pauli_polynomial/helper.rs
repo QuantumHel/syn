@@ -108,7 +108,7 @@ pub(super) fn push_down_pauli_polynomial_update<G>(
             }
         }
         let last_qubit = *affected_qubits.last().unwrap();
-        repr.rz(last_qubit, pauli_polynomial.angle(col));
+        repr.rz(last_qubit, pauli_polynomial.angle(col).to_radians());
         mask.replace(col, false);
     }
 }
