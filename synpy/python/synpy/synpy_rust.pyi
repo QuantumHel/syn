@@ -4,7 +4,6 @@
 from typing import Any
 
 def synthesize_pauli_exponential(*args: Any, **kwargs: Any) -> Any: ...
-def qiskit_to_synir(*args: any, **kwargs: Any) -> Any: ...
 def synthesize_to_qiskit(*args: any, **kwargs: Any) -> Any: ...
 
 class PyCommand(object):
@@ -53,7 +52,6 @@ __all__ = [
     "PyCommand",
     "synthesize_pauli_exponential",
     "QiskitSynIR",
-    "qiskit_to_synir",
     "PauliExponentialWrap",
     "synthesize_to_qiskit"
 ]

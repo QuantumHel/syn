@@ -1,9 +1,9 @@
 from qiskit.transpiler import CouplingMap, Target
 from qiskit.transpiler.passes.synthesis.plugin import HighLevelSynthesisPlugin
 from qiskit.quantum_info import Clifford
-from qiskit import QuantumCircuit
+from qiskit import QuantumCircuit, transpile
 
-from synpy.synpy_rust import PyCliffordTableau, QiskitSynIR, qiskit_to_synir, PauliExponentialWrap, synthesize_to_qiskit
+from synpy.synpy_rust import PyCliffordTableau, QiskitSynIR, PauliExponentialWrap, synthesize_to_qiskit
 from synpy.utils import pycommand_to_qasm
 
 
@@ -28,9 +28,13 @@ class SynPyCliffordPlugin(HighLevelSynthesisPlugin):
         return QuantumCircuit.from_qasm_str(qasm)
     
 def alt_qiskit_to_synir(circuit:QuantumCircuit) -> PauliExponentialWrap:
-    pe = PauliExponentialWrap(circuit.num_qubits)
-    for gate in circuit.data:
+    new_circuit = transpile(circuit, basis_gates=['cx', 'h', 'rz'])
+    pe = PauliExponentialWrap(new_circuit.num_qubits)
+    for gate in new_circuit.data:
         # TODO add gate to pe
+        if gate.name == 'cx':
+            pass
+        # etc
         pass
     print(pe)
     return pe
@@ -40,9 +44,6 @@ def main():
     synir = QiskitSynIR(circuit)
     synir.add_h(0)
     print(circuit)
-    # Don't use rust for circuit parsing
-    pe_wrap = qiskit_to_synir(circuit, 3)
-    print(pe_wrap)
     # Use python for circuit parsing
     pe_wrap2 = alt_qiskit_to_synir(circuit)
     # Do use rust for synthesis.

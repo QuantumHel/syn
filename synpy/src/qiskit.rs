@@ -87,48 +87,6 @@ impl Gates for QiskitSynIR {
     }
 }
 
-#[pyfunction]
-#[pyo3(signature = (circuit, num_qubits), text_signature = "(circuit: QuantumCircuit, num_qubits: int)")]
-pub fn qiskit_to_synir(circuit: Py<PyAny>, num_qubits: usize) -> PyResult<PauliExponentialWrap> {
-    let mut pe = PauliExponentialWrap::new(num_qubits);
-    Python::attach(
-    |py| -> PyResult<()> {
-        let fun: Py<PyAny> = PyModule::from_code(
-            py, 
-c"
-from qiskit import QuantumCircuit
-from qiskit import transpile as qiskit_transpile
-
-def transpile(circuit: QuantumCircuit) -> list[tuple[str, list[int]]]:
-    circ = qiskit_transpile(circuit, basis_gates=['cx', 'h', 'rz'])
-    return [(i.name, [circuit.find_bit(q).index for q in i.qubits]) for i in circ.data]
-", 
-            c"transpile.py", c"")?
-            .getattr("transpile")?
-            .into();
-        let gates = fun.call1(py, (circuit,))?;
-        let gates_list = gates.cast_bound::<PyList>(py)?;
-        for gate in gates_list.iter() {
-            let gate_tuple = gate.cast_into::<PyTuple>()?;
-            let name = gate_tuple.get_item(0)?.cast_into::<PyString>()?;
-            let qubits = gate_tuple.get_item(1)?.cast_into::<PyList>()?;
-            println!("{:?}, {:?}", name, qubits);
-            break;
-            match format!("{:?}", name).as_str() {
-                "cx" => {
-                    let ctrl = qubits.get_item(0)?.cast::<PyInt>()?;
-                    let trgt = qubits.get_item(1)?.cast::<PyInt>()?;
-                    todo!("Implement the necessary functions");
-                    //pe.cx(ctrl, trgt);
-                },
-                _ => todo!("Throw error"),
-            };
-        }
-        Ok(())
-    })?;
-    Ok(pe)
-}
-
 // TODO Move below class to synpy generic stuff
 #[pyclass]
 pub struct PauliExponentialWrap {
