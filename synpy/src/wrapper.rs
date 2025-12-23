@@ -9,7 +9,9 @@ use pyo3::prelude::*;
 use synir::{
     data_structures::{CliffordTableau, PauliExponential},
     ir::{
-        CliffordGates, Gates, Synthesizer, clifford_tableau::CliffordTableauSynthStrategy, pauli_exponential::PauliExponentialSynthesizer, pauli_polynomial::PauliPolynomialSynthStrategy
+        clifford_tableau::CliffordTableauSynthStrategy,
+        pauli_exponential::PauliExponentialSynthesizer,
+        pauli_polynomial::PauliPolynomialSynthStrategy, CliffordGates, Gates, Synthesizer,
     },
 };
 
@@ -44,7 +46,6 @@ impl PyPauliExponential {
             _ => panic!("Unknown Pauli polynomial synthesis strategy: {}", strategy),
         }
     }
-
     pub fn set_tableau_strategy(&mut self, strategy: String) {
         match strategy.as_str() {
             "Naive" => self.tableau_strategy = CliffordTableauSynthStrategy::Naive,
