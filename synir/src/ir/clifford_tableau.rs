@@ -10,13 +10,14 @@ mod helper;
 mod naive;
 mod permrowcol;
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub enum CliffordTableauSynthStrategy {
     #[default]
     Naive,
     PermRowCol,
     Custom(Vec<usize>, Vec<usize>),
 }
+
 
 impl<T: AdjointSynthesizer<CliffordTableau, To, Returns>, To, Returns>
     Synthesizer<CliffordTableau, To, Returns> for T
