@@ -1,7 +1,8 @@
-from qiskit.quantum_info import Clifford
+from qiskit.quantum_info import Clifford, Operator
 from qiskit import QuantumCircuit
 
-from synpy.qiskit.plugin import SynPyCliffordPlugin
+
+from synpy.qiskit.plugin import SynPyCliffordPlugin, qiskit_to_synir
 from synpy.synpy_rust import QiskitSynIR
 
 
@@ -62,3 +63,29 @@ def test_qiskit_bell() -> None:
     circ = plugin.run(cliff, None, None, [])
 
     assert circ == qc
+
+def test_qiskit_loop() -> None:
+    circuit = QuantumCircuit(3)
+    circuit.h(0)
+    circuit.cx(0, 1)
+    circuit.rz(1.5, 1)
+
+    import synpy
+    print(synpy.__file__)
+    print(dir(synpy.qiskit.plugin))
+
+    pe_wrap = qiskit_to_synir(circuit)
+    
+    synir_result = QiskitSynIR(QuantumCircuit(3))
+    pe_wrap.synthesize_to_qiskit(synir_result)
+    circuit = synir_result.get_circuit()
+    
+    op = Operator.from_circuit(circuit)
+
+    sample_circuit = QuantumCircuit(3)
+    sample_circuit.h(0)
+    sample_circuit.cx(0, 1)
+    sample_circuit.rz(1.5, 1)
+
+    op2 = Operator.from_circuit(sample_circuit)
+    assert op.equiv(op2)
