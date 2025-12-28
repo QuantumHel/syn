@@ -62,6 +62,18 @@ impl PauliPolynomial {
         self.angles[i]
     }
 
+    pub fn extend_z(&mut self, target: usize, angle: f64){
+        for (i, chain) in self.chains.iter_mut().enumerate(){
+            if i == target{
+                chain.z.push(true);
+            }else{
+                chain.z.push(false);
+            }
+            chain.x.push(false);
+        }
+        self.angles.push(Angle::Arbitrary(angle));
+    }
+
     pub fn commutes_with(&self, other: &PauliPolynomial) -> bool {
         let size = self.size();
         assert_eq!(size, other.size());
@@ -95,6 +107,7 @@ impl PauliPolynomial {
 impl PropagateClifford for PauliPolynomial {
     fn cx(&mut self, control: IndexType, target: IndexType) -> &mut Self {
         let mut bit_mask: BitVec = BitVec::repeat(true, self.length());
+        println!("Chains length: {:?}", self.chains.len());
 
         let [control, target] = self.chains.get_disjoint_mut([control, target]).unwrap();
 

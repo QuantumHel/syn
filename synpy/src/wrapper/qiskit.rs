@@ -1,7 +1,7 @@
 extern crate pyo3;
 extern crate pyo3_ffi;
 
-use pyo3::prelude::*;
+use pyo3::{intern, prelude::*};
 use synir::ir::{CliffordGates, Gates};
 
 #[pyclass]
@@ -16,6 +16,10 @@ impl QiskitSynIR {
         QiskitSynIR {
             circuit: qiskit_circuit,
         }
+    }
+
+    fn get_circuit(&self, py: Python) -> Py<PyAny> {
+        self.circuit.clone_ref(py)
     }
 
     pub fn s(&mut self, target: synir::IndexType) {
