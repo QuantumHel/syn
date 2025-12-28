@@ -80,7 +80,7 @@ def test_qiskit_loop() -> None:
     pe_wrap.synthesize_to_qiskit(synir_result)
     circuit = synir_result.get_circuit()
     
-    op = Operator.from_circuit(circuit)
+    op1 = Operator.from_circuit(circuit)
 
     sample_circuit = QuantumCircuit(3)
     sample_circuit.h(0)
@@ -88,4 +88,4 @@ def test_qiskit_loop() -> None:
     sample_circuit.rz(1.5, 1)
 
     op2 = Operator.from_circuit(sample_circuit)
-    assert op.equiv(op2)
+    assert op1.equiv(op2)
