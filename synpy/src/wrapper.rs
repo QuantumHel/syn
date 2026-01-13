@@ -30,7 +30,11 @@ impl PyPauliExponential {
     #[new]
     pub fn new(num_qubits: usize) -> Self {
         let pe = PauliExponential::new(VecDeque::from(vec![]), CliffordTableau::new(num_qubits));
-        Self { pe, pauli_strategy: PauliPolynomialSynthStrategy::Naive, tableau_strategy: CliffordTableauSynthStrategy::PermRowCol }
+        Self {
+            pe,
+            pauli_strategy: PauliPolynomialSynthStrategy::Naive,
+            tableau_strategy: CliffordTableauSynthStrategy::PermRowCol,
+        }
     }
 
     pub fn synthesize_to_qiskit(&mut self, circuit: &mut QiskitSynIR) {
@@ -43,7 +47,7 @@ impl PyPauliExponential {
             _ => panic!("Unknown Pauli polynomial synthesis strategy: {}", strategy),
         }
     }
-    
+
     pub fn set_tableau_strategy(&mut self, strategy: String) {
         match strategy.as_str() {
             "Naive" => self.tableau_strategy = CliffordTableauSynthStrategy::Naive,
