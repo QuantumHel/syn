@@ -18,7 +18,6 @@ pub enum CliffordTableauSynthStrategy {
     Custom(Vec<usize>, Vec<usize>),
 }
 
-
 impl<T: AdjointSynthesizer<CliffordTableau, To, Returns>, To, Returns>
     Synthesizer<CliffordTableau, To, Returns> for T
 {
