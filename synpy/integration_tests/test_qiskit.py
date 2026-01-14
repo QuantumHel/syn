@@ -22,13 +22,13 @@ def test_qiskit_synir() -> None:
     synir.rx(0, 1.23)
     synir.ry(0, 1.23)
     synir.rz(0, 1.23)
-    
+
 
 def test_qiskit_bell() -> None:
     qc = QuantumCircuit(2)
     qc.h(0)
     qc.cx(0, 1)
-    
+
     cliff = Clifford(qc)
 
     plugin = SynPyCliffordPlugin()
