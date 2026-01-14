@@ -7,7 +7,6 @@ from synpy.synpy_rust import PyCliffordTableau, PyPauliExponential
 from synpy.utils import pycommand_to_qasm
 
 
-
 class SynPyCliffordPlugin(HighLevelSynthesisPlugin):
     def __init__(self) -> None:
         super().__init__()
@@ -28,10 +27,11 @@ class SynPyCliffordPlugin(HighLevelSynthesisPlugin):
         qasm = pycommand_to_qasm(n, commands)
         return QuantumCircuit.from_qasm_str(qasm)
 
-def qiskit_to_synir(circuit:QuantumCircuit) -> PyPauliExponential:
-    new_circuit = transpile(circuit, basis_gates=['cx', 'h', 'rz'])
+
+def qiskit_to_synir(circuit: QuantumCircuit) -> PyPauliExponential:
+    new_circuit = transpile(circuit, basis_gates=["cx", "h", "rz"])
     pe = PyPauliExponential(new_circuit.num_qubits)
-    
+
     for gate in reversed(new_circuit.data):
         if gate.name == "cx":
             pe.add_cx(gate.qubits[0]._index, gate.qubits[1]._index)

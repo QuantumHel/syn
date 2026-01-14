@@ -1,7 +1,7 @@
 use pyo3::exceptions::PyException;
 use pyo3::{pyclass, pymethods, PyErr};
-use synir::data_structures::Angle;
 use std::ops::Deref;
+use synir::data_structures::Angle;
 
 use pyo3::{pyfunction, PyRef, PyResult};
 use synir::{

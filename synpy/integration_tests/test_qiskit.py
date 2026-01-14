@@ -34,25 +34,6 @@ def test_qiskit_synir() -> None:
             assert inst.params[0] == reference_param
 
 
-def test_qiskit_synir() -> None:
-    qc = QuantumCircuit(2)
-    synir = QiskitSynIR(qc)
-
-    synir.s(0)
-    synir.v(0)
-    synir.s_dgr(0)
-    synir.v_dgr(0)
-    synir.x(0)
-    synir.y(0)
-    synir.z(0)
-    synir.h(0)
-    synir.cx(0, 1)
-    synir.cz(0, 1)
-    synir.rx(0, 1.23)
-    synir.ry(0, 1.23)
-    synir.rz(0, 1.23)
-    
-
 def test_qiskit_bell() -> None:
     qc = QuantumCircuit(2)
     qc.h(0)
@@ -64,6 +45,7 @@ def test_qiskit_bell() -> None:
 
     assert circ == qc
 
+
 def test_qiskit_loop() -> None:
     circuit = QuantumCircuit(3)
     circuit.h(0)
@@ -71,15 +53,16 @@ def test_qiskit_loop() -> None:
     circuit.rz(1.5, 1)
 
     import synpy
+
     print(synpy.__file__)
     print(dir(synpy.qiskit.plugin))
 
     pe_wrap = qiskit_to_synir(circuit)
-    
+
     synir_result = QiskitSynIR(QuantumCircuit(3))
     pe_wrap.synthesize_to_qiskit(synir_result)
     circuit = synir_result.get_circuit()
-    
+
     op1 = Operator.from_circuit(circuit)
 
     sample_circuit = QuantumCircuit(3)
