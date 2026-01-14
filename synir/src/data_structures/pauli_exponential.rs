@@ -19,16 +19,16 @@ impl PauliExponential {
         }
     }
 
-    pub fn chains(&mut self) -> &mut VecDeque<PauliPolynomial>{
+    pub fn chains(&mut self) -> &mut VecDeque<PauliPolynomial> {
         &mut self.pauli_polynomials
     }
 
-    pub fn size(&self) -> usize{
+    pub fn size(&self) -> usize {
         self.clifford_tableau.size()
     }
 }
 
-impl PropagateClifford for PauliExponential{
+impl PropagateClifford for PauliExponential {
     fn cx(&mut self, control: crate::IndexType, target: crate::IndexType) -> &mut Self {
         self.pauli_polynomials.cx(control, target);
         self.clifford_tableau.cx(control, target);

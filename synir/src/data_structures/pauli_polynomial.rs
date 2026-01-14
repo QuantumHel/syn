@@ -62,11 +62,11 @@ impl PauliPolynomial {
         self.angles[i]
     }
 
-    pub fn extend_z(&mut self, target: usize, angle: f64){
-        for (i, chain) in self.chains.iter_mut().enumerate(){
-            if i == target{
+    pub fn extend_z(&mut self, target: usize, angle: f64) {
+        for (i, chain) in self.chains.iter_mut().enumerate() {
+            if i == target {
                 chain.z.push(true);
-            }else{
+            } else {
                 chain.z.push(false);
             }
             chain.x.push(false);
