@@ -93,7 +93,10 @@ impl PyPauliExponential {
             }
             return;
         }
-        let newpp = PauliPolynomial::from_hamiltonian(vec![(&to_pauli_component(size, &target, 'Z'), Angle::Arbitrary(angle))]);
+        let newpp = PauliPolynomial::from_hamiltonian(vec![(
+            &to_pauli_component(size, &target, 'Z'),
+            Angle::Arbitrary(angle),
+        )]);
         ppvec.push_front(newpp);
     }
 }
