@@ -186,9 +186,3 @@ impl Gates for QiskitSynIR {
         self.rz(target, angle);
     }
 }
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn test_clifford_s() {}
-}
