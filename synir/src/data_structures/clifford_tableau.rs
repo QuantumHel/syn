@@ -193,7 +193,7 @@ impl CliffordTableau {
 
     /// Composes a gadget onto a Clifford tableau if the angle is Clifford
     /// Decomposes the Pauli gadget by performing naive decomposition into mapping to Z legs, CNOT walls and Z-rotations
-    pub fn compose_gadget(&mut self, rhs: (PauliString, Angle)) {
+    pub fn compose_gadget(&mut self, rhs: (PauliString, Angle)) -> Result<(), String> {
         let (pauli_string, angle) = rhs;
         let size = self.size();
         assert_eq!(
@@ -272,6 +272,7 @@ impl CliffordTableau {
                 PauliLetter::Z => {}
             }
         }
+        Ok(())
     }
 
     pub fn permute(&mut self, permutation_vector: Vec<usize>) {

@@ -1,15 +1,6 @@
 extern crate rand;
 
-use rand::seq::SliceRandom;
-
-use crate::common::mock_circuit::{
-    check_mock_equals_clifford_tableau, parse_clifford_commands, MockCircuit, MockCommand,
-};
-use crate::common::sample_clifford_tableaus::{
-    half_swap_0_1, half_swap_1_0, identity_2qb_ct, sample_2cnot_ladder, sample_cnot_gate,
-    sample_cnot_reverse_gate, sample_s_dgr_gate, sample_s_gate, sample_swap_ct, sample_v_dgr_gate,
-    sample_v_gate, setup_sample_ct, setup_sample_inverse_ct,
-};
+use crate::common::mock_circuit::{check_mock_equals_clifford_tableau, MockCircuit, MockCommand};
 use itertools::Itertools;
 use synir::data_structures::{Angle, CliffordTableau, PropagateClifford};
 use synir::ir::clifford_tableau::CallbackCliffordSynthesizer;
@@ -19,7 +10,7 @@ fn run_synthesizer(clifford_tableau: &CliffordTableau) -> (MockCircuit, Clifford
     let mut mock = MockCircuit::new();
     // let mut rng = rand::rng(); //TODO make this from seed
     let custom_columns = (0..clifford_tableau.size()).collect_vec();
-    let mut custom_rows = (0..clifford_tableau.size()).collect_vec();
+    let custom_rows = (0..clifford_tableau.size()).collect_vec();
     // custom_rows.shuffle(&mut rng);
 
     let mut synthesizer = CallbackCliffordSynthesizer::custom_pivot(custom_columns, custom_rows);
@@ -45,7 +36,7 @@ macro_rules! test_clifford {
 
 fn compose_x_gadget() -> CliffordTableau {
     let mut ct = CliffordTableau::new(2);
-    ct.compose_gadget((
+    let _ = ct.compose_gadget((
         synir::data_structures::PauliString::from_text("XI"),
         Angle::from_pi4_rotation(2),
     ));
@@ -54,7 +45,7 @@ fn compose_x_gadget() -> CliffordTableau {
 
 fn compose_z_gadget() -> CliffordTableau {
     let mut ct = CliffordTableau::new(2);
-    ct.compose_gadget((
+    let _ = ct.compose_gadget((
         synir::data_structures::PauliString::from_text("ZI"),
         Angle::from_pi4_rotation(4),
     ));
@@ -63,7 +54,7 @@ fn compose_z_gadget() -> CliffordTableau {
 
 fn compose_y_gadget() -> CliffordTableau {
     let mut ct = CliffordTableau::new(2);
-    ct.compose_gadget((
+    let _ = ct.compose_gadget((
         synir::data_structures::PauliString::from_text("YI"),
         Angle::from_pi4_rotation(6),
     ));
@@ -80,7 +71,7 @@ test_clifford!(
 
 fn compose_xx_gadget() -> CliffordTableau {
     let mut ct = CliffordTableau::new(2);
-    ct.compose_gadget((
+    let _ = ct.compose_gadget((
         synir::data_structures::PauliString::from_text("XX"),
         Angle::from_pi4_rotation(2),
     ));
@@ -89,7 +80,7 @@ fn compose_xx_gadget() -> CliffordTableau {
 
 fn compose_zz_gadget() -> CliffordTableau {
     let mut ct = CliffordTableau::new(2);
-    ct.compose_gadget((
+    let _ = ct.compose_gadget((
         synir::data_structures::PauliString::from_text("ZZ"),
         Angle::from_pi4_rotation(2),
     ));
@@ -98,7 +89,7 @@ fn compose_zz_gadget() -> CliffordTableau {
 
 fn compose_yy_gadget() -> CliffordTableau {
     let mut ct = CliffordTableau::new(2);
-    ct.compose_gadget((
+    let _ = ct.compose_gadget((
         synir::data_structures::PauliString::from_text("YY"),
         Angle::from_pi4_rotation(2),
     ));
@@ -146,7 +137,7 @@ test_clifford!(
 
 fn compose_complex_gadget() -> CliffordTableau {
     let mut ct = CliffordTableau::new(3);
-    ct.compose_gadget((
+    let _ = ct.compose_gadget((
         synir::data_structures::PauliString::from_text("XYZ"),
         Angle::from_pi4_rotation(2),
     ));
