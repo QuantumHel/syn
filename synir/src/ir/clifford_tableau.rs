@@ -10,7 +10,7 @@ mod helper;
 mod naive;
 mod permrowcol;
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub enum CliffordTableauSynthStrategy {
     #[default]
     Naive,
