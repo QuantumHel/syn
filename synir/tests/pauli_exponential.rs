@@ -3,7 +3,9 @@ mod common;
 use std::collections::VecDeque;
 
 use common::mock_circuit::{parse_clifford_commands, MockCircuit, MockCommand};
-use synir::data_structures::{Angle, CliffordTableau, HasAdjoint, PauliExponential, PauliPolynomial};
+use synir::data_structures::{
+    Angle, CliffordTableau, HasAdjoint, PauliExponential, PauliPolynomial,
+};
 use synir::ir::clifford_tableau::{CliffordTableauSynthStrategy, NaiveCliffordSynthesizer};
 use synir::ir::pauli_exponential::PauliExponentialSynthesizer;
 use synir::ir::pauli_polynomial::PauliPolynomialSynthStrategy;
