@@ -51,24 +51,15 @@ def test_qiskit_loop() -> None:
     circuit.h(0)
     circuit.cx(0, 1)
     circuit.rz(1.5, 1)
-
-    import synpy
-
-    print(synpy.__file__)
-    print(dir(synpy.qiskit.plugin))
+    sample_circuit = circuit.copy()
 
     pe_wrap = qiskit_to_synir(circuit)
 
-    synir_result = QiskitSynIR(QuantumCircuit(3))
+    synir_result = QiskitSynIR(circuit.copy_empty_like())
     pe_wrap.synthesize_to_qiskit(synir_result)
     circuit = synir_result.get_circuit()
 
     op1 = Operator.from_circuit(circuit)
-
-    sample_circuit = QuantumCircuit(3)
-    sample_circuit.h(0)
-    sample_circuit.cx(0, 1)
-    sample_circuit.rz(1.5, 1)
-
     op2 = Operator.from_circuit(sample_circuit)
+
     assert op1.equiv(op2)
