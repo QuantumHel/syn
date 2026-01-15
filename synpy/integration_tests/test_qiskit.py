@@ -23,6 +23,15 @@ def test_qiskit_synir() -> None:
     synir.ry(0, 1.23)
     synir.rz(0, 1.23)
 
+    reference_circuit = ["s", "sx", "sdg", "sxdg", "x", "y", "z", "h", "cx", "cz", "rx", "ry", "rz"]
+    reference_angles = [None, None, None, None, None, None, None, None, None, None, 1.23, 1.23, 1.23]
+
+    for inst in qc.data:
+        assert inst.name == reference_circuit.pop(0)
+        reference_param = reference_angles.pop(0)
+        if inst.params:
+            assert inst.params[0] == reference_param
+
 
 def test_qiskit_bell() -> None:
     qc = QuantumCircuit(2)
@@ -33,6 +42,5 @@ def test_qiskit_bell() -> None:
 
     plugin = SynPyCliffordPlugin()
     circ = plugin.run(cliff, None, None, [])
-    # circ.draw()
 
     assert circ == qc
