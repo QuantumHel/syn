@@ -18,14 +18,6 @@ impl QiskitSynIR {
         }
     }
 
-    pub fn get_commands(&self, tgt: usize) {
-        Python::attach(|py| -> PyResult<()> {
-            self.circuit.call_method1(py, "h", (tgt,))?;
-            Ok(())
-        })
-        .unwrap();
-    }
-
     pub fn s(&mut self, target: synir::IndexType) {
         Python::attach(|py| -> PyResult<()> {
             self.circuit.call_method1(py, "s", (target,))?;
