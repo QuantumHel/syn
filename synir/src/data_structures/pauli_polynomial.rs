@@ -107,7 +107,6 @@ impl PauliPolynomial {
 impl PropagateClifford for PauliPolynomial {
     fn cx(&mut self, control: IndexType, target: IndexType) -> &mut Self {
         let mut bit_mask: BitVec = BitVec::repeat(true, self.length());
-        println!("Chains length: {:?}", self.chains.len());
 
         let [control, target] = self.chains.get_disjoint_mut([control, target]).unwrap();
 
