@@ -28,7 +28,7 @@ fn get_non_cutting_vertices(
         .collect()
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Connectivity {
     graph: StableUnGraph<NodeWeight, EdgeWeight, GraphIndex>,
     non_cutting: Vec<GraphIndex>,
