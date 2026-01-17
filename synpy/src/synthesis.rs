@@ -1,17 +1,18 @@
 use pyo3::exceptions::PyException;
 use pyo3::{pyclass, pymethods, PyErr};
 use std::ops::Deref;
+use synir::data_structures::Angle;
 
 use pyo3::{pyfunction, PyRef, PyResult};
-use synir::data_structures::PropagateClifford;
-use synir::data_structures::{CliffordTableau, PauliPolynomial};
-use synir::ir::clifford_tableau::CliffordTableauSynthStrategy;
-use synir::ir::pauli_exponential::{PauliExponential, PauliExponentialSynthesizer};
-use synir::ir::pauli_polynomial::PauliPolynomialSynthStrategy;
-use synir::ir::CliffordGates;
-use synir::ir::Gates;
-use synir::ir::Synthesizer;
-use synir::IndexType;
+use synir::{
+    data_structures::{CliffordTableau, PauliExponential, PauliPolynomial, PropagateClifford},
+    ir::{
+        clifford_tableau::CliffordTableauSynthStrategy,
+        pauli_exponential::PauliExponentialSynthesizer,
+        pauli_polynomial::PauliPolynomialSynthStrategy, CliffordGates, Gates, Synthesizer,
+    },
+    IndexType,
+};
 
 use crate::validation::validate;
 
@@ -210,8 +211,14 @@ pub fn synthesize_pauli_exponential(
 ) -> PyResult<Vec<PyCommand>> {
     let converted_hamiltonian = hamiltonian
         .iter()
-        .map(|inner| inner.iter().map(PyPauliString::as_tuple).collect())
-        .map(|inner: Vec<(&str, f64)>| PauliPolynomial::from_hamiltonian(inner))
+        .map(|inner| {
+            inner
+                .iter()
+                .map(PyPauliString::as_tuple)
+                .map(|(pauli_str, phase)| (pauli_str, Angle::from_angle(phase)))
+                .collect::<Vec<(&str, Angle)>>()
+        })
+        .map(|inner: Vec<(&str, Angle)>| PauliPolynomial::from_hamiltonian(inner))
         .collect();
     let clifford_gates: Vec<PyCommand> = clifford_gates.iter().map(|cmd| *(cmd.deref())).collect();
 

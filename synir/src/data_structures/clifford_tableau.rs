@@ -10,7 +10,7 @@ use super::{
     pauli_string::{cx, PauliString},
     IndexType, PropagateClifford,
 };
-use crate::data_structures::PauliLetter;
+use crate::data_structures::{Angle, PauliLetter};
 
 #[derive(PartialEq, Eq, Debug, Clone, Default)]
 pub struct CliffordTableau {
@@ -189,6 +189,90 @@ impl CliffordTableau {
             signs: new_signs,
             size,
         }
+    }
+
+    /// Composes a gadget onto a Clifford tableau if the angle is Clifford
+    /// Decomposes the Pauli gadget by performing naive decomposition into mapping to Z legs, CNOT walls and Z-rotations
+    pub fn compose_gadget(&mut self, rhs: (PauliString, Angle)) -> Result<(), String> {
+        let (pauli_string, angle) = rhs;
+        let size = self.size();
+        assert_eq!(
+            size,
+            pauli_string.len(),
+            "Cannot compose Clifford tableau with PauliPolynomial of different size"
+        );
+        let pi2rotations = match angle {
+            Angle::Arbitrary(angle) => panic!(
+                "Cannot compose Clifford tableau with non-Clifford angle: {}",
+                angle
+            ),
+            Angle::Pi4Rotations(rotations) => {
+                if rotations % 2 == 1 {
+                    panic!("Cannot compose Clifford tableau with non-Clifford angle: {} pi/4 rotations", rotations);
+                }
+                (rotations >> 1) % 4
+            }
+        };
+        let mut leg_numbers = Vec::with_capacity(size);
+        for i in 0..size {
+            match pauli_string.pauli(i) {
+                PauliLetter::I => {}
+                PauliLetter::X => {
+                    self.h(i);
+                    leg_numbers.push(i);
+                }
+                PauliLetter::Y => {
+                    self.v(i);
+                    leg_numbers.push(i);
+                }
+                PauliLetter::Z => {
+                    leg_numbers.push(i);
+                }
+            }
+        }
+
+        for (control, target) in leg_numbers.iter().tuple_windows() {
+            self.cx(*control, *target);
+        }
+        match pi2rotations {
+            0 => {}
+            1 => {
+                let target = *leg_numbers.last().unwrap();
+                self.s(target);
+            }
+            2 => {
+                let target = *leg_numbers.last().unwrap();
+                self.z(target);
+            }
+            3 => {
+                let target = *leg_numbers.last().unwrap();
+                self.s_dgr(target);
+            }
+            _ => unreachable!(),
+        }
+
+        for (control, target) in leg_numbers
+            .iter()
+            .tuple_windows()
+            .collect_vec()
+            .iter()
+            .rev()
+        {
+            self.cx(**control, **target);
+        }
+        for i in 0..size {
+            match pauli_string.pauli(i) {
+                PauliLetter::I => {}
+                PauliLetter::X => {
+                    self.h(i);
+                }
+                PauliLetter::Y => {
+                    self.v_dgr(i);
+                }
+                PauliLetter::Z => {}
+            }
+        }
+        Ok(())
     }
 
     pub fn permute(&mut self, permutation_vector: Vec<usize>) {

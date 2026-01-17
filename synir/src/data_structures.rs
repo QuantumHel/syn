@@ -1,11 +1,15 @@
 use crate::IndexType;
+use bitvec::vec::BitVec;
 
+pub mod angle;
 mod clifford_tableau;
+mod pauli_exponential;
 mod pauli_polynomial;
 mod pauli_string;
 
-use bitvec::vec::BitVec;
+pub use angle::Angle;
 pub use clifford_tableau::CliffordTableau;
+pub use pauli_exponential::PauliExponential;
 pub use pauli_polynomial::PauliPolynomial;
 pub use pauli_string::PauliString;
 
