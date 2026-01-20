@@ -46,6 +46,14 @@ impl Angle {
             Angle::Pi4Rotations(n) => *n = (8 - *n) % 8,
         }
     }
+
+    pub fn is_clifford(&self) -> bool {
+        match self {
+            Angle::Arbitrary(rad) => (rad * std::f64::consts::FRAC_2_PI).fract() == 0.,
+            Angle::Pi4Rotations(n) => n % 2 == 0,
+        }
+    }
+
 }
 
 impl AddAssign for Angle {
