@@ -1,5 +1,5 @@
-use crate::data_structures::PauliPolynomial;
-use itertools::Itertools;
+use crate::data_structures::{PauliLetter, PauliPolynomial, PauliString};
+use itertools::{Either, Itertools};
 use std::collections::HashMap;
 
 /// Check for items in PauliPolynomial that has the same Pauli string
@@ -60,6 +60,46 @@ pub fn merge_repeats(mut pp: PauliPolynomial) -> PauliPolynomial {
     let repeats = check_repeats(&pp);
     _merge_repeats(pp, repeats)
 }
+
+
+pub fn split_off_cliffords(pp: PauliPolynomial) -> (PauliPolynomial, PauliPolynomial) {
+    // Removes clifford gates from this PauliPolynomial and returns them as a separate PP
+    let mut to_remove= vec![];
+    for (i, angle) in pp.angles.iter().enumerate(){
+        if angle.is_clifford(){
+            to_remove.push(i);
+        }
+    }
+    let (filtered_chains, removed_chains) = pp.chains
+        .iter()
+        .map(|ps| {
+            let (left, right): (Vec<PauliLetter>, Vec<PauliLetter>) = (0..ps.len()).into_iter()
+                .partition_map(|i|{ 
+                    if to_remove.contains(&i) {
+                        Either::Left(ps.pauli(i))
+                    } else {
+                        Either::Right(ps.pauli(i))
+                    }
+                });
+            (PauliString::from_letters(&left), PauliString::from_letters(&right))
+        })
+        .unzip();
+    let (filtered_angles, removed_angles) = pp.angles
+        .iter()
+        .enumerate()
+        .partition_map(|(j, p)| {
+            if to_remove.contains(&j) {
+                Either::Left(p)
+            } else {
+                Either::Right(p)
+            }
+    });
+    (
+    PauliPolynomial { chains: filtered_chains, angles: filtered_angles, size: pp.size },
+    PauliPolynomial { chains: removed_chains, angles: removed_angles, size: pp.size }
+    )
+}
+
 
 #[cfg(test)]
 mod tests {
