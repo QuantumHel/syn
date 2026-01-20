@@ -3,7 +3,7 @@ use std::iter::zip;
 use super::{pauli_string::PauliString, IndexType, MaskedPropagateClifford, PropagateClifford};
 use crate::data_structures::{Angle, PauliLetter};
 use bitvec::vec::BitVec;
-use itertools::zip_eq;
+use itertools::{Itertools, zip_eq};
 
 mod simplify;
 
@@ -58,6 +58,10 @@ impl PauliPolynomial {
         self.angles.len()
     }
 
+    pub fn pauli_gadget(&self, i:usize) -> PauliString{
+        PauliString::from_letters(&self.chains.iter().map(|ps| ps.pauli(i)).collect_vec())
+    }
+
     pub fn chain(&self, i: usize) -> &PauliString {
         &self.chains[i]
     }
@@ -90,6 +94,14 @@ impl PauliPolynomial {
         self.angles.push(Angle::Arbitrary(angle));
     }
 
+    pub fn append_other(&mut self, other: Self) {
+        for (self_chain, other_chain) in zip(self.mut_chains(), other.chains){
+            self_chain.x.extend(other_chain.x);
+            self_chain.z.extend(other_chain.z);
+        }
+        self.angles.extend(other.angles);
+    }
+
     pub fn commutes_with(&self, other: &PauliPolynomial) -> bool {
         let size = self.size();
         assert_eq!(size, other.size());
@@ -97,11 +109,10 @@ impl PauliPolynomial {
         let self_length = self.length();
         let other_length = other.length();
 
+        println!("Commute with of size {} {}", self_length, other_length);
+
         for index_1 in 0..self_length {
-            let mut pauli_string = Vec::with_capacity(size);
-            for q1 in 0..size {
-                pauli_string.push(self.chain(q1).pauli(index_1));
-            }
+            let pauli_string = (0..size).map(|q1| self.chain(q1).pauli(index_1)).collect_vec();
             for index_2 in 0..other_length {
                 let other_pauli_string = (0..size).map(|q2| other.chain(q2).pauli(index_2));
                 let mut commutes = true;
