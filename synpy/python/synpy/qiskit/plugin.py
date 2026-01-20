@@ -29,7 +29,7 @@ class SynPyCliffordPlugin(HighLevelSynthesisPlugin):
 
 
 def qiskit_to_synir(circuit: QuantumCircuit) -> PyPauliExponential:
-    new_circuit = transpile(circuit, basis_gates=["cx", "h", "rz"])
+    new_circuit = transpile(circuit, basis_gates=["cx", "h", "rz"], routing_method="none")
     pe = PyPauliExponential(new_circuit.num_qubits)
 
     for gate in reversed(new_circuit.data):
