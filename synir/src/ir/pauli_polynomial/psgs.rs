@@ -32,6 +32,9 @@ where
         mut pauli_polynomials: VecDeque<PauliPolynomial>,
         repr: &mut G,
     ) -> CliffordTableau {
+        if pauli_polynomials.is_empty() {
+            panic!("You are trying to synthesize an empty PauliPolynomial.")
+        }
         let mut clifford_tableau = CliffordTableau::new(pauli_polynomials[0].size());
         while !pauli_polynomials.is_empty() {
             let mut pauli_polynomial = pauli_polynomials.pop_front().unwrap();
