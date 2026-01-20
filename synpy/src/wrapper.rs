@@ -87,12 +87,7 @@ impl PyPauliExponential {
     pub fn add_rz(&mut self, target: usize, angle: f64) {
         let size = self.pe.size();
         let ppvec = self.pe.chains();
-        if let Some(pp) = ppvec.front_mut() {
-            if pp.chain(target).x_weight() != 0 {
-                pp.extend_z(target, angle);
-            }
-            return;
-        }
+        
         let newpp = PauliPolynomial::from_hamiltonian(vec![(
             &to_pauli_component(size, &target, 'Z'),
             Angle::Arbitrary(angle),
