@@ -33,12 +33,13 @@ def qiskit_to_synir(circuit: QuantumCircuit) -> PyPauliExponential:
     pe = PyPauliExponential(new_circuit.num_qubits)
 
     for gate in reversed(new_circuit.data):
+        qubit_indices = [new_circuit.find_bit(q).index for q in gate.qubits]
         if gate.name == "cx":
-            pe.add_cx(gate.qubits[0]._index, gate.qubits[1]._index)
+            pe.add_cx(*qubit_indices)
         elif gate.name == "h":
-            pe.add_h(gate.qubits[0]._index)
+            pe.add_h(*qubit_indices)
         elif gate.name == "rz":
-            pe.add_rz(gate.qubits[0]._index, gate.params[0])
+            pe.add_rz(*qubit_indices, gate.params[0])
         else:
             raise Exception("Gate is not supported")
     return pe
