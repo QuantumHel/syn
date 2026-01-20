@@ -13,6 +13,8 @@ pub use pauli_exponential::PauliExponential;
 pub use pauli_polynomial::PauliPolynomial;
 pub use pauli_string::PauliString;
 
+pub type Angle = f64;
+
 pub trait HasAdjoint {
     fn adjoint(&self) -> Self;
 }
