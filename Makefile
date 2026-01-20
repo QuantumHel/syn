@@ -19,9 +19,11 @@ rust_project_setup:
 
 build:
 	@$(CARGO) build --verbose
+	pip install synpy
 
 test:
 	@$(CARGO) test --verbose
+	pytest
 
 format-check:
 	@$(CARGO) fmt -- --check
