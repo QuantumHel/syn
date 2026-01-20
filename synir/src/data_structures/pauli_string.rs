@@ -1,6 +1,7 @@
 use bitvec::{prelude::BitVec, slice::BitSlice};
 use std::fmt;
 use std::iter::zip;
+use std::path::Iter;
 
 use super::PauliLetter;
 
@@ -30,23 +31,30 @@ impl PauliString {
         PauliString::new(x, z)
     }
 
-    /// Takes in a String containing "I"
-    pub fn from_text(pauli: &str) -> Self {
-        let (x, z): (BitVec, BitVec) = pauli
-            .chars()
-            .map(|pauli_char| {
-                let (x, z) = match pauli_char {
-                    'I' => (false, false),
-                    'X' => (true, false),
-                    'Y' => (true, true),
-                    'Z' => (false, true),
-                    _ => panic!("Letter not recognized"),
-                };
-                (x, z)
+    pub fn from_letters(paulis: &[PauliLetter]) -> Self {
+        let (x, z): (BitVec, BitVec) = paulis.iter()
+            .map(|pauli| {
+                match pauli {
+                    PauliLetter::I => (false, false),
+                    PauliLetter::X => (true, false),
+                    PauliLetter::Y => (true, true),
+                    PauliLetter::Z => (false, true)
+                }
             })
-            .collect();
+            .unzip();
 
         PauliString::new(x, z)
+    }
+
+    /// Takes in a String containing "I"
+    pub fn from_text(pauli: &str) -> Self {
+        let letters: Vec<PauliLetter> = pauli
+            .chars()
+            .map(|pauli_char| {
+                PauliLetter::from_char(pauli_char)
+            }).collect();
+
+        PauliString::from_letters(&letters)
     }
 
     pub fn x(&self, i: usize) -> bool {
