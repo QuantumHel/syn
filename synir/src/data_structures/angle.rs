@@ -1,7 +1,9 @@
 use std::{
     f64::consts::PI,
-    ops::{Add, AddAssign, Sub, SubAssign},
+    ops::{Add, AddAssign, Sub, SubAssign, Neg},
 };
+
+use crate::data_structures::angle;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Angle {
@@ -95,6 +97,17 @@ impl Add for Angle {
             (Angle::Pi4Rotations(n1), Angle::Arbitrary(rad2)) => {
                 Angle::Arbitrary(rad2 + n1 as f64 * PI / 4.0)
             }
+        }
+    }
+}
+
+impl Neg for Angle {
+    type Output = Angle;
+
+    fn neg(self) -> Angle {
+        match self {
+            Angle::Arbitrary(rad) => Angle::Arbitrary(-rad),
+            Angle::Pi4Rotations(n) => Angle::Pi4Rotations((8 - n) % 8),
         }
     }
 }
