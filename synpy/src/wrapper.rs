@@ -45,6 +45,7 @@ impl PyPauliExponential {
     pub fn set_pauli_strategy(&mut self, strategy: String) {
         match strategy.as_str() {
             "Naive" => self.pauli_strategy = PauliPolynomialSynthStrategy::Naive,
+            "PSGS" => self.pauli_strategy = PauliPolynomialSynthStrategy::PSGS,
             _ => panic!("Unknown Pauli polynomial synthesis strategy: {}", strategy),
         }
     }
@@ -85,13 +86,38 @@ impl PyPauliExponential {
     }
 
     pub fn add_rz(&mut self, target: usize, angle: f64) {
+        println!("Calculating Angle");
+        let mut angle = Angle::Arbitrary(angle);
+        let maybe_pi4_rot = angle.to_pi4_rotation();
+        if maybe_pi4_rot.is_ok(){
+            match maybe_pi4_rot.unwrap() {
+                0 => return,
+                2 => return self.add_s(target),
+                4 => return self.add_z(target),
+                6 => return self.add_s_dgr(target),
+                n => angle = Angle::Pi4Rotations(n) // Non-Clifford
+            }
+        }
+        println!("Creating gadget");
         let size = self.pe.size();
-        let ppvec = self.pe.chains();
+        let mut ppvec = self.pe.mut_chains();
         
         let newpp = PauliPolynomial::from_hamiltonian(vec![(
             &to_pauli_component(size, &target, 'Z'),
-            Angle::Arbitrary(angle),
+            angle,
         )]);
+        println!("Checking commutation");
+        let first_pp = ppvec.front_mut();
+        if first_pp.is_some(){
+            let pp: &mut PauliPolynomial = first_pp.unwrap();
+            println!("Found first pp");
+            if pp.commutes_with(&newpp){
+                println!("Appending other");
+                pp.append_other(newpp);
+                return;
+            }
+        }
+        println!("Pushing new block");
         ppvec.push_front(newpp);
     }
 }

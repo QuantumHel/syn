@@ -1,7 +1,7 @@
 extern crate pyo3;
 extern crate pyo3_ffi;
 
-use pyo3::{IntoPyObjectExt, intern, prelude::*, types::PyList};
+use pyo3::{prelude::*, types::PyList};
 use synir::ir::{CliffordGates, Gates};
 
 #[pyclass]

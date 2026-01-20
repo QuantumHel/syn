@@ -4,9 +4,9 @@ use bitvec::{bitvec, order::Lsb0};
 use itertools::Itertools;
 
 use crate::{
-    architecture::{connectivity::Connectivity, Architecture},
+    architecture::{Architecture, connectivity::Connectivity},
     data_structures::{
-        CliffordTableau, MaskedPropagateClifford, PauliLetter, PauliPolynomial, PropagateClifford,
+        CliffordTableau, MaskedPropagateClifford, PauliExponential, PauliLetter, PauliPolynomial, PropagateClifford
     },
     ir::{CliffordGates, Gates},
 };
@@ -240,7 +240,10 @@ pub(super) fn max_partition(
     for pauli in pauli_chain.iter() {
         match pauli {
             PauliLetter::I => {
-                panic!("Cannot partition polynomial with identity leg on selected qubit");
+                x_mask.push(false);
+                y_mask.push(false);
+                z_mask.push(false);
+                //panic!("Cannot partition polynomial with identity leg on selected qubit");
             }
             PauliLetter::X => {
                 x_mask.push(polynomial_mask.pop().unwrap());
@@ -282,7 +285,7 @@ pub(super) fn max_partition(
 
 pub(super) fn identity_recurse<G>(
     pauli_polynomial: &mut PauliPolynomial,
-    clifford_tableau: &mut CliffordTableau,
+    remainder_pe: &mut PauliExponential,
     connectivity: &Connectivity,
     mut polynomial_mask: BitVec,
     // selected_qubits: &[usize],
@@ -307,7 +310,7 @@ pub(super) fn identity_recurse<G>(
         // recurse down identity mask
         identity_recurse(
             pauli_polynomial,
-            clifford_tableau,
+            remainder_pe,
             &reduced_connectivity,
             identity_mask,
             repr,
@@ -315,7 +318,7 @@ pub(super) fn identity_recurse<G>(
         // ensure remainder is synthesized
         identity_recurse(
             pauli_polynomial,
-            clifford_tableau,
+            remainder_pe,
             connectivity,
             other_mask,
             repr,
@@ -341,7 +344,7 @@ pub(super) fn identity_recurse<G>(
         // Ensure that selected qubit is always Pauli::Z
         diagonalize_qubit(
             pauli_polynomial,
-            clifford_tableau,
+            remainder_pe,
             repr,
             selected_qubit,
             largest_pauli,
@@ -350,7 +353,7 @@ pub(super) fn identity_recurse<G>(
         if next_identity_mask.count_ones() > 0 {
             disconnect_i(
                 pauli_polynomial,
-                clifford_tableau,
+                remainder_pe,
                 repr,
                 selected_qubit,
                 next_qubit,
@@ -362,7 +365,7 @@ pub(super) fn identity_recurse<G>(
 
             identity_recurse(
                 pauli_polynomial,
-                clifford_tableau,
+                remainder_pe,
                 &reduced_connectivity,
                 identity_mask,
                 repr,
@@ -370,7 +373,7 @@ pub(super) fn identity_recurse<G>(
 
             identity_recurse(
                 pauli_polynomial,
-                clifford_tableau,
+                remainder_pe,
                 connectivity,
                 other_mask,
                 repr,
@@ -391,7 +394,7 @@ pub(super) fn identity_recurse<G>(
 
             disconnect(
                 pauli_polynomial,
-                clifford_tableau,
+                remainder_pe,
                 repr,
                 selected_qubit,
                 next_qubit,
@@ -401,14 +404,14 @@ pub(super) fn identity_recurse<G>(
 
             identity_recurse(
                 pauli_polynomial,
-                clifford_tableau,
+                remainder_pe,
                 &reduced_connectivity,
                 largest_mask,
                 repr,
             );
             identity_recurse(
                 pauli_polynomial,
-                clifford_tableau,
+                remainder_pe,
                 connectivity,
                 third_mask,
                 repr,
@@ -419,7 +422,7 @@ pub(super) fn identity_recurse<G>(
 
 fn disconnect_i<G>(
     pauli_polynomial: &mut PauliPolynomial,
-    clifford_tableau: &mut CliffordTableau,
+    remainder_pe: &mut PauliExponential,
     repr: &mut G,
     selected_qubit: usize,
     next_qubit: usize,
@@ -428,15 +431,15 @@ fn disconnect_i<G>(
 {
     pauli_polynomial.cx(selected_qubit, next_qubit);
     pauli_polynomial.cx(next_qubit, selected_qubit);
-    clifford_tableau.cx(selected_qubit, next_qubit);
-    clifford_tableau.cx(next_qubit, selected_qubit);
+    remainder_pe.cx(selected_qubit, next_qubit);
+    remainder_pe.cx(next_qubit, selected_qubit);
     repr.cx(selected_qubit, next_qubit);
     repr.cx(next_qubit, selected_qubit);
 }
 
 fn disconnect<G>(
     pauli_polynomial: &mut PauliPolynomial,
-    clifford_tableau: &mut CliffordTableau,
+    remainder_pe: &mut PauliExponential,
     repr: &mut G,
     selected_qubit: usize,
     next_qubit: usize,
@@ -448,24 +451,24 @@ fn disconnect<G>(
     match (is_x, is_y) {
         (true, true) => {
             pauli_polynomial.h(next_qubit);
-            clifford_tableau.h(next_qubit);
+            remainder_pe.h(next_qubit);
             repr.h(next_qubit);
         }
         (true, false) => {
             pauli_polynomial.s(next_qubit);
-            clifford_tableau.s(next_qubit);
+            remainder_pe.s(next_qubit);
             repr.s(next_qubit);
         }
         _ => {}
     }
     pauli_polynomial.cx(selected_qubit, next_qubit);
-    clifford_tableau.cx(selected_qubit, next_qubit);
+    remainder_pe.cx(selected_qubit, next_qubit);
     repr.cx(selected_qubit, next_qubit);
 }
 
 fn diagonalize_qubit<G>(
     pauli_polynomial: &mut PauliPolynomial,
-    clifford_tableau: &mut CliffordTableau,
+    remainder_pe: &mut PauliExponential,
     repr: &mut G,
     selected_qubit: usize,
     largest_pauli: PauliLetter,
@@ -476,12 +479,12 @@ fn diagonalize_qubit<G>(
         PauliLetter::I => panic!("Should not have Pauli::I here"),
         PauliLetter::X => {
             pauli_polynomial.h(selected_qubit);
-            clifford_tableau.h(selected_qubit);
+            remainder_pe.h(selected_qubit);
             repr.h(selected_qubit);
         }
         PauliLetter::Y => {
             pauli_polynomial.v(selected_qubit);
-            clifford_tableau.v(selected_qubit);
+            remainder_pe.v(selected_qubit);
             repr.v(selected_qubit);
         }
         PauliLetter::Z => {}
