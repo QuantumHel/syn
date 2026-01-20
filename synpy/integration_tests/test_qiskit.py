@@ -65,7 +65,9 @@ def circuit_to_circuit(circuit: QuantumCircuit) -> QuantumCircuit:
     synir_result = QiskitSynIR(circuit.copy_empty_like())
     pe_wrap.synthesize_to_qiskit(synir_result)
     new_circuit = synir_result.get_circuit()
-    new_circuit.append(PermutationGate(synir_result.get_permutation()), new_circuit.qubits, new_circuit.clbits)
+    perm1 = synir_result.get_permutation()
+    perm2 = [perm1.index(i) for i in range(len(perm1))]
+    new_circuit.append(PermutationGate(perm2), new_circuit.qubits, [])
     return synir_result.get_circuit()
 
 
@@ -79,6 +81,7 @@ def test_qiskit_multiple_registers():
 def round_loop(circuit):
     new_circuit = circuit_to_circuit(circuit)
     check_equiv(circuit, new_circuit)
+    return new_circuit
 
 def test_rz_at_start_of_circuit():
     circuit = QuantumCircuit(2)
@@ -88,4 +91,9 @@ def test_rz_at_start_of_circuit():
 
 def test_quantum_volume():
     circuit = QuantumVolume(3)
+    round_loop(circuit)
+
+def test_final_permutation():
+    circuit = QuantumCircuit(5)
+    circuit.append(PermutationGate([4,2,3,0,1]), circuit.qubits)
     round_loop(circuit)
