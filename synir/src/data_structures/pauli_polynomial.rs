@@ -9,8 +9,8 @@ mod simplify;
 
 #[derive(Debug, Clone, Default)]
 pub struct PauliPolynomial {
-    chains: Vec<PauliString>,
-    angles: Vec<Angle>,
+    pub(crate) chains: Vec<PauliString>,
+    pub(crate) angles: Vec<Angle>,
     size: usize,
 }
 
@@ -35,10 +35,18 @@ impl PauliPolynomial {
             .map(|gadget| PauliString::from_text(gadget))
             .collect::<Vec<_>>();
 
-        PauliPolynomial {
+        Self {
             chains,
             angles,
             size: num_qubits,
+        }
+    }
+
+    pub fn from_components(chains: Vec<PauliString>, angles: Vec<Angle>, size: usize) -> Self {
+        Self {
+            chains,
+            angles,
+            size,
         }
     }
 
@@ -58,8 +66,16 @@ impl PauliPolynomial {
         &self.chains
     }
 
+    pub fn angles(&self) -> &Vec<Angle> {
+        &self.angles
+    }
+
     pub fn angle(&self, i: usize) -> Angle {
         self.angles[i]
+    }
+
+    pub fn mut_chains(&mut self) -> &mut Vec<PauliString> {
+        &mut self.chains
     }
 
     pub fn extend_z(&mut self, target: usize, angle: f64) {
@@ -128,19 +144,20 @@ impl PropagateClifford for PauliPolynomial {
     fn s(&mut self, target: IndexType) -> &mut Self {
         let chains_target = self.chains.get_mut(target).unwrap();
         // Update angles
+        chains_target.s();
         let y_vec = chains_target.y_bitmask();
         for (angle, flip) in zip(self.angles.iter_mut(), y_vec.iter()) {
             if *flip {
                 angle.flip();
             }
         }
-        chains_target.s();
+
         self
     }
 
     fn v(&mut self, target: IndexType) -> &mut Self {
         let chains_target = self.chains.get_mut(target).unwrap();
-        chains_target.v();
+
         // Update angles
         let y_vec = chains_target.y_bitmask();
         for (angle, flip) in zip(self.angles.iter_mut(), y_vec.iter()) {
@@ -148,6 +165,7 @@ impl PropagateClifford for PauliPolynomial {
                 angle.flip();
             }
         }
+        chains_target.v();
         self
     }
 }

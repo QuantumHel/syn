@@ -173,13 +173,13 @@ pub(super) fn check_columns<G>(
                 let letter = chain.swap_remove(index);
                 match letter {
                     PauliLetter::X => {
-                        repr.rx(qubit, angle);
+                        repr.rx(qubit, angle.to_radians());
                     }
                     PauliLetter::Y => {
-                        repr.ry(qubit, angle);
+                        repr.ry(qubit, angle.to_radians());
                     }
                     PauliLetter::Z => {
-                        repr.rz(qubit, angle);
+                        repr.rz(qubit, angle.to_radians());
                     }
                     PauliLetter::I => {}
                 }
