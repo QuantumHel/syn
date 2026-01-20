@@ -19,7 +19,11 @@ impl PauliExponential {
         }
     }
 
-    pub fn chains(&mut self) -> &mut VecDeque<PauliPolynomial> {
+    pub fn chains(&self) -> &VecDeque<PauliPolynomial> {
+        &self.pauli_polynomials
+    }
+
+    pub fn mut_chains(&mut self) -> &mut VecDeque<PauliPolynomial> {
         &mut self.pauli_polynomials
     }
 
