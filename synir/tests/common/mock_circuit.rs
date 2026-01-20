@@ -1,12 +1,9 @@
-use std::cell::RefMut;
-
 use synir::{
     data_structures::{CliffordTableau, PropagateClifford},
     ir::{CliffordGates, Gates},
     IndexType,
 };
 
-type Angle = f64;
 #[derive(Debug, Default)]
 pub struct MockCircuit {
     commands: Vec<MockCommand>,
@@ -83,15 +80,15 @@ impl CliffordGates for MockCircuit {
 }
 
 impl Gates for MockCircuit {
-    fn rx(&mut self, target: IndexType, angle: Angle) {
+    fn rx(&mut self, target: IndexType, angle: f64) {
         self.commands.push(MockCommand::Rx(target, angle));
     }
 
-    fn ry(&mut self, target: IndexType, angle: Angle) {
+    fn ry(&mut self, target: IndexType, angle: f64) {
         self.commands.push(MockCommand::Ry(target, angle));
     }
 
-    fn rz(&mut self, target: IndexType, angle: Angle) {
+    fn rz(&mut self, target: IndexType, angle: f64) {
         self.commands.push(MockCommand::Rz(target, angle));
     }
 }

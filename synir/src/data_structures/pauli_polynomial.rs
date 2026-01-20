@@ -302,9 +302,9 @@ mod tests {
 
         // Polynomials: IZY, -YXI, -XYX
 
-        // IXY -> IY(-X)
+        // IXY -> I(-Y)X
         let pg1_ref = PauliString::from_text("IYX");
-        // ZYX -> Z(-X)Y
+        // ZYX -> ZX(-Y)
         let pg2_ref = PauliString::from_text("ZXY");
         // YIX
         let pg3_ref = PauliString::from_text("YIX");
@@ -333,13 +333,13 @@ mod tests {
 
         // IXY
         let pg1_ref = PauliString::from_text("IXY");
-        // ZYX -> (-Y)ZX
+        // ZYX -> Y(-Z)X
         let pg2_ref = PauliString::from_text("YZX");
-        // YIX -> ZIX
+        // YIX -> (-Z)IX
         let pg3_ref = PauliString::from_text("ZIX");
         let angles_ref = vec![
             Angle::from_angle(-0.3),
-            Angle::from_pi4_rotation(2),
+            Angle::from_pi4_rotation(6),
             Angle::from_angle(0.12),
         ];
         let pp_ref = PauliPolynomial {
@@ -362,13 +362,13 @@ mod tests {
 
         // IXY
         let pg1_ref = PauliString::from_text("IXY");
-        // ZYX -> ZX(-Y)
+        // ZYX -> Z(-X)Y
         let pg2_ref = PauliString::from_text("ZXY");
-        // YIX -> XI(-Y)
+        // YIX -> (-X)IY
         let pg3_ref = PauliString::from_text("XIY");
         let angles_ref = vec![
-            Angle::from_angle(0.3),
-            Angle::from_pi4_rotation(2),
+            Angle::from_angle(-0.3),
+            Angle::from_pi4_rotation(6),
             Angle::from_angle(0.12),
         ];
         let pp_ref = PauliPolynomial {
@@ -391,13 +391,13 @@ mod tests {
 
         // IXY
         let pg1_ref = PauliString::from_text("IXY");
-        // ZYX -> Y(-Z)X
+        // ZYX -> (-Y)ZX
         let pg2_ref = PauliString::from_text("YZX");
-        // YIX -> (-Z)IX
+        // YIX -> ZIX
         let pg3_ref = PauliString::from_text("ZIX");
         let angles_ref = vec![
             Angle::from_angle(-0.3),
-            Angle::from_pi4_rotation(6),
+            Angle::from_pi4_rotation(2),
             Angle::from_angle(0.12),
         ];
         let pp_ref = PauliPolynomial {
