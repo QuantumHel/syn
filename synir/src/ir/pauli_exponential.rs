@@ -63,25 +63,30 @@ where
                 pauli_synthesizer.synthesize(pauli_polynomials, repr)
             }
         };
-
-        match &self.clifford_strategy {
+        
+        let final_ct = match &self.clifford_strategy {
             CliffordTableauSynthStrategy::Naive => {
                 let mut clifford_synthesizer = NaiveCliffordSynthesizer::default();
-                clifford_synthesizer.synthesize(clifford_tableau.adjoint(), repr);
+                clifford_synthesizer.synthesize(clifford_tableau.adjoint(), repr)
             }
             CliffordTableauSynthStrategy::Custom(custom_rows, custom_columns) => {
                 let mut clifford_synthesizer = CallbackCliffordSynthesizer::custom_pivot(
                     custom_columns.to_owned(),
                     custom_rows.to_owned(),
                 );
-                clifford_synthesizer.synthesize(clifford_tableau.adjoint(), repr);
+                clifford_synthesizer.synthesize(clifford_tableau.adjoint(), repr)
             }
             CliffordTableauSynthStrategy::PermRowCol => {
                 let size = clifford_tableau.size();
                 let mut clifford_synthesizer =
                     PermRowColCliffordSynthesizer::new(Connectivity::complete(size));
-                clifford_synthesizer.synthesize(clifford_tableau.adjoint(), repr);
+                clifford_synthesizer.synthesize(clifford_tableau.adjoint(), repr)
             }
         };
+        let final_perm = final_ct.get_permutation();
+        match final_perm {
+            Some(perm) => repr.add_final_permutation(perm),
+            None => panic!("Final state was not a permutation: {final_ct}")
+        }
     }
 }
