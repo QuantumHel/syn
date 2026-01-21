@@ -67,14 +67,13 @@ def test_qiskit_loop(pauli_strat, ct_strat) -> None:
     circuit.rz(1.5, 1)
     round_loop(circuit, pauli_strat, ct_strat)
 
-
 def check_equiv(circuit: QuantumCircuit, circuit2: QuantumCircuit):
     op1 = Operator.from_circuit(circuit)
     op2 = Operator.from_circuit(circuit2)
     print(circuit)
-    if circuit.num_qubits < 4:
-        print("Is not the same as")
-        print(circuit2)
+    # if circuit.num_qubits < 4:
+    #     print("Is not the same as")
+    #     print(circuit2)
     assert op1.equiv(op2)
 
 def circuit_to_circuit(circuit: QuantumCircuit, pauli_strat = None, ct_strat = None) -> QuantumCircuit:
