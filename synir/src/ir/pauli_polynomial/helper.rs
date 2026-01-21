@@ -147,6 +147,9 @@ pub(super) fn check_columns<G>(
 ) where
     G: CliffordGates + Gates,
 {
+    if polynomial_mask.count_ones() == 0 {
+        return;
+    }
     let invalid = {
         let length = pauli_polynomial.length();
 
