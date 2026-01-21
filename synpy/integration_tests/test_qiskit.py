@@ -1,3 +1,4 @@
+from typing import Optional
 from qiskit.quantum_info import Clifford, Operator
 from qiskit import QuantumCircuit, QuantumRegister
 from qiskit.circuit.library import PermutationGate, quantum_volume
@@ -46,15 +47,12 @@ def test_qiskit_bell() -> None:
 
     assert circ == qc
 
-all_strats = (
-    ("Naive", "Naive"),
-    ("Naive", "PermRowCol"),
-    ("PSGS", "Naive"),
-    ("PSGS", "PermRowCol")
-)
+
+all_strats = (("Naive", "Naive"), ("Naive", "PermRowCol"), ("PSGS", "Naive"), ("PSGS", "PermRowCol"))
+
 
 @pytest.mark.parametrize(("pauli_strat", "ct_strat"), all_strats)
-def test_qiskit_loop(pauli_strat, ct_strat) -> None:
+def test_qiskit_loop(pauli_strat: str, ct_strat: str) -> None:
     circuit = QuantumCircuit(3)
     circuit.s(0)
     circuit.cx(0, 1)
@@ -67,7 +65,8 @@ def test_qiskit_loop(pauli_strat, ct_strat) -> None:
     circuit.rz(1.5, 1)
     round_loop(circuit, pauli_strat, ct_strat)
 
-def check_equiv(circuit: QuantumCircuit, circuit2: QuantumCircuit):
+
+def check_equiv(circuit: QuantumCircuit, circuit2: QuantumCircuit) -> None:
     op1 = Operator.from_circuit(circuit)
     op2 = Operator.from_circuit(circuit2)
     print(circuit)
@@ -76,7 +75,8 @@ def check_equiv(circuit: QuantumCircuit, circuit2: QuantumCircuit):
     #     print(circuit2)
     assert op1.equiv(op2)
 
-def circuit_to_circuit(circuit: QuantumCircuit, pauli_strat = None, ct_strat = None) -> QuantumCircuit:
+
+def circuit_to_circuit(circuit: QuantumCircuit, pauli_strat: Optional[str] = None, ct_strat: Optional[str] = None) -> QuantumCircuit:
     pe_wrap = qiskit_to_synir(circuit)
     if pauli_strat:
         pe_wrap.set_pauli_strategy(pauli_strat)
@@ -93,73 +93,82 @@ def circuit_to_circuit(circuit: QuantumCircuit, pauli_strat = None, ct_strat = N
 
 
 @pytest.mark.parametrize(("pauli_strat", "ct_strat"), all_strats)
-def test_qiskit_multiple_registers(pauli_strat, ct_strat):
+def test_qiskit_multiple_registers(pauli_strat: str, ct_strat: str) -> None:
     reg1 = QuantumRegister(1)
     reg2 = QuantumRegister(1)
     circuit = QuantumCircuit(reg1, reg2)
     circuit.cx(reg1, reg2)
     round_loop(circuit, pauli_strat, ct_strat)
 
-def round_loop(circuit, pauli_strat = None, ct_strat = None):
+
+def round_loop(circuit: QuantumCircuit, pauli_strat: Optional[str] = None, ct_strat: Optional[str] = None) -> QuantumCircuit:
     new_circuit = circuit_to_circuit(circuit, pauli_strat, ct_strat)
     check_equiv(circuit, new_circuit)
     return new_circuit
 
+
 @pytest.mark.parametrize(("pauli_strat", "ct_strat"), all_strats)
-def test_rz_at_start_of_circuit(pauli_strat, ct_strat):
+def test_rz_at_start_of_circuit(pauli_strat: str, ct_strat: str) -> None:
     circuit = QuantumCircuit(2)
     circuit.rz(0.234, 0)
-    circuit.cx(0,1)
+    circuit.cx(0, 1)
     round_loop(circuit, pauli_strat, ct_strat)
 
-@pytest.mark.parametrize(("pauli_strat", "ct_strat"), all_strats)
-def test_quantum_volume2(pauli_strat, ct_strat):
-    circuit = quantum_volume(2,1)
-    round_loop(circuit, pauli_strat, ct_strat)
 
 @pytest.mark.parametrize(("pauli_strat", "ct_strat"), all_strats)
-def test_quantum_volume3(pauli_strat, ct_strat):
-    circuit = quantum_volume(3,1)
+def test_quantum_volume2(pauli_strat: str, ct_strat: str) -> None:
+    circuit = quantum_volume(2, 1)
     round_loop(circuit, pauli_strat, ct_strat)
 
-@pytest.mark.parametrize(("pauli_strat", "ct_strat"), all_strats)
-def test_quantum_volume4(pauli_strat, ct_strat):
-    circuit = quantum_volume(4,1)
-    round_loop(circuit, pauli_strat, ct_strat)
 
 @pytest.mark.parametrize(("pauli_strat", "ct_strat"), all_strats)
-def test_final_permutation(pauli_strat, ct_strat):
+def test_quantum_volume3(pauli_strat: str, ct_strat: str) -> None:
+    circuit = quantum_volume(3, 1)
+    round_loop(circuit, pauli_strat, ct_strat)
+
+
+@pytest.mark.parametrize(("pauli_strat", "ct_strat"), all_strats)
+def test_quantum_volume4(pauli_strat: str, ct_strat: str) -> None:
+    circuit = quantum_volume(4, 1)
+    round_loop(circuit, pauli_strat, ct_strat)
+
+
+@pytest.mark.parametrize(("pauli_strat", "ct_strat"), all_strats)
+def test_final_permutation(pauli_strat: str, ct_strat: str) -> None:
     circuit = QuantumCircuit(5)
-    circuit.append(PermutationGate([4,2,3,0,1]), circuit.qubits)
+    circuit.append(PermutationGate([4, 2, 3, 0, 1]), circuit.qubits)
     round_loop(circuit, pauli_strat, ct_strat)
 
+
 @pytest.mark.parametrize(("pauli_strat", "ct_strat"), all_strats)
-def test_toffoli(pauli_strat, ct_strat):
+def test_toffoli(pauli_strat: str, ct_strat: str) -> None:
     circuit = QuantumCircuit(3)
-    circuit.ccx(0,1,2)
+    circuit.ccx(0, 1, 2)
     round_loop(circuit, pauli_strat, ct_strat)
 
+
 @pytest.mark.parametrize(("pauli_strat", "ct_strat"), all_strats)
-def test_sqg(pauli_strat, ct_strat):
+def test_sqg(pauli_strat: str, ct_strat: str) -> None:
     circuit = QuantumCircuit(1)
     circuit.t(0)
     round_loop(circuit, pauli_strat, ct_strat)
 
+
 @pytest.mark.parametrize(("pauli_strat", "ct_strat"), all_strats)
-def test_pauli_gadget(pauli_strat, ct_strat):
+def test_pauli_gadget(pauli_strat: str, ct_strat: str) -> None:
     circuit = QuantumCircuit(3)
-    circuit.cx(0,1)
-    circuit.cx(1,2)
+    circuit.cx(0, 1)
+    circuit.cx(1, 2)
     circuit.t(2)
-    circuit.cx(1,2)
-    circuit.cx(0,1)
+    circuit.cx(1, 2)
+    circuit.cx(0, 1)
     round_loop(circuit, pauli_strat, ct_strat)
 
 
 @pytest.mark.parametrize(("pauli_strat", "ct_strat"), all_strats)
-def test_pauli_gadget_half(pauli_strat, ct_strat):
+def test_pauli_gadget_half(pauli_strat: str, ct_strat: str) -> None:
     circuit = QuantumCircuit(3)
-    circuit.cx(0,1)
-    circuit.cx(1,2)
+    circuit.cx(0, 1)
+    circuit.cx(1, 2)
     circuit.t(2)
     round_loop(circuit, pauli_strat, ct_strat)

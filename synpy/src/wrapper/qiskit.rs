@@ -7,7 +7,7 @@ use synir::ir::{CliffordGates, Gates};
 #[pyclass]
 pub struct QiskitSynIR {
     circuit: Py<PyAny>,
-    final_permutation: Option<Py<PyList>>
+    final_permutation: Option<Py<PyList>>,
 }
 
 #[pymethods]
@@ -16,7 +16,7 @@ impl QiskitSynIR {
     pub fn new(qiskit_circuit: Py<PyAny>) -> Self {
         QiskitSynIR {
             circuit: qiskit_circuit,
-            final_permutation: None
+            final_permutation: None,
         }
     }
 
@@ -128,10 +128,10 @@ impl QiskitSynIR {
         .unwrap();
     }
 
-    pub fn get_permutation(&self) -> Option<&Py<PyList>>{
+    pub fn get_permutation(&self) -> Option<&Py<PyList>> {
         match &self.final_permutation {
             Some(perm) => Some(perm),
-            None => None
+            None => None,
         }
     }
 }
@@ -179,9 +179,9 @@ impl CliffordGates for QiskitSynIR {
 
     fn add_final_permutation(&mut self, permutation: Vec<synir::IndexType>) {
         Python::attach(|py| -> () {
-            match PyList::new(py, permutation){
+            match PyList::new(py, permutation) {
                 Ok(list) => self.final_permutation = Some(list.unbind()),
-                _ => ()
+                _ => (),
             }
         })
     }
