@@ -109,8 +109,6 @@ impl PauliPolynomial {
         let self_length = self.length();
         let other_length = other.length();
 
-        println!("Commute with of size {} {}", self_length, other_length);
-
         for index_1 in 0..self_length {
             let pauli_string = (0..size)
                 .map(|q1| self.chain(q1).pauli(index_1))

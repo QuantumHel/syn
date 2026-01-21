@@ -86,7 +86,6 @@ impl PyPauliExponential {
     }
 
     pub fn add_rz(&mut self, target: usize, angle: f64) {
-        println!("Calculating Angle");
         let mut angle = Angle::Arbitrary(angle);
         // let maybe_pi4_rot = angle.to_pi4_rotation();
         // if maybe_pi4_rot.is_ok(){
@@ -98,7 +97,6 @@ impl PyPauliExponential {
         //         n => angle = Angle::Pi4Rotations(n) // Non-Clifford
         //     }
         // }
-        // println!("Creating gadget");
         let size = self.pe.size();
         let mut ppvec = self.pe.mut_chains();
 
@@ -106,18 +104,14 @@ impl PyPauliExponential {
             &to_pauli_component(size, &target, 'Z'),
             angle,
         )]);
-        println!("Checking commutation");
         let first_pp = ppvec.front_mut();
         if first_pp.is_some() {
             let pp: &mut PauliPolynomial = first_pp.unwrap();
-            println!("Found first pp");
             // if pp.commutes_with(&newpp){
-            //     println!("Appending other");
             //     pp.append_other(newpp);
             //     return;
             // }
         }
-        println!("Pushing new block");
         ppvec.push_front(newpp);
     }
 }

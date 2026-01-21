@@ -347,17 +347,13 @@ mod tests {
         for n in 0..16 {
             let angle = Angle::Pi4Rotations(n);
             let a_angle = Angle::Arbitrary(angle.to_radians());
-            println!("{} {}", angle, a_angle);
             let res = a_angle.to_pi4_rotation();
             assert!(res.is_ok(), "{}", res.err().unwrap());
-            println!("{}", res.as_ref().unwrap());
             assert!((n as u8) % 8 == res.unwrap());
         }
         let alt_angle = Angle::Arbitrary(-PI / 4.);
-        println!("{}", alt_angle);
         let res2 = alt_angle.to_pi4_rotation();
         assert!(res2.is_ok(), "{}", res2.err().unwrap());
-        println!("{}", res2.as_ref().unwrap());
         assert!(res2.unwrap() == 7);
     }
 }

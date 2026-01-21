@@ -59,8 +59,6 @@ where
             pauli_polynomials,
             clifford_tableau,
         } = pauli_exponential;
-        print_pp_help(&pauli_polynomials);
-        println!("Before Synth {}", clifford_tableau);
         let num_qubits = clifford_tableau.size();
         let ct = match pauli_polynomials.is_empty() {
             true => CliffordTableau::new(num_qubits), // Skip PauliPolynomial synthesis
@@ -76,10 +74,7 @@ where
                 }
             },
         };
-        println!("Before combine: {ct}");
-        //let combined_ct = ct.adjoint().compose(&clifford_tableau.adjoint());
         let combined_ct = clifford_tableau.compose(&ct).adjoint();
-        println!("After synth: {}", combined_ct);
 
         let final_ct = match &self.clifford_strategy {
             CliffordTableauSynthStrategy::Naive => {
@@ -99,7 +94,6 @@ where
                 clifford_synthesizer.synthesize(combined_ct, repr)
             }
         };
-        println!("Final perm: {}", final_ct);
         let final_perm = final_ct.get_permutation();
         match final_perm {
             Some(perm) => repr.add_final_permutation(perm),
