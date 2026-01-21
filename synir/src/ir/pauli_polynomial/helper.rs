@@ -191,7 +191,7 @@ pub(super) fn check_columns<G>(
 /// Partition the input polynomial mask on the selected qubit. If the gadget has an identity leg, it is assigned to the identity mask. Otherwise, it is assigned to the other mask.
 pub(super) fn identity_partition(
     pauli_polynomial: &PauliPolynomial,
-    mut polynomial_mask: BitVec,
+    polynomial_mask: BitVec,
     selected_qubit: usize,
 ) -> (BitVec, BitVec) {
     let pauli_polynomial_length = pauli_polynomial.length();
@@ -199,27 +199,25 @@ pub(super) fn identity_partition(
     let mut other_mask = BitVec::with_capacity(pauli_polynomial_length);
 
     let pauli_chain = pauli_polynomial.chain(selected_qubit).iter();
-
-    for pauli in pauli_chain.iter() {
+    for (pauli, mask_bit) in zip(pauli_chain.iter(), polynomial_mask.iter()) {
         match pauli {
             PauliLetter::I => {
-                identity_mask.push(polynomial_mask.pop().unwrap());
+                identity_mask.push(*mask_bit);
                 other_mask.push(false);
             }
             _ => {
-                other_mask.push(polynomial_mask.pop().unwrap());
+                other_mask.push(*mask_bit);
                 identity_mask.push(false);
             }
         }
     }
-
     (identity_mask, other_mask)
 }
 
 /// Partition the input polynomial mask on the selected qubit. If the gadget has an identity leg, it is assigned to the identity mask. Otherwise, it is assigned to the other mask.
 pub(super) fn max_partition(
     pauli_polynomial: &PauliPolynomial,
-    mut polynomial_mask: BitVec,
+    polynomial_mask: BitVec,
     selected_qubit: usize,
 ) -> (
     BitVec,
@@ -237,7 +235,7 @@ pub(super) fn max_partition(
 
     let pauli_chain = pauli_polynomial.chain(selected_qubit).iter();
 
-    for pauli in pauli_chain.iter() {
+    for (pauli, mask_bit) in zip(pauli_chain.iter(), polynomial_mask.iter()) {
         match pauli {
             PauliLetter::I => {
                 x_mask.push(false);
@@ -246,19 +244,19 @@ pub(super) fn max_partition(
                 //panic!("Cannot partition polynomial with identity leg on selected qubit");
             }
             PauliLetter::X => {
-                x_mask.push(polynomial_mask.pop().unwrap());
+                x_mask.push(*mask_bit);
                 y_mask.push(false);
                 z_mask.push(false);
             }
             PauliLetter::Y => {
                 x_mask.push(false);
-                y_mask.push(polynomial_mask.pop().unwrap());
+                y_mask.push(*mask_bit);
                 z_mask.push(false);
             }
             PauliLetter::Z => {
                 x_mask.push(false);
                 y_mask.push(false);
-                z_mask.push(polynomial_mask.pop().unwrap());
+                z_mask.push(*mask_bit);
             }
         }
     }
