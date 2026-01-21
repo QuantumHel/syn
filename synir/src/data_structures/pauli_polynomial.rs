@@ -1,7 +1,7 @@
 use std::iter::zip;
 
 use super::{pauli_string::PauliString, IndexType, MaskedPropagateClifford, PropagateClifford};
-use crate::data_structures::{Angle, PauliLetter};
+use crate::data_structures::Angle;
 use bitvec::vec::BitVec;
 use itertools::{zip_eq, Itertools};
 
@@ -103,26 +103,13 @@ impl PauliPolynomial {
     }
 
     pub fn commutes_with(&self, other: &PauliPolynomial) -> bool {
-        let size = self.size();
-        assert_eq!(size, other.size());
+        if self.size() != other.size() {
+            panic!("Commutation checking only works with PauliPolynomials of the same size, but found {} and {}", self.size(), other.size());
+        }
 
-        let self_length = self.length();
-        let other_length = other.length();
-
-        for index_1 in 0..self_length {
-            let pauli_string = (0..size)
-                .map(|q1| self.chain(q1).pauli(index_1))
-                .collect_vec();
-            for index_2 in 0..other_length {
-                let other_pauli_string = (0..size).map(|q2| other.chain(q2).pauli(index_2));
-                let mut commutes = true;
-                for (p1, p2) in zip(&pauli_string, other_pauli_string) {
-                    if *p1 == PauliLetter::I || p2 == PauliLetter::I || p1 == &p2 {
-                        continue;
-                    }
-                    commutes = !commutes;
-                }
-                if !commutes {
+        for gadget1 in (0..self.length()).map(|i| self.pauli_gadget(i)){
+            for gadget2 in (0..other.length()).map(|i| other.pauli_gadget(i)){
+                if !gadget1.commutes_with(&gadget2) {
                     return false;
                 }
             }
