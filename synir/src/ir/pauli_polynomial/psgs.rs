@@ -4,7 +4,11 @@ use crate::{
     architecture::connectivity::Connectivity,
     data_structures::{CliffordTableau, PauliExponential, PauliPolynomial},
     ir::{
-        CliffordGates, Gates, Synthesizer, pauli_polynomial::{self, helper::{check_columns, identity_recurse}}
+        pauli_polynomial::{
+            self,
+            helper::{check_columns, identity_recurse},
+        },
+        CliffordGates, Gates, Synthesizer,
     },
 };
 use bitvec::{bitvec, order::Lsb0};
@@ -41,7 +45,10 @@ where
             let mut pauli_polynomial = maybe_pp.unwrap();
             let num_gadgets: usize = pauli_polynomial.length();
             let mut polynomial_mask = bitvec![usize, Lsb0; 1; num_gadgets];
-            let mut remainder_pe = PauliExponential{pauli_polynomials: pauli_polynomials.to_owned(), clifford_tableau: clifford_tableau.to_owned()};
+            let mut remainder_pe = PauliExponential {
+                pauli_polynomials: pauli_polynomials.to_owned(),
+                clifford_tableau: clifford_tableau.to_owned(),
+            };
             check_columns(repr, &mut pauli_polynomial, &mut polynomial_mask);
             identity_recurse(
                 &mut pauli_polynomial,
