@@ -32,14 +32,13 @@ impl PauliString {
     }
 
     pub fn from_letters(paulis: &[PauliLetter]) -> Self {
-        let (x, z): (BitVec, BitVec) = paulis.iter()
-            .map(|pauli| {
-                match pauli {
-                    PauliLetter::I => (false, false),
-                    PauliLetter::X => (true, false),
-                    PauliLetter::Y => (true, true),
-                    PauliLetter::Z => (false, true)
-                }
+        let (x, z): (BitVec, BitVec) = paulis
+            .iter()
+            .map(|pauli| match pauli {
+                PauliLetter::I => (false, false),
+                PauliLetter::X => (true, false),
+                PauliLetter::Y => (true, true),
+                PauliLetter::Z => (false, true),
             })
             .unzip();
 
@@ -50,9 +49,8 @@ impl PauliString {
     pub fn from_text(pauli: &str) -> Self {
         let letters: Vec<PauliLetter> = pauli
             .chars()
-            .map(|pauli_char| {
-                PauliLetter::from_char(pauli_char)
-            }).collect();
+            .map(|pauli_char| PauliLetter::from_char(pauli_char))
+            .collect();
 
         PauliString::from_letters(&letters)
     }

@@ -101,14 +101,14 @@ impl PyPauliExponential {
         // println!("Creating gadget");
         let size = self.pe.size();
         let mut ppvec = self.pe.mut_chains();
-        
+
         let newpp = PauliPolynomial::from_hamiltonian(vec![(
             &to_pauli_component(size, &target, 'Z'),
             angle,
         )]);
         println!("Checking commutation");
         let first_pp = ppvec.front_mut();
-        if first_pp.is_some(){
+        if first_pp.is_some() {
             let pp: &mut PauliPolynomial = first_pp.unwrap();
             println!("Found first pp");
             // if pp.commutes_with(&newpp){

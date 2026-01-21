@@ -116,13 +116,13 @@ impl PauliLetter {
         }
     }
 
-    pub fn from_char(c: char) -> PauliLetter{
-        let (x,z) = match c {
+    pub fn from_char(c: char) -> PauliLetter {
+        let (x, z) = match c {
             'I' => (false, false),
             'X' => (true, false),
             'Y' => (true, true),
             'Z' => (false, true),
-            _ => panic!("Unknown Pauli letter {c}")
+            _ => panic!("Unknown Pauli letter {c}"),
         };
         PauliLetter::new(x, z)
     }

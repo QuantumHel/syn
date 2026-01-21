@@ -1,5 +1,7 @@
 use std::{
-    f64::{EPSILON, consts::PI}, fmt, ops::{Add, AddAssign, Neg, Sub, SubAssign}
+    f64::{consts::PI, EPSILON},
+    fmt,
+    ops::{Add, AddAssign, Neg, Sub, SubAssign},
 };
 
 use crate::data_structures::angle;
@@ -39,13 +41,17 @@ impl Angle {
         }
     }
 
-    pub fn to_pi4_rotation(&self) -> Result<u8, String>{
+    pub fn to_pi4_rotation(&self) -> Result<u8, String> {
         match self {
             Angle::Pi4Rotations(n) => Ok(*n),
             Angle::Arbitrary(rad) => {
                 let pi4_rot = rad * std::f64::consts::FRAC_2_PI * 2.;
-                if pi4_rot.fract() > 1.0e-14 { // Catch floating point errors
-                    Err(format!("Can only cast Angles that are multiples of pi/4. Fraction part is {}", pi4_rot.fract()))
+                if pi4_rot.fract() > 1.0e-14 {
+                    // Catch floating point errors
+                    Err(format!(
+                        "Can only cast Angles that are multiples of pi/4. Fraction part is {}",
+                        pi4_rot.fract()
+                    ))
                 } else {
                     let mut n = pi4_rot.trunc() as i64;
                     while n < 0 {
@@ -66,11 +72,10 @@ impl Angle {
 
     pub fn is_clifford(&self) -> bool {
         match self.to_pi4_rotation() {
-            Ok(n) => n%2 == 0,
-            Err(_) => false
+            Ok(n) => n % 2 == 0,
+            Err(_) => false,
         }
     }
-
 }
 
 impl AddAssign for Angle {
@@ -156,11 +161,11 @@ impl Sub for Angle {
     }
 }
 
-impl fmt::Display for Angle{
+impl fmt::Display for Angle {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Angle::Arbitrary(rad) => write!(f, "{}", rad),
-            Angle::Pi4Rotations(n) => write!(f, "{} PI / 4", n)
+            Angle::Pi4Rotations(n) => write!(f, "{} PI / 4", n),
         }
     }
 }
@@ -338,8 +343,8 @@ mod tests {
     }
 
     #[test]
-    fn test_angle_to_pi4(){
-        for n in 0..16{
+    fn test_angle_to_pi4() {
+        for n in 0..16 {
             let angle = Angle::Pi4Rotations(n);
             let a_angle = Angle::Arbitrary(angle.to_radians());
             println!("{} {}", angle, a_angle);
@@ -348,7 +353,7 @@ mod tests {
             println!("{}", res.as_ref().unwrap());
             assert!((n as u8) % 8 == res.unwrap());
         }
-        let alt_angle = Angle::Arbitrary(-PI/4.);
+        let alt_angle = Angle::Arbitrary(-PI / 4.);
         println!("{}", alt_angle);
         let res2 = alt_angle.to_pi4_rotation();
         assert!(res2.is_ok(), "{}", res2.err().unwrap());

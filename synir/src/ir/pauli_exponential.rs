@@ -62,7 +62,7 @@ where
         print_pp_help(&pauli_polynomials);
         println!("Before Synth {}", clifford_tableau);
         let num_qubits = clifford_tableau.size();
-        let ct = match pauli_polynomials.is_empty(){
+        let ct = match pauli_polynomials.is_empty() {
             true => CliffordTableau::new(num_qubits), // Skip PauliPolynomial synthesis
             false => match self.pauli_strategy {
                 PauliPolynomialSynthStrategy::Naive => {
@@ -74,13 +74,13 @@ where
                     pauli_synthesizer.set_connectivity(Connectivity::complete(num_qubits));
                     pauli_synthesizer.synthesize(pauli_polynomials, repr)
                 }
-            }
+            },
         };
         println!("Before combine: {ct}");
         //let combined_ct = ct.adjoint().compose(&clifford_tableau.adjoint());
         let combined_ct = clifford_tableau.compose(&ct).adjoint();
         println!("After synth: {}", combined_ct);
-        
+
         let final_ct = match &self.clifford_strategy {
             CliffordTableauSynthStrategy::Naive => {
                 let mut clifford_synthesizer = NaiveCliffordSynthesizer::default();
@@ -103,17 +103,16 @@ where
         let final_perm = final_ct.get_permutation();
         match final_perm {
             Some(perm) => repr.add_final_permutation(perm),
-            None => panic!("Final state was not a permutation: {final_ct}")
+            None => panic!("Final state was not a permutation: {final_ct}"),
         }
     }
 }
 
-fn print_pp_help(pauli_polynomials: &VecDeque<PauliPolynomial>){
+fn print_pp_help(pauli_polynomials: &VecDeque<PauliPolynomial>) {
     for pp in pauli_polynomials {
-        for i in 0..pp.length(){
+        for i in 0..pp.length() {
             println!("{}, {}", pp.pauli_gadget(i), pp.angle(i));
         }
         println!("--");
     }
-
 }

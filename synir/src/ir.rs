@@ -15,9 +15,9 @@ pub trait CliffordGates {
     fn h(&mut self, target: IndexType);
     fn cx(&mut self, control: IndexType, target: IndexType);
     fn cz(&mut self, control: IndexType, target: IndexType);
-    fn add_final_permutation(&mut self, permutation: Vec<IndexType>){
+    fn add_final_permutation(&mut self, permutation: Vec<IndexType>) {
         let mut perm = permutation.clone();
-        for i in 0..permutation.len(){
+        for i in 0..permutation.len() {
             // TODO: Rewrite so that it doesn't need to create 3 clones
             let tmp_perm = perm.clone();
             let j = tmp_perm.iter().find(|&x| *x == i).unwrap();
@@ -25,7 +25,7 @@ pub trait CliffordGates {
                 // Swap the qubits
                 self.cx(i, *j);
                 self.cx(*j, i);
-                self.cx(i,*j);
+                self.cx(i, *j);
                 // Update the permutation
                 perm.swap(i, *j);
             }

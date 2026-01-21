@@ -1,8 +1,6 @@
 use bitvec::bitvec;
 use bitvec::prelude::Lsb0;
-use synir::{
-    data_structures::{CliffordTableau, PauliString, PropagateClifford}
-};
+use synir::data_structures::{CliffordTableau, PauliString, PropagateClifford};
 
 pub fn setup_sample_ct() -> CliffordTableau {
     // Stab: ZZZ, -YIY, XIX
