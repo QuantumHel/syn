@@ -41,13 +41,13 @@ impl PropagateClifford for PauliExponential {
 
     fn s(&mut self, target: crate::IndexType) -> &mut Self {
         self.pauli_polynomials.s(target);
-        self.clifford_tableau.s(target);
+        self.clifford_tableau.s_dgr(target);
         self
     }
 
     fn v(&mut self, target: crate::IndexType) -> &mut Self {
         self.pauli_polynomials.v(target);
-        self.clifford_tableau.v(target);
+        self.clifford_tableau.v_dgr(target);
         self
     }
 }

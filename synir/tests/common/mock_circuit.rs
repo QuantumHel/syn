@@ -103,8 +103,14 @@ pub fn parse_clifford_commands(size: usize, commands: &[MockCommand]) -> Cliffor
             MockCommand::S(target) => {
                 tableau.s(*target);
             }
+            MockCommand::SDgr(target) => {
+                tableau.s_dgr(*target);
+            }
             MockCommand::V(target) => {
                 tableau.v(*target);
+            }
+            MockCommand::VDgr(target) => {
+                tableau.v_dgr(*target);
             }
             MockCommand::CX(control, target) => {
                 tableau.cx(*control, *target);

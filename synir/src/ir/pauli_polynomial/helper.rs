@@ -4,9 +4,10 @@ use bitvec::{bitvec, order::Lsb0};
 use itertools::Itertools;
 
 use crate::{
-    architecture::{Architecture, connectivity::Connectivity},
+    architecture::{connectivity::Connectivity, Architecture},
     data_structures::{
-        CliffordTableau, MaskedPropagateClifford, PauliExponential, PauliLetter, PauliPolynomial, PropagateClifford
+        CliffordTableau, MaskedPropagateClifford, PauliExponential, PauliLetter, PauliPolynomial,
+        PropagateClifford,
     },
     ir::{CliffordGates, Gates},
 };
@@ -447,13 +448,14 @@ fn disconnect<G>(
 ) where
     G: CliffordGates + Gates,
 {
+    // OK if its y or z, so (false, true) or (false, false)
     match (is_x, is_y) {
-        (true, true) => {
+        (true, false) => {
             pauli_polynomial.h(next_qubit);
             remainder_pe.h(next_qubit);
             repr.h(next_qubit);
         }
-        (true, false) => {
+        (true, true) => {
             pauli_polynomial.s(next_qubit);
             remainder_pe.s(next_qubit);
             repr.s(next_qubit);

@@ -23,17 +23,17 @@ fn test_psgs_pauli_exponential_synthesis_simple() {
     let ct = synthesizer.synthesize(pp, &mut mock);
 
     let ref_commands = [
-        MockCommand::S(1),
+        MockCommand::H(1),
         MockCommand::CX(3, 1),
         MockCommand::V(2),
         MockCommand::CX(2, 1),
-        MockCommand::Ry(1, 0.3),
+        MockCommand::Rz(1, -0.3),
     ];
 
     let ref_clifford_commands = [
-        MockCommand::S(1),
+        MockCommand::H(1),
         MockCommand::CX(3, 1),
-        MockCommand::V(2),
+        MockCommand::VDgr(2),
         MockCommand::CX(2, 1),
     ];
 
@@ -54,16 +54,16 @@ fn test_psgs_pauli_exponential_synthesis_complex() {
         MockCommand::CX(2, 1),
         MockCommand::Rz(1, 0.3),
         MockCommand::H(1),
-        MockCommand::S(0),
+        MockCommand::H(0),
         MockCommand::CX(1, 0),
-        MockCommand::Ry(0, -0.7),
+        MockCommand::Rz(0, 0.7),
     ];
 
     let ref_clifford_commands = [
         MockCommand::CX(3, 1),
         MockCommand::CX(2, 1),
         MockCommand::H(1),
-        MockCommand::S(0),
+        MockCommand::H(0),
         MockCommand::CX(1, 0),
     ];
 

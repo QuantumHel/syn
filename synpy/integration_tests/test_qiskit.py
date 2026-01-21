@@ -56,10 +56,15 @@ all_strats = (
 @pytest.mark.parametrize(("pauli_strat", "ct_strat"), all_strats)
 def test_qiskit_loop(pauli_strat, ct_strat) -> None:
     circuit = QuantumCircuit(3)
-    circuit.h(0)
+    circuit.s(0)
     circuit.cx(0, 1)
     circuit.rz(1.5, 1)
-    #circuit.rx(1.5, 1)
+    circuit.s(0)
+    circuit.cx(0, 1)
+    circuit.rz(1.5, 1)
+    circuit.s(0)
+    circuit.cx(0, 1)
+    circuit.rz(1.5, 1)
     round_loop(circuit, pauli_strat, ct_strat)
 
 
