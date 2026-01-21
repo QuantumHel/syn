@@ -114,7 +114,18 @@ def test_rz_at_start_of_circuit(pauli_strat, ct_strat):
     round_loop(circuit, pauli_strat, ct_strat)
 
 @pytest.mark.parametrize(("pauli_strat", "ct_strat"), all_strats)
-def test_quantum_volume(pauli_strat, ct_strat):
+def test_quantum_volume2(pauli_strat, ct_strat):
+    circuit = QuantumVolume(2,1)
+
+    round_loop(circuit, pauli_strat, ct_strat)
+
+@pytest.mark.parametrize(("pauli_strat", "ct_strat"), all_strats)
+def test_quantum_volume3(pauli_strat, ct_strat):
+    circuit = QuantumVolume(3,1)
+    round_loop(circuit, pauli_strat, ct_strat)
+
+@pytest.mark.parametrize(("pauli_strat", "ct_strat"), all_strats)
+def test_quantum_volume4(pauli_strat, ct_strat):
     circuit = QuantumVolume(4)
     round_loop(circuit, pauli_strat, ct_strat)
 
