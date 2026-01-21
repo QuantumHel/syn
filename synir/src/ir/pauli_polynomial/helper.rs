@@ -314,6 +314,7 @@ pub(super) fn identity_recurse<G>(
             repr,
         );
         // ensure remainder is synthesized
+        let other_mask = other_mask.iter_ones().map(|_| true).collect();
         identity_recurse(
             pauli_polynomial,
             remainder_pe,
