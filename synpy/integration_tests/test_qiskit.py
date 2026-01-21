@@ -1,6 +1,6 @@
 from qiskit.quantum_info import Clifford, Operator
 from qiskit import QuantumCircuit, QuantumRegister
-from qiskit.circuit.library import PermutationGate, QuantumVolume
+from qiskit.circuit.library import PermutationGate, quantum_volume
 import pytest
 
 from synpy.qiskit.plugin import SynPyCliffordPlugin, qiskit_to_synir
@@ -114,18 +114,17 @@ def test_rz_at_start_of_circuit(pauli_strat, ct_strat):
 
 @pytest.mark.parametrize(("pauli_strat", "ct_strat"), all_strats)
 def test_quantum_volume2(pauli_strat, ct_strat):
-    circuit = QuantumVolume(2,1)
-
+    circuit = quantum_volume(2,1)
     round_loop(circuit, pauli_strat, ct_strat)
 
 @pytest.mark.parametrize(("pauli_strat", "ct_strat"), all_strats)
 def test_quantum_volume3(pauli_strat, ct_strat):
-    circuit = QuantumVolume(3,1)
+    circuit = quantum_volume(3,1)
     round_loop(circuit, pauli_strat, ct_strat)
 
 @pytest.mark.parametrize(("pauli_strat", "ct_strat"), all_strats)
 def test_quantum_volume4(pauli_strat, ct_strat):
-    circuit = QuantumVolume(4)
+    circuit = quantum_volume(4,1)
     round_loop(circuit, pauli_strat, ct_strat)
 
 @pytest.mark.parametrize(("pauli_strat", "ct_strat"), all_strats)
