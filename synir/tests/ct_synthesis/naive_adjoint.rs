@@ -1,4 +1,4 @@
-use crate::common::mock_circuit::{check_mock_equals_clifford_tableau, MockCircuit, MockCommand};
+use crate::common::mock_circuit::{MockCircuit, MockCommand};
 use crate::common::sample_clifford_tableaus::{
     half_swap_0_1, half_swap_1_0, identity_2qb_ct, sample_2cnot_ladder, sample_cnot_gate,
     sample_cnot_reverse_gate, sample_s_dgr_gate, sample_s_gate, sample_swap_ct, sample_v_dgr_gate,
@@ -18,16 +18,16 @@ fn run_synthesizer(clifford_tableau: &CliffordTableau) -> (MockCircuit, Clifford
 macro_rules! test_clifford {
     ($fun:ident, $expected:expr) => {
         paste::item! {
-                #[test]
-                fn [< synthesize_ $fun>]() {
-                    let clifford_tableau = $fun();
-                    let (mock, new_ct) = run_synthesizer(&clifford_tableau);
-                    if $expected.is_some() {
-                        assert_eq!(mock.commands(), $expected.unwrap());
-                    }
-                    check_mock_equals_clifford_tableau(&clifford_tableau, &mock, new_ct.get_permutation());
+            #[test]
+            fn [< synthesize_ $fun>]() {
+                let clifford_tableau = $fun();
+                let (mock, new_ct) = run_synthesizer(&clifford_tableau);
+                if $expected.is_some() {
+                    assert_eq!(mock.commands(), $expected.unwrap());
                 }
+                mock.equals_clifford_tableau(&clifford_tableau, new_ct.get_permutation());
             }
+        }
     };
 }
 

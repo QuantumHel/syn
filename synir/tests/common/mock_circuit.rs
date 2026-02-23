@@ -1,15 +1,16 @@
 use synir::{
+    architecture::connectivity::{self, Connectivity},
     data_structures::{CliffordTableau, PropagateClifford},
     ir::{CliffordGates, Gates},
     IndexType,
 };
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, PartialEq)]
 pub struct MockCircuit {
     commands: Vec<MockCommand>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum MockCommand {
     CX(usize, usize),
     CZ(usize, usize),
@@ -32,8 +33,88 @@ impl MockCircuit {
             commands: Vec::new(),
         }
     }
+
+    pub fn from_vec(commands: Vec<MockCommand>) -> Self {
+        Self { commands }
+    }
+
     pub fn commands(&self) -> &Vec<MockCommand> {
         &self.commands
+    }
+
+    pub fn to_clifford_tableau(&self, size: usize) -> CliffordTableau {
+        let mut tableau = CliffordTableau::new(size);
+        for command in self.commands.iter() {
+            match command {
+                MockCommand::H(target) => {
+                    tableau.h(*target);
+                }
+                MockCommand::S(target) => {
+                    tableau.s(*target);
+                }
+                MockCommand::SDgr(target) => {
+                    tableau.s_dgr(*target);
+                }
+                MockCommand::V(target) => {
+                    tableau.v(*target);
+                }
+                MockCommand::VDgr(target) => {
+                    tableau.v_dgr(*target);
+                }
+                MockCommand::CX(control, target) => {
+                    tableau.cx(*control, *target);
+                }
+                MockCommand::X(target) => {
+                    tableau.x(*target);
+                }
+                MockCommand::Z(target) => {
+                    tableau.z(*target);
+                }
+                _ => {
+                    panic!("Circuit contains non-cliffords")
+                }
+            }
+        }
+        tableau
+    }
+
+    pub fn equals_clifford_tableau(
+        &self,
+        clifford_tableau: &CliffordTableau,
+        permutation: Option<Vec<usize>>,
+    ) -> bool {
+        let mut ref_ct = self.to_clifford_tableau(clifford_tableau.size());
+        if permutation.is_some() {
+            ref_ct.permute(permutation.unwrap());
+        }
+        *clifford_tableau == ref_ct
+    }
+
+    pub fn fits_connectivity(&self, connectivity: &Connectivity) -> bool {
+        let mut result = true;
+        for command in self.commands.iter() {
+            result &= match command {
+                MockCommand::CX(i, j) => connectivity.has_edge(*i, *j),
+                MockCommand::CZ(i, j) => connectivity.has_edge(*i, *j),
+                _ => true,
+            };
+        }
+        result
+    }
+
+    pub fn cliffords_only(&self) -> MockCircuit {
+        MockCircuit::from_vec(
+            self.commands
+                .iter()
+                .filter(|c| match **c {
+                    MockCommand::Rx(_, _) => false,
+                    MockCommand::Ry(_, _) => false,
+                    MockCommand::Rz(_, _) => false,
+                    _ => true,
+                })
+                .map(|c| (*c).clone())
+                .collect(),
+        )
     }
 }
 
@@ -91,54 +172,4 @@ impl Gates for MockCircuit {
     fn rz(&mut self, target: IndexType, angle: f64) {
         self.commands.push(MockCommand::Rz(target, angle));
     }
-}
-
-pub fn parse_clifford_commands(size: usize, commands: &[MockCommand]) -> CliffordTableau {
-    let mut tableau = CliffordTableau::new(size);
-    for command in commands.iter() {
-        match command {
-            MockCommand::H(target) => {
-                tableau.h(*target);
-            }
-            MockCommand::S(target) => {
-                tableau.s(*target);
-            }
-            MockCommand::SDgr(target) => {
-                tableau.s_dgr(*target);
-            }
-            MockCommand::V(target) => {
-                tableau.v(*target);
-            }
-            MockCommand::VDgr(target) => {
-                tableau.v_dgr(*target);
-            }
-            MockCommand::CX(control, target) => {
-                tableau.cx(*control, *target);
-            }
-            MockCommand::X(target) => {
-                tableau.x(*target);
-            }
-            MockCommand::Z(target) => {
-                tableau.z(*target);
-            }
-            _ => {
-                panic!("not found")
-            }
-        }
-    }
-    tableau
-}
-
-pub fn check_mock_equals_clifford_tableau(
-    clifford_tableau: &CliffordTableau,
-    mock: &MockCircuit,
-    permutation: Option<Vec<usize>>,
-) {
-    assert!(
-        permutation.is_some(),
-        "Tableau was not a permutation matrix"
-    );
-    let mut ref_ct = parse_clifford_commands(clifford_tableau.size(), mock.commands());
-    ref_ct.permute(permutation.unwrap());
-    assert_eq!(*clifford_tableau, ref_ct);
 }

@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, ops::Deref};
+use std::{cell::Cell, collections::VecDeque, ops::Deref};
 
 use crate::{
     architecture::connectivity::Connectivity,
@@ -23,6 +23,10 @@ impl PSGSPauliPolynomialSynthesizer {
         self.connectivity = connectivity;
         self
     }
+
+    pub fn get_connectivity(&self) -> &Connectivity {
+        &self.connectivity
+    }
 }
 
 impl<G> Synthesizer<VecDeque<PauliPolynomial>, G, CliffordTableau>
@@ -38,7 +42,7 @@ where
         if pauli_polynomials.is_empty() {
             panic!("You are trying to synthesize an empty PauliPolynomial.")
         }
-        let num_qubits = &pauli_polynomials[0].size();
+        let num_qubits = &pauli_polynomials[0].num_qubits();
         let mut clifford_tableau = CliffordTableau::new(*num_qubits);
         let mut maybe_pp = pauli_polynomials.pop_front();
         while maybe_pp.as_ref().is_some() {

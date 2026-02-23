@@ -3,10 +3,14 @@ pub(crate) mod qiskit;
 extern crate pyo3;
 extern crate pyo3_ffi;
 
-use std::collections::VecDeque;
+use std::{
+    borrow::{Borrow, BorrowMut},
+    collections::VecDeque,
+};
 
 use pyo3::prelude::*;
 use synir::{
+    data_structures::pauli_exponential::{merge_commuting_pp, merge_repeats, push_clifford_angles},
     data_structures::{
         Angle, CliffordTableau, PauliExponential, PauliPolynomial, PropagateClifford,
     },
@@ -61,6 +65,10 @@ impl PyPauliExponential {
         self.pe.h(target);
     }
 
+    pub fn add_v(&mut self, target: usize) {
+        self.pe.v(target);
+    }
+
     pub fn add_s(&mut self, target: usize) {
         self.pe.s(target);
     }
@@ -86,17 +94,17 @@ impl PyPauliExponential {
     }
 
     pub fn add_rz(&mut self, target: usize, angle: f64) {
-        let mut angle = Angle::Arbitrary(angle);
-        // let maybe_pi4_rot = angle.to_pi4_rotation();
-        // if maybe_pi4_rot.is_ok(){
-        //     match maybe_pi4_rot.unwrap() {
-        //         0 => return,
-        //         2 => return self.add_s(target),
-        //         4 => return self.add_z(target),
-        //         6 => return self.add_s_dgr(target),
-        //         n => angle = Angle::Pi4Rotations(n) // Non-Clifford
-        //     }
-        // }
+        let mut angle = Angle::from_angle(angle);
+        let maybe_pi4_rot = angle.to_pi4_rotation();
+        if maybe_pi4_rot.is_ok() {
+            match maybe_pi4_rot.unwrap() {
+                0 => return,
+                2 => return self.add_s(target),
+                4 => return self.add_z(target),
+                6 => return self.add_s_dgr(target),
+                n => angle = Angle::from_pi4_rotation(n), //Non-Clifford
+            }
+        }
         let size = self.pe.size();
         let mut ppvec = self.pe.mut_chains();
 
@@ -104,15 +112,19 @@ impl PyPauliExponential {
             &to_pauli_component(size, &target, 'Z'),
             angle,
         )]);
-        let first_pp = ppvec.front_mut();
+        /*let first_pp = ppvec.front_mut();
         if first_pp.is_some() {
             let pp: &mut PauliPolynomial = first_pp.unwrap();
-            // if pp.commutes_with(&newpp){
-            //     pp.append_other(newpp);
-            //     return;
-            // }
-        }
+            if pp.commutes_with(&newpp){
+                pp.append_other(newpp);
+                return;
+            }
+        }*/
         ppvec.push_front(newpp);
+    }
+
+    pub fn print(&self) {
+        pe_print_helper(self.pe.borrow());
     }
 }
 
@@ -136,6 +148,25 @@ where
         pe.pauli_strategy.clone(),
         pe.tableau_strategy.clone(),
     );
-    let pe = std::mem::take(&mut pe.pe);
+    let mut pe = std::mem::take(&mut pe.pe);
+    merge_commuting_pp(pe.borrow_mut());
+    merge_repeats(pe.borrow_mut());
+    push_clifford_angles(pe.borrow_mut());
+    pe_print_helper(&pe);
     synth.synthesize(pe, circuit);
+}
+
+fn pe_print_helper(pe: &PauliExponential) {
+    println!("PE:");
+    for pp in pe.chains() {
+        for a in pp.angles() {
+            print!("{} ", *a);
+        }
+        println!("");
+        for chain in pp.chains() {
+            println!("{}", chain);
+        }
+        println!("---");
+    }
+    println!("{}", pe.clifford_tableau());
 }

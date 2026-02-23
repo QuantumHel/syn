@@ -1,5 +1,8 @@
-use std::iter::zip;
+use core::num;
+use std::{borrow::BorrowMut, iter::zip};
 
+use bitvec::prelude::{BitVec, Msb0};
+use bitvec::vec;
 use itertools::Itertools;
 
 use crate::{
@@ -7,44 +10,6 @@ use crate::{
     data_structures::{CliffordTableau, PauliLetter, PauliString, PropagateClifford},
     ir::CliffordGates,
 };
-
-fn get_pauli(pauli_string: &PauliString, row: usize) -> PauliLetter {
-    PauliLetter::new(pauli_string.x(row), pauli_string.z(row))
-}
-
-#[allow(dead_code)]
-fn is_i(pauli_letter: PauliLetter) -> bool {
-    pauli_letter == PauliLetter::I
-}
-
-fn is_not_i(pauli_letter: PauliLetter) -> bool {
-    pauli_letter != PauliLetter::I
-}
-
-fn is_x(pauli_letter: PauliLetter) -> bool {
-    pauli_letter == PauliLetter::X
-}
-
-fn is_not_x(pauli_letter: PauliLetter) -> bool {
-    pauli_letter != PauliLetter::X
-}
-
-fn is_y(pauli_letter: PauliLetter) -> bool {
-    pauli_letter == PauliLetter::Y
-}
-
-#[allow(dead_code)]
-fn is_not_y(pauli_letter: PauliLetter) -> bool {
-    pauli_letter != PauliLetter::Y
-}
-
-fn is_z(pauli_letter: PauliLetter) -> bool {
-    pauli_letter == PauliLetter::Z
-}
-
-fn is_not_z(pauli_letter: PauliLetter) -> bool {
-    pauli_letter != PauliLetter::Z
-}
 
 pub(super) fn clean_naive_pivot<G>(
     repr: &mut G,
@@ -55,19 +20,20 @@ pub(super) fn clean_naive_pivot<G>(
     G: CliffordGates,
 {
     let num_qubits = ct.size();
-    if check_pauli(&*ct, pivot_row, pivot_column + num_qubits, is_y) {
-        ct.s(pivot_row);
-        repr.s(pivot_row);
-    }
-
-    if check_pauli(&*ct, pivot_row, pivot_column + num_qubits, is_not_z) {
-        ct.h(pivot_row);
-        repr.h(pivot_row);
-    }
-
-    if check_pauli(&*ct, pivot_row, pivot_column, is_not_x) {
-        ct.s(pivot_row);
-        repr.s(pivot_row);
+    match ct.column(pivot_row).pauli(pivot_column + num_qubits) {
+        PauliLetter::Y => {
+            ct.s(pivot_row);
+            repr.s(pivot_row);
+        }
+        PauliLetter::X => {
+            ct.v(pivot_row);
+            repr.v(pivot_row);
+        }
+        PauliLetter::Z => {
+            ct.h(pivot_row);
+            repr.h(pivot_row);
+        }
+        PauliLetter::I => (),
     }
 }
 
@@ -125,16 +91,16 @@ pub(super) fn clean_x_pivot<G>(
 ) where
     G: CliffordGates,
 {
-    // These are switched around because of implementation
-    if check_pauli(&*clifford_tableau, pivot_column, pivot_row, is_y) {
-        clifford_tableau.s(pivot_column);
-        repr.s(pivot_column);
-    }
-
-    // These are switched around because of implementation
-    if check_pauli(&*clifford_tableau, pivot_column, pivot_row, is_z) {
-        clifford_tableau.h(pivot_column);
-        repr.h(pivot_column);
+    match clifford_tableau.column(pivot_column).pauli(pivot_row) {
+        PauliLetter::Y => {
+            clifford_tableau.s(pivot_column);
+            repr.s(pivot_column);
+        }
+        PauliLetter::Z => {
+            clifford_tableau.h(pivot_column);
+            repr.h(pivot_column);
+        }
+        _ => (),
     }
 }
 
@@ -148,31 +114,23 @@ pub(super) fn clean_z_pivot<G>(
     G: CliffordGates,
 {
     let num_qubits = clifford_tableau.size();
-
-    // These are switched around because of implementation
-    if check_pauli(
-        &*clifford_tableau,
-        pivot_column,
-        pivot_row + num_qubits,
-        is_y,
-    ) {
-        clifford_tableau.v(pivot_column);
-        repr.v(pivot_column);
-    }
-
-    // These are switched around because of implementation
-    if check_pauli(
-        &*clifford_tableau,
-        pivot_column,
-        pivot_row + num_qubits,
-        is_x,
-    ) {
-        clifford_tableau.h(pivot_column);
-        repr.h(pivot_column);
+    match clifford_tableau
+        .column(pivot_column)
+        .pauli(pivot_row + num_qubits)
+    {
+        PauliLetter::Y => {
+            clifford_tableau.v(pivot_column);
+            repr.v(pivot_column);
+        }
+        PauliLetter::X => {
+            clifford_tableau.h(pivot_column);
+            repr.h(pivot_column);
+        }
+        _ => (),
     }
 }
 
-/// Cleans the destabilizer observables for `pivot_row` in the Clifford tableau using (pivot_column, pivot_row) as the entry for elimination..
+/// Cleans Ithe destabilizer observables for `pivot_row` in the Clifford tableau using (pivot_column, pivot_row) as the entry for elimination..
 /// Assumes that (pivot_column, pivot_row) is either an I term or a X term.
 /// Only removes entries from columns in `remaining_columns` and assumes `pivot_column` has already been removed from `remaining_columns`.
 /// If (pivot_column, pivot_row) is an I term, set it to X first using a non-I term in (pivot_row, remaining_columns).
@@ -185,33 +143,37 @@ pub(super) fn clean_x_observables<G>(
 ) where
     G: CliffordGates,
 {
-    let affected_cols =
-        check_across_columns(&*clifford_tableau, remaining_columns, pivot_row, is_y);
-
+    let affected_cols = remaining_columns
+        .iter()
+        .filter(|col| clifford_tableau.column(**col).pauli(pivot_row) == PauliLetter::Y)
+        .collect_vec();
     for col in affected_cols {
-        repr.s(col);
-        clifford_tableau.s(col);
+        repr.s(*col);
+        clifford_tableau.s(*col);
     }
 
-    let affected_cols =
-        check_across_columns(&*clifford_tableau, remaining_columns, pivot_row, is_z);
+    let affected_cols = remaining_columns
+        .iter()
+        .filter(|col| clifford_tableau.column(**col).pauli(pivot_row) == PauliLetter::Z)
+        .collect_vec();
 
     for col in affected_cols {
-        repr.h(col);
-        clifford_tableau.h(col);
+        repr.h(*col);
+        clifford_tableau.h(*col);
     }
 
-    let affected_cols =
-        check_across_columns(&*clifford_tableau, remaining_columns, pivot_row, is_not_i);
-
-    if check_pauli(clifford_tableau, pivot_column, pivot_row, is_i) {
-        repr.cx(affected_cols[0], pivot_column);
-        clifford_tableau.cx(affected_cols[0], pivot_column);
+    let affected_cols = remaining_columns
+        .iter()
+        .filter(|col| clifford_tableau.column(**col).pauli(pivot_row) != PauliLetter::I)
+        .collect_vec();
+    if clifford_tableau.column(pivot_column).pauli(pivot_row) == PauliLetter::I {
+        repr.cx(*affected_cols[0], pivot_column);
+        clifford_tableau.cx(*affected_cols[0], pivot_column);
     }
 
     for col in affected_cols {
-        repr.cx(pivot_column, col);
-        clifford_tableau.cx(pivot_column, col);
+        repr.cx(pivot_column, *col);
+        clifford_tableau.cx(pivot_column, *col);
     }
 }
 
@@ -229,43 +191,46 @@ pub(super) fn clean_z_observables<G>(
     G: CliffordGates,
 {
     let num_qubits = clifford_tableau.size();
-    let affected_cols = check_across_columns(
-        &*clifford_tableau,
-        remaining_columns,
-        pivot_row + num_qubits,
-        is_y,
-    );
+    let affected_cols = remaining_columns
+        .iter()
+        .filter(|col| {
+            clifford_tableau.column(**col).pauli(pivot_row + num_qubits) == PauliLetter::Y
+        })
+        .collect_vec();
     for col in affected_cols {
-        repr.v(col);
-        clifford_tableau.v(col);
+        repr.v(*col);
+        clifford_tableau.v(*col);
     }
 
-    let affected_cols = check_across_columns(
-        &*clifford_tableau,
-        remaining_columns,
-        pivot_row + num_qubits,
-        is_x,
-    );
+    let affected_cols = remaining_columns
+        .iter()
+        .filter(|col| {
+            clifford_tableau.column(**col).pauli(pivot_row + num_qubits) == PauliLetter::X
+        })
+        .collect_vec();
     for col in affected_cols {
-        repr.h(col);
-        clifford_tableau.h(col);
+        repr.h(*col);
+        clifford_tableau.h(*col);
     }
 
-    let affected_cols = check_across_columns(
-        &*clifford_tableau,
-        remaining_columns,
-        pivot_row + num_qubits,
-        is_not_i,
-    );
-
-    if check_pauli(clifford_tableau, pivot_column, pivot_row + num_qubits, is_i) {
-        repr.cx(pivot_column, affected_cols[0]);
-        clifford_tableau.cx(pivot_column, affected_cols[0]);
+    let affected_cols = remaining_columns
+        .iter()
+        .filter(|col| {
+            clifford_tableau.column(**col).pauli(pivot_row + num_qubits) != PauliLetter::I
+        })
+        .collect_vec();
+    if clifford_tableau
+        .column(pivot_column)
+        .pauli(pivot_row + num_qubits)
+        == PauliLetter::I
+    {
+        repr.cx(pivot_column, *affected_cols[0]);
+        clifford_tableau.cx(pivot_column, *affected_cols[0]);
     }
 
     for col in affected_cols {
-        repr.cx(col, pivot_column);
-        clifford_tableau.cx(col, pivot_column);
+        repr.cx(*col, pivot_column);
+        clifford_tableau.cx(*col, pivot_column);
     }
 }
 
@@ -273,7 +238,7 @@ pub(super) fn clean_signs<G>(repr: &mut G, clifford_tableau: &mut CliffordTablea
 where
     G: CliffordGates,
 {
-    let z_signs = clifford_tableau.z_signs();
+    let n = clifford_tableau.size();
     let inv_perm = match clifford_tableau.get_permutation() {
         None => panic!(
             "Cleaning signs but tableau is not a permutation matrix: \n{}",
@@ -281,42 +246,31 @@ where
         ),
         Some(perm) => perm,
     };
-    let row_permutation = (0..clifford_tableau.size())
+    let row_permutation = (0..n)
         .map(|i| inv_perm.iter().find_position(|&&x| x == i))
         .map(|x| x.unwrap().0)
         .collect_vec();
-    for (sign, row) in zip(z_signs, row_permutation.iter()) {
-        if sign {
-            repr.x(*row);
-            clifford_tableau.x(*row);
-        }
+    let z_signs = clifford_tableau.z_signs();
+    for r in (0..n).filter(|r| z_signs[*r]) {
+        let row = row_permutation[r];
+        repr.x(row);
+        clifford_tableau.x(row);
+        println!("X on {}", row);
     }
-
+    assert_eq!(
+        clifford_tableau.z_signs(),
+        BitVec::<u8, Msb0>::repeat(false, n)
+    );
     let x_signs = clifford_tableau.x_signs();
-
-    for (sign, row) in zip(x_signs, row_permutation.iter()) {
-        if sign {
-            repr.z(*row);
-            clifford_tableau.z(*row);
-        }
+    for r in (0..n).filter(|r| x_signs[*r]) {
+        let row = row_permutation[r];
+        repr.z(row);
+        clifford_tableau.z(row);
     }
-}
-
-pub(super) fn swap<G>(
-    repr: &mut G,
-    clifford_tableau: &mut CliffordTableau,
-    row: usize,
-    pivot_col: usize,
-) where
-    G: CliffordGates,
-{
-    repr.cx(pivot_col, row);
-    repr.cx(row, pivot_col);
-    repr.cx(pivot_col, row);
-
-    clifford_tableau.cx(pivot_col, row);
-    clifford_tableau.cx(row, pivot_col);
-    clifford_tableau.cx(pivot_col, row);
+    assert_eq!(
+        clifford_tableau.x_signs(),
+        BitVec::<u8, Msb0>::repeat(false, n)
+    );
 }
 
 pub(super) fn naive_pivot_search(
@@ -328,43 +282,14 @@ pub(super) fn naive_pivot_search(
 
     for col in 0..num_qubits {
         let column = clifford_tableau.column(col);
-        let x_pauli = get_pauli(column, row);
-        let z_pauli = get_pauli(column, row + num_qubits);
+        let x_pauli = column.pauli(row);
+        let z_pauli = column.pauli(row + num_qubits);
         if x_pauli != PauliLetter::I && z_pauli != PauliLetter::I && x_pauli != z_pauli {
             pivot_col = col;
             break;
         }
     }
     pivot_col
-}
-
-pub(super) fn check_pauli(
-    clifford_tableau: &CliffordTableau,
-    column: usize,
-    row: usize,
-    pauli_check: fn(PauliLetter) -> bool,
-) -> bool {
-    let pauli_string = clifford_tableau.column(column);
-    pauli_check(get_pauli(pauli_string, row))
-}
-
-/// Helper function that returns indices for a particular column `col` of `clifford_tableau` that match the provided closure `pauli_check`.
-pub(super) fn check_across_columns(
-    clifford_tableau: &CliffordTableau,
-    columns: &[usize],
-    checked_row: usize,
-    pauli_check: fn(PauliLetter) -> bool,
-) -> Vec<usize> {
-    let mut affected_cols = Vec::new();
-
-    for column in columns {
-        let pauli_string = clifford_tableau.column(*column);
-
-        if pauli_check(get_pauli(pauli_string, checked_row)) {
-            affected_cols.push(*column);
-        }
-    }
-    affected_cols
 }
 
 /// function to pick a stabilizer / destabilizer to set to identity in Clifford tableau.
@@ -377,10 +302,10 @@ pub(super) fn pick_row(
     for row in remaining_rows {
         row_weights[*row] = 0;
         for qubit in connectivity.nodes() {
-            if is_not_i(clifford_tableau.stabilizer(qubit, *row)) {
+            if clifford_tableau.stabilizer(qubit, *row) != PauliLetter::I {
                 row_weights[*row] += 1;
             }
-            if is_not_i(clifford_tableau.destabilizer(qubit, *row)) {
+            if clifford_tableau.destabilizer(qubit, *row) != PauliLetter::I {
                 row_weights[*row] += 1;
             }
         }
@@ -475,7 +400,7 @@ pub(super) fn clean_x_prc<G>(
     let mut terminals = remaining_columns
         .iter()
         .filter_map(|qubit| {
-            if is_not_i(clifford_tableau.destabilizer(*qubit, pivot_row)) {
+            if clifford_tableau.destabilizer(*qubit, pivot_row) != PauliLetter::I {
                 Some(*qubit)
             } else {
                 None
@@ -492,20 +417,26 @@ pub(super) fn clean_x_prc<G>(
         .get_cx_ladder(&terminals, &pivot_column)
         .unwrap();
 
-    let affected_cols = check_across_columns(&*clifford_tableau, &terminals, pivot_row, is_y);
+    let affected_cols = terminals
+        .iter()
+        .filter(|col| clifford_tableau.column(**col).pauli(pivot_row) == PauliLetter::Y)
+        .collect_vec();
     for col in affected_cols {
-        repr.s(col);
-        clifford_tableau.s(col);
+        repr.s(*col);
+        clifford_tableau.s(*col);
     }
 
-    let affected_cols = check_across_columns(&*clifford_tableau, &terminals, pivot_row, is_z);
+    let affected_cols = terminals
+        .iter()
+        .filter(|col| clifford_tableau.column(**col).pauli(pivot_row) == PauliLetter::Z)
+        .collect_vec();
     for col in affected_cols {
-        repr.h(col);
-        clifford_tableau.h(col);
+        repr.h(*col);
+        clifford_tableau.h(*col);
     }
 
     for (parent, child) in traversal.iter().rev() {
-        if is_i(clifford_tableau.destabilizer(*parent, pivot_row)) {
+        if clifford_tableau.destabilizer(*parent, pivot_row) == PauliLetter::I {
             repr.cx(*child, *parent);
             clifford_tableau.cx(*child, *parent);
         }
@@ -531,7 +462,7 @@ pub(super) fn clean_z_prc<G>(
     let mut terminals = remaining_columns
         .iter()
         .filter_map(|qubit| {
-            if is_not_i(clifford_tableau.stabilizer(*qubit, pivot_row)) {
+            if clifford_tableau.stabilizer(*qubit, pivot_row) != PauliLetter::I {
                 Some(*qubit)
             } else {
                 None
@@ -547,23 +478,30 @@ pub(super) fn clean_z_prc<G>(
         .get_cx_ladder(&terminals, &pivot_column)
         .unwrap();
 
-    let affected_cols =
-        check_across_columns(&*clifford_tableau, &terminals, pivot_row + num_qubits, is_y);
-
+    let affected_cols = terminals
+        .iter()
+        .filter(|col| {
+            clifford_tableau.column(**col).pauli(pivot_row + num_qubits) == PauliLetter::Y
+        })
+        .collect_vec();
     for col in affected_cols {
-        repr.v(col);
-        clifford_tableau.v(col);
+        repr.v(*col);
+        clifford_tableau.v(*col);
     }
 
-    let affected_cols =
-        check_across_columns(&*clifford_tableau, &terminals, pivot_row + num_qubits, is_x);
+    let affected_cols = terminals
+        .iter()
+        .filter(|col| {
+            clifford_tableau.column(**col).pauli(pivot_row + num_qubits) == PauliLetter::X
+        })
+        .collect_vec();
     for col in affected_cols {
-        repr.h(col);
-        clifford_tableau.h(col);
+        repr.h(*col);
+        clifford_tableau.h(*col);
     }
 
     for (parent, child) in traversal.iter().rev() {
-        if is_i(clifford_tableau.stabilizer(*parent, pivot_row)) {
+        if clifford_tableau.stabilizer(*parent, pivot_row) == PauliLetter::I {
             repr.cx(*parent, *child);
             clifford_tableau.cx(*parent, *child);
         }

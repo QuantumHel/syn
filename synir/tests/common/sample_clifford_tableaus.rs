@@ -1,6 +1,6 @@
 use bitvec::bitvec;
 use bitvec::prelude::Lsb0;
-use synir::data_structures::{CliffordTableau, PauliString, PropagateClifford};
+use synir::data_structures::{Angle, CliffordTableau, PauliString, PropagateClifford};
 
 pub fn setup_sample_ct() -> CliffordTableau {
     // Stab: ZZZ, -YIY, XIX
@@ -112,4 +112,31 @@ pub fn sample_cnot_reverse_gate() -> CliffordTableau {
     let mut ct = CliffordTableau::new(2);
     ct.cx(1, 0);
     return ct;
+}
+
+fn compose_x_gadget() -> CliffordTableau {
+    let mut ct = CliffordTableau::new(2);
+    let _ = ct.compose_gadget((
+        synir::data_structures::PauliString::from_text("XI"),
+        Angle::from_pi4_rotation(2),
+    ));
+    ct
+}
+
+fn compose_z_gadget() -> CliffordTableau {
+    let mut ct = CliffordTableau::new(2);
+    let _ = ct.compose_gadget((
+        synir::data_structures::PauliString::from_text("ZI"),
+        Angle::from_pi4_rotation(4),
+    ));
+    ct
+}
+
+fn compose_y_gadget() -> CliffordTableau {
+    let mut ct = CliffordTableau::new(2);
+    let _ = ct.compose_gadget((
+        synir::data_structures::PauliString::from_text("YI"),
+        Angle::from_pi4_rotation(6),
+    ));
+    ct
 }

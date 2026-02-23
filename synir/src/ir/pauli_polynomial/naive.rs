@@ -23,7 +23,7 @@ where
         mut pauli_polynomials: VecDeque<PauliPolynomial>,
         repr: &mut G,
     ) -> CliffordTableau {
-        let mut clifford_tableau = CliffordTableau::new(pauli_polynomials[0].size());
+        let mut clifford_tableau = CliffordTableau::new(pauli_polynomials[0].num_qubits());
         while !pauli_polynomials.is_empty() {
             let pauli_polynomial = pauli_polynomials.pop_front().unwrap();
             let num_gadgets = pauli_polynomial.length();
@@ -35,6 +35,7 @@ where
                 pauli_polynomial,
                 num_gadgets,
                 mask,
+                false,
             );
         }
 

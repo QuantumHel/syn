@@ -2,14 +2,8 @@ extern crate rand;
 
 use rand::seq::SliceRandom;
 
-use crate::common::mock_circuit::{
-    check_mock_equals_clifford_tableau, parse_clifford_commands, MockCircuit, MockCommand,
-};
-use crate::common::sample_clifford_tableaus::{
-    half_swap_0_1, half_swap_1_0, identity_2qb_ct, sample_2cnot_ladder, sample_cnot_gate,
-    sample_cnot_reverse_gate, sample_s_dgr_gate, sample_s_gate, sample_swap_ct, sample_v_dgr_gate,
-    sample_v_gate, setup_sample_ct, setup_sample_inverse_ct,
-};
+use crate::common::mock_circuit::{MockCircuit, MockCommand};
+use crate::common::sample_clifford_tableaus::*;
 use itertools::Itertools;
 use synir::data_structures::{CliffordTableau, PropagateClifford};
 use synir::ir::clifford_tableau::CallbackCliffordSynthesizer;
@@ -30,16 +24,16 @@ fn run_synthesizer(clifford_tableau: &CliffordTableau) -> (MockCircuit, Clifford
 macro_rules! test_clifford {
     ($fun:ident, $expected:expr) => {
         paste::item! {
-                #[test]
-                fn [< synthesize_ $fun>]() {
-                    let clifford_tableau = $fun();
-                    let (mock, new_ct) = run_synthesizer(&clifford_tableau);
-                    if $expected.is_some() {
-                        assert_eq!(mock.commands(), $expected.unwrap());
-                    }
-                    check_mock_equals_clifford_tableau(&clifford_tableau, &mock, new_ct.get_permutation());
+            #[test]
+            fn [< synthesize_ $fun>]() {
+                let clifford_tableau = $fun();
+                let (mock, new_ct) = run_synthesizer(&clifford_tableau);
+                if $expected.is_some() {
+                    assert_eq!(mock.commands(), $expected.unwrap());
                 }
+                assert!(mock.equals_clifford_tableau(&clifford_tableau, new_ct.get_permutation()));
             }
+        }
     };
 }
 
@@ -75,10 +69,7 @@ fn test_custom_clifford_synthesis_old() {
 
     let mut synthesizer = CallbackCliffordSynthesizer::custom_pivot(vec![0, 1, 2], vec![0, 1, 2]);
     synthesizer.synthesize(clifford_tableau.clone(), &mut mock);
-
-    let ref_ct = parse_clifford_commands(3, mock.commands());
-
-    assert_eq!(clifford_tableau, ref_ct);
+    assert!(mock.equals_clifford_tableau(&clifford_tableau, None));
 }
 
 #[test]
@@ -91,10 +82,7 @@ fn test_custom_clifford_synthesis_large_old() {
 
     synthesizer.synthesize(clifford_tableau.clone(), &mut mock);
 
-    let mut ref_ct = parse_clifford_commands(4, mock.commands());
-    ref_ct.permute(vec![0, 2, 1, 3]);
-
-    assert_eq!(clifford_tableau, ref_ct);
+    assert!(mock.equals_clifford_tableau(&clifford_tableau, Some(vec![0, 2, 1, 3])));
 }
 
 #[test]
@@ -106,7 +94,5 @@ fn test_custom_clifford_synthesis_simple_old() {
 
     let mut synthesizer = CallbackCliffordSynthesizer::custom_pivot(vec![0, 1, 2], vec![0, 1, 2]);
     synthesizer.synthesize(clifford_tableau.clone(), &mut mock);
-
-    let ref_ct = parse_clifford_commands(3, mock.commands());
-    assert_eq!(clifford_tableau, ref_ct);
+    assert!(mock.equals_clifford_tableau(&clifford_tableau, None));
 }

@@ -1,6 +1,6 @@
 extern crate rand;
 
-use crate::common::mock_circuit::{check_mock_equals_clifford_tableau, MockCircuit, MockCommand};
+use crate::common::mock_circuit::{MockCircuit, MockCommand};
 use itertools::Itertools;
 use synir::data_structures::{Angle, CliffordTableau, PropagateClifford};
 use synir::ir::clifford_tableau::CallbackCliffordSynthesizer;
@@ -21,16 +21,16 @@ fn run_synthesizer(clifford_tableau: &CliffordTableau) -> (MockCircuit, Clifford
 macro_rules! test_clifford {
     ($fun:ident, $expected:expr) => {
         paste::item! {
-                #[test]
-                fn [< synthesize_ $fun>]() {
-                    let clifford_tableau = $fun();
-                    let (mock, new_ct) = run_synthesizer(&clifford_tableau);
-                    if $expected.is_some() {
-                        assert_eq!(mock.commands(), $expected.unwrap());
-                    }
-                    check_mock_equals_clifford_tableau(&clifford_tableau, &mock, new_ct.get_permutation());
+            #[test]
+            fn [< synthesize_ $fun>]() {
+                let clifford_tableau = $fun();
+                let (mock, new_ct) = run_synthesizer(&clifford_tableau);
+                if $expected.is_some() {
+                    assert_eq!(mock.commands(), $expected.unwrap());
                 }
+                assert!(mock.equals_clifford_tableau(&clifford_tableau, new_ct.get_permutation()));
             }
+        }
     };
 }
 

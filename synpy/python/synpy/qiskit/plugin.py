@@ -3,6 +3,8 @@ from qiskit.transpiler.passes.synthesis.plugin import HighLevelSynthesisPlugin
 from qiskit.quantum_info import Clifford
 from qiskit import QuantumCircuit, transpile
 
+from math import pi
+
 from synpy.synpy_rust import PyCliffordTableau, PyPauliExponential
 from synpy.utils import pycommand_to_qasm
 
@@ -29,9 +31,15 @@ class SynPyCliffordPlugin(HighLevelSynthesisPlugin):
 
 
 def qiskit_to_synir(circuit: QuantumCircuit) -> PyPauliExponential:
-    new_circuit = transpile(circuit, basis_gates=["cx", "h", "rz"], routing_method="none")
-    pe = PyPauliExponential(new_circuit.num_qubits)
+    #basis_gates=["cx", "h", "rz", "rx", "s"]
+    basis_gates=["cx", "h", "rz"]
 
+    if not all(gate in basis_gates for gate in circuit.count_ops()):
+        new_circuit = transpile(circuit, basis_gates=basis_gates, routing_method="none", optimization_level=0)
+    else:
+        new_circuit = circuit
+    pe = PyPauliExponential(new_circuit.num_qubits)
+    print("Original after Qiskit", new_circuit)
     for gate in reversed(new_circuit.data):
         qubit_indices = [new_circuit.find_bit(q).index for q in gate.qubits]
         if gate.name == "cx":
@@ -40,6 +48,12 @@ def qiskit_to_synir(circuit: QuantumCircuit) -> PyPauliExponential:
             pe.add_h(*qubit_indices)
         elif gate.name == "rz":
             pe.add_rz(*qubit_indices, gate.params[0])
+        elif gate.name == "s":
+            pe.add_rz(*qubit_indices, pi/2)
+        elif gate.name == "rx":
+            pe.add_h(*qubit_indices)
+            pe.add_rz(*qubit_indices, gate.params[0])
+            pe.add_h(*qubit_indices)
         else:
             raise Exception("Gate is not supported")
     return pe

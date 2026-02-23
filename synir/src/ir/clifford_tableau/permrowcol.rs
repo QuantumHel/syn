@@ -1,5 +1,5 @@
 use crate::{
-    architecture::connectivity::Connectivity,
+    architecture::connectivity::{self, Connectivity},
     data_structures::{CliffordTableau, PauliLetter},
     ir::{
         clifford_tableau::helper::{clean_pivot, clean_prc, pick_column, pick_row},
@@ -40,6 +40,10 @@ impl PermRowColCliffordSynthesizer {
     ) {
         (self.column_strategy) = column_strategy;
     }
+
+    pub fn get_connectivity(&self) -> &Connectivity {
+        &self.connectivity
+    }
 }
 
 impl<G> AdjointSynthesizer<CliffordTableau, G, CliffordTableau> for PermRowColCliffordSynthesizer
@@ -53,6 +57,7 @@ where
     ) -> CliffordTableau {
         let num_qubits = clifford_tableau.size();
         let machine_size = self.connectivity.node_count();
+        let mut connectivity = self.connectivity.clone();
         assert!(
             num_qubits <= machine_size,
             "Number of qubits {} exceeds machine size {}",
@@ -65,10 +70,8 @@ where
         let mut remaining_rows = (0..num_qubits).collect::<Vec<_>>();
 
         while !remaining_columns.is_empty() {
-            let pivot_row =
-                (self.row_strategy)(&clifford_tableau, &self.connectivity, &remaining_rows);
-            let pivot_column =
-                (self.column_strategy)(&clifford_tableau, &self.connectivity, pivot_row);
+            let pivot_row = (self.row_strategy)(&clifford_tableau, &connectivity, &remaining_rows);
+            let pivot_column = (self.column_strategy)(&clifford_tableau, &connectivity, pivot_row);
             let column = clifford_tableau.column(pivot_column);
             let x_weight = column.x_weight();
             let z_weight = column.z_weight();
@@ -94,7 +97,7 @@ where
             clean_prc(
                 repr,
                 &mut clifford_tableau,
-                &self.connectivity,
+                &connectivity,
                 &remaining_columns,
                 pivot_column,
                 pivot_row,
@@ -113,7 +116,7 @@ where
             clean_prc(
                 repr,
                 &mut clifford_tableau,
-                &self.connectivity,
+                &connectivity,
                 &remaining_columns,
                 pivot_column,
                 pivot_row,
@@ -121,7 +124,7 @@ where
             );
 
             // If the pivot row is now an identity row, we can remove it from the tableau.
-            self.connectivity.remove_node(pivot_column);
+            connectivity.remove_node(pivot_column);
         }
 
         clean_signs(repr, &mut clifford_tableau);

@@ -2,8 +2,9 @@ mod common;
 
 use std::collections::VecDeque;
 
+use itertools::Itertools;
 use synir::{
-    data_structures::{CliffordTableau, PauliExponential, PauliPolynomial},
+    data_structures::{CliffordTableau, PauliExponential, PauliPolynomial, PauliString},
     ir::{
         clifford_tableau::CliffordTableauSynthStrategy,
         pauli_exponential::PauliExponentialSynthesizer,
@@ -34,7 +35,7 @@ fn test_empty_pe() {
 #[test]
 fn test_empty_pp_in_pe() {
     let pe = PauliExponential::new(
-        VecDeque::from([PauliPolynomial::from_components(vec![], vec![], 5)]),
+        VecDeque::from([PauliPolynomial::new(5)]),
         CliffordTableau::new(5),
     );
     let mock = run_synthesizer(pe);

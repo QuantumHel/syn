@@ -1,7 +1,7 @@
 use bitvec::prelude::BitVec;
 use bitvec::vec;
 use itertools::{izip, Itertools};
-use std::fmt;
+use std::fmt::{self, format};
 use std::iter::zip;
 use std::ops::Mul;
 
@@ -89,6 +89,7 @@ impl CliffordTableau {
     }
 
     pub fn compose(&self, rhs: &Self) -> Self {
+        // -[lhs]-[rhs]-
         rhs.prepend(self)
     }
 
@@ -191,88 +192,15 @@ impl CliffordTableau {
         }
     }
 
-    /// Composes a gadget onto a Clifford tableau if the angle is Clifford
-    /// Decomposes the Pauli gadget by performing naive decomposition into mapping to Z legs, CNOT walls and Z-rotations
     pub fn compose_gadget(&mut self, rhs: (PauliString, Angle)) -> Result<(), String> {
         let (pauli_string, angle) = rhs;
         let size = self.size();
-        assert_eq!(
-            size,
-            pauli_string.len(),
-            "Cannot compose Clifford tableau with PauliPolynomial of different size"
-        );
-        let pi2rotations = match angle {
-            Angle::Arbitrary(angle) => panic!(
-                "Cannot compose Clifford tableau with non-Clifford angle: {}",
-                angle
-            ),
-            Angle::Pi4Rotations(rotations) => {
-                if rotations % 2 == 1 {
-                    panic!("Cannot compose Clifford tableau with non-Clifford angle: {} pi/4 rotations", rotations);
-                }
-                (rotations >> 1) % 4
-            }
-        };
-        let mut leg_numbers = Vec::with_capacity(size);
-        for i in 0..size {
-            match pauli_string.pauli(i) {
-                PauliLetter::I => {}
-                PauliLetter::X => {
-                    self.h(i);
-                    leg_numbers.push(i);
-                }
-                PauliLetter::Y => {
-                    self.v(i);
-                    leg_numbers.push(i);
-                }
-                PauliLetter::Z => {
-                    leg_numbers.push(i);
-                }
-            }
+        if size != pauli_string.len() {
+            return Err(format!(
+                "Cannot compose Clifford tableau with PauliPolynomial of different size"
+            ));
         }
-
-        for (control, target) in leg_numbers.iter().tuple_windows() {
-            self.cx(*control, *target);
-        }
-        match pi2rotations {
-            0 => {}
-            1 => {
-                let target = *leg_numbers.last().unwrap();
-                self.s(target);
-            }
-            2 => {
-                let target = *leg_numbers.last().unwrap();
-                self.z(target);
-            }
-            3 => {
-                let target = *leg_numbers.last().unwrap();
-                self.s_dgr(target);
-            }
-            _ => unreachable!(),
-        }
-
-        for (control, target) in leg_numbers
-            .iter()
-            .tuple_windows()
-            .collect_vec()
-            .iter()
-            .rev()
-        {
-            self.cx(**control, **target);
-        }
-        for i in 0..size {
-            match pauli_string.pauli(i) {
-                PauliLetter::I => {}
-                PauliLetter::X => {
-                    self.h(i);
-                }
-                PauliLetter::Y => {
-                    self.v_dgr(i);
-                }
-                PauliLetter::Z => {}
-            }
-        }
-        Ok(())
+        self.propate_gadget(pauli_string, angle)
     }
 
     pub fn permute(&mut self, permutation_vector: Vec<usize>) {
@@ -282,7 +210,8 @@ impl CliffordTableau {
                 .copied()
                 .sorted_unstable()
                 .collect::<Vec<_>>(),
-            (0..self.size()).collect::<Vec<_>>()
+            (0..self.size()).collect::<Vec<_>>(),
+            "Permutation vector when permuting Clifford Tableau is not a Permutation"
         );
         let pauli_columns = std::mem::take(&mut self.pauli_columns);
         let sorted_pauli_columns = zip(pauli_columns, permutation_vector)
@@ -375,6 +304,7 @@ fn reverse_flow(x1: bool, z1: bool, x2: bool, z2: bool) -> ((bool, bool), (bool,
 }
 
 impl PropagateClifford for CliffordTableau {
+    // Appends the gate, does not prepend!
     fn cx(&mut self, control: IndexType, target: IndexType) -> &mut Self {
         let n = self.size();
 
@@ -454,6 +384,8 @@ impl fmt::Display for CliffordTableau {
 
 #[cfg(test)]
 mod tests {
+    use crate::ir::Gates;
+
     use super::*;
     use bitvec::bitvec;
     use bitvec::prelude::Lsb0;
@@ -508,11 +440,14 @@ mod tests {
         let pauli_3 = PauliString::new(x_3, z_3);
 
         let signs = bitvec![0, 1, 0, 1, 0, 0];
-        CliffordTableau {
+
+        let ct = CliffordTableau {
             pauli_columns: vec![pauli_1, pauli_2, pauli_3],
             signs,
             size: ct_size,
-        }
+        };
+        println!("{}", ct);
+        ct
     }
 
     fn setup_sample_inverse_ct() -> CliffordTableau {
@@ -552,11 +487,96 @@ mod tests {
         }
     }
 
+    fn xz_ct() -> CliffordTableau {
+        CliffordTableau::new(1)
+    }
+
+    fn yz_ct() -> CliffordTableau {
+        CliffordTableau::from_parts(vec![PauliString::from_text("YZ")], BitVec::repeat(false, 2))
+    }
+
+    fn zz_ct() -> CliffordTableau {
+        CliffordTableau::from_parts(vec![PauliString::from_text("ZZ")], BitVec::repeat(false, 2))
+    }
+
+    fn xx_ct() -> CliffordTableau {
+        CliffordTableau::from_parts(vec![PauliString::from_text("XX")], BitVec::repeat(false, 2))
+    }
+
+    fn yx_ct() -> CliffordTableau {
+        CliffordTableau::from_parts(vec![PauliString::from_text("YX")], BitVec::repeat(false, 2))
+    }
+
+    fn zx_ct() -> CliffordTableau {
+        CliffordTableau::from_parts(vec![PauliString::from_text("ZX")], BitVec::repeat(false, 2))
+    }
+
+    fn xy_ct() -> CliffordTableau {
+        CliffordTableau::from_parts(vec![PauliString::from_text("XY")], BitVec::repeat(false, 2))
+    }
+
+    fn yy_ct() -> CliffordTableau {
+        CliffordTableau::from_parts(vec![PauliString::from_text("YY")], BitVec::repeat(false, 2))
+    }
+
+    fn zy_ct() -> CliffordTableau {
+        CliffordTableau::from_parts(vec![PauliString::from_text("ZY")], BitVec::repeat(false, 2))
+    }
+
+    fn all_single_qubit_ct() -> Vec<CliffordTableau> {
+        vec![
+            //xx_ct(),
+            yx_ct(),
+            zx_ct(),
+            xy_ct(),
+            //yy_ct(),
+            zy_ct(),
+            xz_ct(),
+            yz_ct(),
+            //zz_ct(),
+        ]
+    }
+
     #[test]
     fn test_clifford_tableau_s() {
+        for ct in all_single_qubit_ct().iter_mut() {
+            let destab = ct.column(0).pauli(0);
+            let stab = ct.column(0).pauli(1);
+            ct.s(0);
+            let (new_destab, new_sign_destab) = match destab {
+                PauliLetter::I => unreachable!(),
+                PauliLetter::X => (PauliLetter::Y, false),
+                PauliLetter::Y => (PauliLetter::X, true),
+                PauliLetter::Z => (PauliLetter::Z, false),
+            };
+            let (new_stab, new_sign_stab) = match stab {
+                PauliLetter::I => unreachable!(),
+                PauliLetter::X => (PauliLetter::Y, false),
+                PauliLetter::Y => (PauliLetter::X, true),
+                PauliLetter::Z => (PauliLetter::Z, false),
+            };
+            let mut new_signs = BitVec::repeat(false, 2);
+            new_signs.set(0, new_sign_destab);
+            new_signs.set(1, new_sign_stab);
+            let ref_ct = CliffordTableau::from_parts(
+                vec![PauliString::from_text(&format!(
+                    "{}{}",
+                    new_destab, new_stab
+                ))],
+                new_signs,
+            );
+            assert_eq!(*ct, ref_ct);
+            ct.s_dgr(0);
+            let orig_ct = CliffordTableau::from_parts(
+                vec![PauliString::from_text(&format!("{}{}", destab, stab))],
+                BitVec::repeat(false, 2),
+            );
+            assert_eq!(*ct, orig_ct);
+        }
+        // TODO below
+
         // Stab: ZZZ, -YIY, IXY
         // Destab: -IXI, ZII, ZIZ
-        let ct_size = 3;
         let mut ct = setup_sample_ct();
 
         // Apply S on qubit 0
@@ -588,7 +608,7 @@ mod tests {
         let clifford_tableau_ref = CliffordTableau {
             pauli_columns: vec![pauli_1_ref, pauli_2_ref, pauli_3_ref],
             signs: signs_ref,
-            size: ct_size,
+            size: ct.size(),
         };
 
         assert_eq!(ct, clifford_tableau_ref);
@@ -596,6 +616,40 @@ mod tests {
 
     #[test]
     fn test_clifford_tableau_v() {
+        for ct in all_single_qubit_ct().iter_mut() {
+            let destab = ct.column(0).pauli(0);
+            let stab = ct.column(0).pauli(1);
+            ct.v(0);
+            let (new_destab, new_sign_destab) = match destab {
+                PauliLetter::I => unreachable!(),
+                PauliLetter::X => (PauliLetter::X, false),
+                PauliLetter::Y => (PauliLetter::Z, false),
+                PauliLetter::Z => (PauliLetter::Y, true),
+            };
+            let (new_stab, new_sign_stab) = match stab {
+                PauliLetter::I => unreachable!(),
+                PauliLetter::X => (PauliLetter::X, false),
+                PauliLetter::Y => (PauliLetter::Z, false),
+                PauliLetter::Z => (PauliLetter::Y, true),
+            };
+            let mut new_signs = BitVec::repeat(false, 2);
+            new_signs.set(0, new_sign_destab);
+            new_signs.set(1, new_sign_stab);
+            let ref_ct = CliffordTableau::from_parts(
+                vec![PauliString::from_text(&format!(
+                    "{}{}",
+                    new_destab, new_stab
+                ))],
+                new_signs,
+            );
+            assert_eq!(*ct, ref_ct);
+            ct.v_dgr(0);
+            let orig_ct = CliffordTableau::from_parts(
+                vec![PauliString::from_text(&format!("{}{}", destab, stab))],
+                BitVec::repeat(false, 2),
+            );
+            assert_eq!(*ct, orig_ct);
+        }
         // Stab: ZZZ, -YIY, IXY
         // Destab: -IXI, ZII, ZIZ
         let ct_size = 3;
@@ -637,6 +691,41 @@ mod tests {
 
     #[test]
     fn test_clifford_tableau_sdag() {
+        for ct in all_single_qubit_ct().iter_mut() {
+            let destab = ct.column(0).pauli(0);
+            let stab = ct.column(0).pauli(1);
+            ct.s_dgr(0);
+            let (new_destab, new_sign_destab) = match destab {
+                PauliLetter::I => unreachable!(),
+                PauliLetter::X => (PauliLetter::Y, true),
+                PauliLetter::Y => (PauliLetter::X, false),
+                PauliLetter::Z => (PauliLetter::Z, false),
+            };
+            let (new_stab, new_sign_stab) = match stab {
+                PauliLetter::I => unreachable!(),
+                PauliLetter::X => (PauliLetter::Y, true),
+                PauliLetter::Y => (PauliLetter::X, false),
+                PauliLetter::Z => (PauliLetter::Z, false),
+            };
+            let mut new_signs = BitVec::repeat(false, 2);
+            new_signs.set(0, new_sign_destab);
+            new_signs.set(1, new_sign_stab);
+            let ref_ct = CliffordTableau::from_parts(
+                vec![PauliString::from_text(&format!(
+                    "{}{}",
+                    new_destab, new_stab
+                ))],
+                new_signs,
+            );
+            assert_eq!(*ct, ref_ct);
+            ct.s(0);
+            let orig_ct = CliffordTableau::from_parts(
+                vec![PauliString::from_text(&format!("{}{}", destab, stab))],
+                BitVec::repeat(false, 2),
+            );
+            assert_eq!(*ct, orig_ct);
+        }
+
         // Stab: ZZZ, -YIY, IXY
         // Destab: -IXI, ZII, ZIZ
         let ct_size = 3;
@@ -680,6 +769,41 @@ mod tests {
 
     #[test]
     fn test_clifford_tableau_vdag() {
+        for ct in all_single_qubit_ct().iter_mut() {
+            println!("{}", ct);
+            let destab = ct.column(0).pauli(0);
+            let stab = ct.column(0).pauli(1);
+            ct.v_dgr(0);
+            let (new_stab, new_sign_stab): (PauliLetter, bool) = match stab {
+                PauliLetter::I => unreachable!(),
+                PauliLetter::X => (PauliLetter::X, false),
+                PauliLetter::Y => (PauliLetter::Z, true),
+                PauliLetter::Z => (PauliLetter::Y, false),
+            };
+            let (new_destab, new_sign_destab): (PauliLetter, bool) = match destab {
+                PauliLetter::I => unreachable!(),
+                PauliLetter::X => (PauliLetter::X, false),
+                PauliLetter::Y => (PauliLetter::Z, true),
+                PauliLetter::Z => (PauliLetter::Y, false),
+            };
+            let mut new_signs = BitVec::repeat(false, 2);
+            new_signs.set(0, new_sign_destab);
+            new_signs.set(1, new_sign_stab);
+            let ref_ct = CliffordTableau::from_parts(
+                vec![PauliString::from_text(&format!(
+                    "{}{}",
+                    new_destab, new_stab
+                ))],
+                new_signs,
+            );
+            assert_eq!(*ct, ref_ct);
+            ct.v(0);
+            let orig_ct = CliffordTableau::from_parts(
+                vec![PauliString::from_text(&format!("{}{}", destab, stab))],
+                BitVec::repeat(false, 2),
+            );
+            assert_eq!(*ct, orig_ct);
+        }
         // Stab: ZZZ, -YIY, IXY
         // Destab: -IXI, ZII, ZIZ
         let ct_size = 3;
@@ -1330,5 +1454,151 @@ mod tests {
             ct.to_string(),
             "CliffordTableau(3)\nZ Y I I Z Z\nZ I X X I I\nZ Y Y I I Z\n+ - + - + +"
         );
+    }
+
+    fn all_2qb_ct() -> Vec<CliffordTableau> {
+        let (mut sqg, cnot): (Vec<CliffordTableau>, Vec<CliffordTableau>) = vec![
+            // destab
+            &CliffordTableau::new(2),                    // XX
+            CliffordTableau::new(2).s(0),                // YX
+            CliffordTableau::new(2).s(0).v(0),           // ZX
+            CliffordTableau::new(2).s(1),                // XY
+            CliffordTableau::new(2).s(1).s(0),           // YY
+            CliffordTableau::new(2).s(1).s(0).v(0),      // ZY
+            CliffordTableau::new(2).s(1).v(1),           // XZ
+            CliffordTableau::new(2).s(1).v(1).s(0),      // YZ
+            CliffordTableau::new(2).s(1).v(1).s(0).v(0), // ZZ
+        ]
+        .iter()
+        .map(|ct| {
+            let tmp_ct = ct.to_owned().to_owned();
+            let mut other = tmp_ct.clone();
+            other.cx(1, 0);
+            (tmp_ct, other)
+        })
+        .unzip();
+        sqg.extend(cnot);
+        sqg
+    }
+
+    #[test]
+    fn test_double_adjoint(){
+        for ct in all_2qb_ct() {
+            assert_eq!(ct, ct.adjoint().adjoint());
+        }
+        for ct in all_single_qubit_ct() {
+            assert_eq!(ct, ct.adjoint().adjoint());
+        }
+    }
+
+    #[test]
+    fn test_joint_compose_adjoint(){
+        for ct in all_2qb_ct() {
+            let ct_adj = ct.adjoint();
+            assert_eq!(ct.compose(&ct_adj), CliffordTableau::new(2));
+            assert_eq!(ct_adj.compose(&ct), CliffordTableau::new(2));
+        }
+        for ct in all_single_qubit_ct(){
+            let ct_adj = ct.adjoint();
+            println!("CT {}", ct);
+            println!("Adj {}", ct_adj);
+            println!("compose1 {}", ct.compose(&ct_adj));
+            println!("compose2 {}", ct_adj.compose(&ct));
+            assert_eq!(ct.compose(&ct_adj), CliffordTableau::new(1));
+            assert_eq!(ct_adj.compose(&ct), CliffordTableau::new(1));
+        }
+    }
+
+    #[test]
+    fn test_cnot_prop() {
+        for mut ct in all_2qb_ct() {
+            let qb0 = ct.column(0).iter();
+            let qb1 = ct.column(1).iter();
+            let mut signs = ct.signs.iter().by_vals().collect_vec();
+            assert!(signs.len() == 4);
+            let (control, target) = (0, 1);
+            ct.cx(control, target);
+            for (i, tup) in qb0
+                .iter()
+                .zip(qb1.iter())
+                .map(|t| vec![t.0, t.1])
+                .enumerate()
+            {
+                match tup[control] {
+                    PauliLetter::I => {
+                        assert_eq!(*tup[target], ct.column(target).pauli(i)); // Target qubit is unchanged
+                        match tup[target] {
+                            PauliLetter::Z => {
+                                assert_eq!(PauliLetter::Z, ct.column(control).pauli(i));
+                            }
+                            PauliLetter::Y => {
+                                assert_eq!(PauliLetter::Z, ct.column(control).pauli(i));
+                            }
+                            _ => { // Nothing changes
+                                assert_eq!(*tup[control], ct.column(control).pauli(i));
+                            }
+                        }
+                    }
+                    PauliLetter::X => 
+                        match tup[target] {
+                            PauliLetter::X => {
+                                assert_eq!(PauliLetter::X, ct.column(control).pauli(i));
+                                assert_eq!(PauliLetter::I, ct.column(target).pauli(i));
+                            }
+                            PauliLetter::Y => {
+                                assert_eq!(PauliLetter::Y, ct.column(control).pauli(i));
+                                assert_eq!(PauliLetter::Z, ct.column(target).pauli(i));
+                            }
+                            PauliLetter::I => {
+                                assert_eq!(PauliLetter::X, ct.column(control).pauli(i));
+                                assert_eq!(PauliLetter::X, ct.column(target).pauli(i));
+                            }
+                            PauliLetter::Z => {
+                                assert_eq!(PauliLetter::Y, ct.column(control).pauli(i));
+                                assert_eq!(PauliLetter::Y, ct.column(target).pauli(i));
+                                signs[i] = !signs[i];
+                            }
+                        },
+                    PauliLetter::Y => match tup[target] {
+                        PauliLetter::I => {
+                            assert_eq!(PauliLetter::Y, ct.column(control).pauli(i));
+                            assert_eq!(PauliLetter::X, ct.column(target).pauli(i));
+                        }
+                        PauliLetter::X => {
+                            assert_eq!(PauliLetter::Y, ct.column(control).pauli(i));
+                            assert_eq!(PauliLetter::I, ct.column(target).pauli(i));
+                        }
+                        PauliLetter::Y => {
+                            assert_eq!(PauliLetter::X, ct.column(control).pauli(i));
+                            assert_eq!(PauliLetter::Z, ct.column(target).pauli(i));
+                            signs[i] = !signs[i];
+                        }
+                        PauliLetter::Z => {
+                            assert_eq!(PauliLetter::X, ct.column(control).pauli(i));
+                            assert_eq!(PauliLetter::Y, ct.column(target).pauli(i));
+                        }
+                    },
+                    PauliLetter::Z => match tup[target] {
+                        PauliLetter::I => {
+                            assert_eq!(PauliLetter::Z, ct.column(control).pauli(i));
+                            assert_eq!(PauliLetter::I, ct.column(target).pauli(i));
+                        }
+                        PauliLetter::X => {
+                            assert_eq!(PauliLetter::Z, ct.column(control).pauli(i));
+                            assert_eq!(PauliLetter::X, ct.column(target).pauli(i));
+                        }
+                        PauliLetter::Y => {
+                            assert_eq!(PauliLetter::Y, ct.column(control).pauli(i));
+                            assert_eq!(PauliLetter::I, ct.column(target).pauli(i));
+                        }
+                        PauliLetter::Z => {
+                            assert_eq!(PauliLetter::I, ct.column(control).pauli(i));
+                            assert_eq!(PauliLetter::Z, ct.column(target).pauli(i));
+                        }
+                    },
+                };
+            }
+            assert!(signs.iter().zip(ct.signs.iter().by_vals()).all(|(b1, b2)| *b1 == b2));
+        }
     }
 }

@@ -28,7 +28,7 @@ fn get_non_cutting_vertices(
         .collect()
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Connectivity {
     graph: StableUnGraph<NodeWeight, EdgeWeight, GraphIndex>,
     non_cutting: Vec<GraphIndex>,
@@ -167,6 +167,10 @@ impl Connectivity {
 
         path.reverse();
         path
+    }
+
+    pub fn has_edge(&self, v1: GraphIndex, v2: GraphIndex) -> bool {
+        self.edges().contains(&(v1, v2)) || self.edges().contains(&(v2, v1))
     }
 }
 

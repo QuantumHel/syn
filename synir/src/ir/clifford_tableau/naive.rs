@@ -1,10 +1,10 @@
 use crate::{
-    data_structures::CliffordTableau,
+    data_structures::{CliffordTableau, PropagateClifford},
     ir::{AdjointSynthesizer, CliffordGates},
 };
 
 use super::helper::{
-    clean_pivot, clean_signs, clean_x_observables, clean_z_observables, naive_pivot_search, swap,
+    clean_pivot, clean_signs, clean_x_observables, clean_z_observables, naive_pivot_search,
 };
 
 use crate::data_structures::PauliLetter;
@@ -33,7 +33,8 @@ where
             let pivot_col = naive_pivot_search(&clifford_tableau, num_qubits, row);
 
             if pivot_col != row {
-                swap(repr, &mut clifford_tableau, row, pivot_col);
+                repr.swap(pivot_col, row);
+                clifford_tableau.swap(row, pivot_col);
             }
 
             // Cleanup pivot column

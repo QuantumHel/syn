@@ -15,6 +15,11 @@ pub trait CliffordGates {
     fn h(&mut self, target: IndexType);
     fn cx(&mut self, control: IndexType, target: IndexType);
     fn cz(&mut self, control: IndexType, target: IndexType);
+    fn swap(&mut self, control: IndexType, target: IndexType) {
+        self.cx(control, target);
+        self.cx(target, control);
+        self.cx(control, target);
+    }
     fn add_final_permutation(&mut self, permutation: Vec<IndexType>) {
         let mut perm = permutation.clone();
         for i in 0..permutation.len() {

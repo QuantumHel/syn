@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, iter::zip};
+use std::{collections::VecDeque, iter::zip, ops::Deref};
 
 use bitvec::{bitvec, order::Lsb0};
 use itertools::Itertools;
@@ -74,12 +74,13 @@ pub(super) fn push_down_pauli_polynomial_update<G>(
     mut pauli_polynomial: PauliPolynomial,
     num_gadgets: usize,
     mut mask: BitVec,
+    incl_uncompute_ladder: bool,
 ) where
     G: CliffordGates + Gates,
 {
     for col in 0..num_gadgets {
         let mut affected_qubits = Vec::new();
-        for i in 0..pauli_polynomial.size() {
+        for i in 0..pauli_polynomial.num_qubits() {
             let row = pauli_polynomial.chain(i);
             match row.pauli(col) {
                 PauliLetter::I => {}
@@ -93,26 +94,35 @@ pub(super) fn push_down_pauli_polynomial_update<G>(
                 PauliLetter::Y => {
                     affected_qubits.push(i);
                     pauli_polynomial.masked_v(i, &mask);
-                    pauli_polynomials.v(i);
-                    clifford_tableau.v(i);
-                    repr.v(i);
+                    pauli_polynomials.v_dgr(i);
+                    clifford_tableau.v_dgr(i);
+                    repr.v_dgr(i);
                 }
                 PauliLetter::Z => {
                     affected_qubits.push(i);
                 }
             }
         }
-        if affected_qubits.len() > 1 {
-            for (&control, &target) in affected_qubits.iter().tuple_windows() {
+        if affected_qubits.len() == 0 {
+            panic!("PauliPolynomial contains an all I gadget.")
+        }
+        for (&control, &target) in affected_qubits.iter().tuple_windows() {
+            pauli_polynomial.masked_cx(control, target, &mask);
+            pauli_polynomials.cx(control, target);
+            clifford_tableau.cx(control, target);
+            repr.cx(control, target);
+        }
+        let last_qubit = *affected_qubits.last().unwrap();
+        repr.rz(last_qubit, pauli_polynomial.angle(col).to_radians());
+        mask.replace(col, false);
+        if incl_uncompute_ladder {
+            for (&control, &target) in affected_qubits.iter().rev().tuple_windows() {
                 pauli_polynomial.masked_cx(control, target, &mask);
                 pauli_polynomials.cx(control, target);
                 clifford_tableau.cx(control, target);
                 repr.cx(control, target);
             }
         }
-        let last_qubit = *affected_qubits.last().unwrap();
-        repr.rz(last_qubit, pauli_polynomial.angle(col).to_radians());
-        mask.replace(col, false);
     }
 }
 
@@ -148,8 +158,42 @@ pub(super) fn check_columns<G>(
     G: CliffordGates + Gates,
 {
     if polynomial_mask.count_ones() == 0 {
+        // Everything is masked out.
         return;
     }
+
+    let length = pauli_polynomial.length();
+    let to_remove = (0..length)
+        .rev()
+        .filter(|i| pauli_polynomial.pauli_gadget(*i).weight() == 1)
+        .collect_vec();
+    for i in to_remove {
+        let (gadget, angle) = pauli_polynomial.remove_gadget(i);
+        polynomial_mask.swap_remove(i);
+        match (0..gadget.len())
+            .filter_map(|i| {
+                let p = gadget.pauli(i);
+                match p {
+                    PauliLetter::I => None,
+                    _ => Some((i, p)),
+                }
+            })
+            .collect_vec()[0]
+        {
+            (qubit, PauliLetter::X) => {
+                repr.rx(qubit, angle.to_radians());
+            }
+            (qubit, PauliLetter::Y) => {
+                repr.ry(qubit, angle.to_radians());
+            }
+            (qubit, PauliLetter::Z) => {
+                repr.rz(qubit, angle.to_radians());
+            }
+            _ => unreachable!(),
+        }
+    }
+
+    return;
     let invalid = {
         let length = pauli_polynomial.length();
 
@@ -164,11 +208,7 @@ pub(super) fn check_columns<G>(
         invalid
     };
     let length = pauli_polynomial.length();
-    let PauliPolynomial {
-        ref mut chains,
-        angles,
-        ..
-    } = pauli_polynomial;
+    let (chains, angles) = pauli_polynomial.mut_chains_and_angles();
     for index in (0..length).rev() {
         if !invalid[index] && polynomial_mask[index] {
             polynomial_mask.swap_remove(index);
@@ -401,8 +441,8 @@ pub(super) fn identity_recurse<G>(
                 repr,
                 selected_qubit,
                 next_qubit,
-                is_x,
-                is_y,
+                largest_next_pauli,
+                second_next_pauli,
             );
 
             identity_recurse(
@@ -446,12 +486,27 @@ fn disconnect<G>(
     repr: &mut G,
     selected_qubit: usize,
     next_qubit: usize,
-    is_x: bool,
-    is_y: bool,
+    largest_next_pauli: PauliLetter,
+    second_next_pauli: PauliLetter,
 ) where
     G: CliffordGates + Gates,
 {
+    // Control qubit is Z, So target qubit should by Z or Y to disconnect
+    if largest_next_pauli == PauliLetter::X || second_next_pauli == PauliLetter::X {
+        // needs to be made into a Y or Z with a S or H respectively
+        if largest_next_pauli == PauliLetter::Y || second_next_pauli == PauliLetter::Y {
+            pauli_polynomial.h(next_qubit);
+            remainder_pe.h(next_qubit);
+            repr.h(next_qubit);
+        } else {
+            // S_dgr so that the sign doesn't flip.
+            pauli_polynomial.s_dgr(next_qubit);
+            remainder_pe.s_dgr(next_qubit);
+            repr.s_dgr(next_qubit);
+        }
+    }
     // OK if its y or z, so (false, true) or (false, false)
+    /*
     match (is_x, is_y) {
         (true, false) => {
             pauli_polynomial.h(next_qubit);
@@ -465,6 +520,7 @@ fn disconnect<G>(
         }
         _ => {}
     }
+    */
     pauli_polynomial.cx(selected_qubit, next_qubit);
     remainder_pe.cx(selected_qubit, next_qubit);
     repr.cx(selected_qubit, next_qubit);
@@ -487,9 +543,10 @@ fn diagonalize_qubit<G>(
             repr.h(selected_qubit);
         }
         PauliLetter::Y => {
-            pauli_polynomial.v(selected_qubit);
-            remainder_pe.v(selected_qubit);
-            repr.v(selected_qubit);
+            // V_dgr so that the sign doesn't flip
+            pauli_polynomial.v_dgr(selected_qubit);
+            remainder_pe.v_dgr(selected_qubit);
+            repr.v_dgr(selected_qubit);
         }
         PauliLetter::Z => {}
     }

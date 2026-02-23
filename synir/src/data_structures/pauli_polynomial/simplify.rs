@@ -5,7 +5,7 @@ use std::collections::HashMap;
 /// Check for items in PauliPolynomial that has the same Pauli string
 /// Returns a vector of a tuple of Pauli string identifier and the locations of this repeated string
 pub(crate) fn check_repeats(pp: &PauliPolynomial) -> Vec<(usize, Vec<usize>)> {
-    let size = pp.size();
+    let size = pp.num_qubits();
     let length = pp.length();
     let mut repeats = HashMap::<usize, Vec<usize>>::new();
     for index in 0..length {
@@ -29,9 +29,9 @@ pub(crate) fn check_repeats(pp: &PauliPolynomial) -> Vec<(usize, Vec<usize>)> {
 /// Takes output of check_repeats and merges items with the same Pauli string
 /// Assumes that all angles are of the same type
 pub(crate) fn _merge_repeats(
-    mut pp: PauliPolynomial,
+    pp: &mut PauliPolynomial,
     merge_list: Vec<(usize, Vec<usize>)>,
-) -> PauliPolynomial {
+) -> &PauliPolynomial {
     let mut pp_merge_list = Vec::<usize>::new();
     // merge all the angles first
     for (_, angle_merge_list) in merge_list {
@@ -56,8 +56,8 @@ pub(crate) fn _merge_repeats(
 }
 
 /// Merges all items in PauliPolynomial that share the same Pauli string
-pub fn merge_repeats(mut pp: PauliPolynomial) -> PauliPolynomial {
-    let repeats = check_repeats(&pp);
+pub fn merge_repeats(pp: &mut PauliPolynomial) -> &PauliPolynomial {
+    let repeats = check_repeats(pp);
     _merge_repeats(pp, repeats)
 }
 
@@ -75,7 +75,7 @@ pub fn split_off_cliffords(pp: PauliPolynomial) -> (PauliPolynomial, PauliPolyno
         .map(|ps| {
             let (left, right): (Vec<PauliLetter>, Vec<PauliLetter>) =
                 (0..ps.len()).into_iter().partition_map(|i| {
-                    if to_remove.contains(&i) {
+                    if !to_remove.contains(&i) {
                         Either::Left(ps.pauli(i))
                     } else {
                         Either::Right(ps.pauli(i))
@@ -88,7 +88,7 @@ pub fn split_off_cliffords(pp: PauliPolynomial) -> (PauliPolynomial, PauliPolyno
         })
         .unzip();
     let (filtered_angles, removed_angles) = pp.angles.iter().enumerate().partition_map(|(j, p)| {
-        if to_remove.contains(&j) {
+        if !to_remove.contains(&j) {
             Either::Left(p)
         } else {
             Either::Right(p)
@@ -98,18 +98,18 @@ pub fn split_off_cliffords(pp: PauliPolynomial) -> (PauliPolynomial, PauliPolyno
         PauliPolynomial {
             chains: filtered_chains,
             angles: filtered_angles,
-            size: pp.size,
         },
         PauliPolynomial {
             chains: removed_chains,
             angles: removed_angles,
-            size: pp.size,
         },
     )
 }
 
 #[cfg(test)]
 mod tests {
+    use std::borrow::BorrowMut;
+
     use crate::data_structures::Angle;
     use crate::data_structures::PauliString;
 
@@ -164,7 +164,7 @@ mod tests {
     #[test]
     fn test_simple_merge_repeats() {
         // Combined reading from back -> 01 = 1
-        let pp = PauliPolynomial::from_hamiltonian(vec![
+        let mut pp = PauliPolynomial::from_hamiltonian(vec![
             ("I", Angle::from_angle(1.0)),
             ("X", Angle::from_angle(2.0)),
             ("Z", Angle::from_angle(3.0)),
@@ -173,7 +173,7 @@ mod tests {
         ]);
         let repeats = check_repeats(&pp);
 
-        let pp = _merge_repeats(pp, repeats);
+        _merge_repeats(pp.borrow_mut(), repeats);
 
         assert!(pp.chain(0).len() == 3);
         assert_eq!(pp.chain(0), &PauliString::from_text("IXZ"));
@@ -182,13 +182,13 @@ mod tests {
 
     #[test]
     fn test_merge_repeats() {
-        let pp = PauliPolynomial::from_hamiltonian(vec![
+        let mut pp = PauliPolynomial::from_hamiltonian(vec![
             ("XIZY", Angle::from_angle(1.0)),
             ("XIZY", Angle::from_angle(2.0)),
             ("YZZI", Angle::from_angle(3.0)),
         ]);
         let repeats = check_repeats(&pp);
-        let pp = _merge_repeats(pp, repeats);
+        let pp = _merge_repeats(pp.borrow_mut(), repeats);
 
         assert!(pp.chain(0).len() == 2);
         assert_eq!(pp.chain(0), &PauliString::from_text("XY"));
@@ -201,16 +201,15 @@ mod tests {
     #[test]
     fn test_multiple_merge_repeats() {
         // Combined reading from back -> 01 = 1
-        let pp = PauliPolynomial::from_hamiltonian(vec![
+        let mut original_pp: PauliPolynomial = PauliPolynomial::from_hamiltonian(vec![
             ("II", Angle::from_angle(1.0)),
             ("IX", Angle::from_angle(2.0)),
             ("ZZ", Angle::from_angle(3.0)),
             ("IX", Angle::from_angle(4.0)),
             ("ZZ", Angle::from_angle(5.0)),
         ]);
-
-        let repeats = check_repeats(&pp);
-        let pp = _merge_repeats(pp, repeats);
+        let repeats: Vec<(usize, Vec<usize>)> = check_repeats(&original_pp);
+        let pp = _merge_repeats(original_pp.borrow_mut(), repeats);
 
         assert!(pp.chain(0).len() == 3);
         assert_eq!(pp.chain(0), &PauliString::from_text("IIZ"));

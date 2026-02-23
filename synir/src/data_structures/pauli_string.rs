@@ -1,7 +1,11 @@
 use bitvec::{prelude::BitVec, slice::BitSlice};
+use itertools::Itertools;
 use std::fmt;
 use std::iter::zip;
 use std::path::Iter;
+
+use crate::data_structures::{Angle, PropagateClifford};
+use crate::ir::CliffordGates;
 
 use super::PauliLetter;
 
@@ -56,6 +60,7 @@ impl PauliString {
     }
 
     pub fn x(&self, i: usize) -> bool {
+        assert!(i < self.len());
         self.x[i]
     }
 
@@ -78,10 +83,12 @@ impl PauliString {
     }
 
     pub fn z(&self, i: usize) -> bool {
+        assert!(i < self.len());
         self.z[i]
     }
 
     pub fn pauli(&self, i: usize) -> PauliLetter {
+        assert!(i < self.len());
         PauliLetter::new(self.x(i), self.z(i))
     }
 
@@ -94,6 +101,12 @@ impl PauliString {
     }
 
     pub fn len(&self) -> usize {
+        assert!(
+            self.x.len() == self.z.len(),
+            "PauliString length of x and z differ: {} {}",
+            self.x,
+            self.z
+        );
         self.x.len()
     }
 
@@ -102,7 +115,7 @@ impl PauliString {
     }
 
     pub(crate) fn s(&mut self) {
-        self.z ^= &self.x;
+        self.masked_s(&BitVec::repeat(true, self.len()));
     }
 
     pub(crate) fn masked_s(&mut self, mask: &BitSlice) {
@@ -112,7 +125,7 @@ impl PauliString {
     }
 
     pub(crate) fn v(&mut self) {
-        self.x ^= &self.z;
+        self.masked_v(&BitVec::repeat(true, self.len()));
     }
 
     pub(crate) fn masked_v(&mut self, mask: &BitSlice) {
@@ -142,8 +155,17 @@ impl PauliString {
     }
 
     pub(crate) fn masked_y_bitmask(&self, mask: &BitSlice) -> BitVec {
+        self.masked_x_bitmask(&self.masked_z_bitmask(mask))
+    }
+
+    pub(crate) fn masked_x_bitmask(&self, mask: &BitSlice) -> BitVec {
         let mut mask = mask.to_owned();
         mask &= &self.x;
+        mask
+    }
+
+    pub(crate) fn masked_z_bitmask(&self, mask: &BitSlice) -> BitVec {
+        let mut mask = mask.to_owned();
         mask &= &self.z;
         mask
     }
@@ -155,7 +177,7 @@ impl PauliString {
     }
 
     pub(crate) fn commutes_with(&self, other: &PauliString) -> bool {
-        assert_eq!(self.len(), other.len());
+        assert_eq!(self.len(), other.len(), "PauliStrings need to have the same size when checking commutaiton, but found {} and {}", self.len(), other.len());
         let length = self.len();
         let mut commutes = true;
         for index in 0..length {
@@ -189,18 +211,11 @@ pub(crate) fn masked_cx(control: &mut PauliString, target: &mut PauliString, mas
 impl fmt::Display for PauliString {
     // This trait requires `fmt` with this exact signature.
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut pauli_str = String::new();
-        for (x, z) in zip(&self.x, &self.z) {
-            match (*x, *z) {
-                (false, false) => pauli_str.push('I'),
-                (false, true) => pauli_str.push('Z'),
-                (true, false) => pauli_str.push('X'),
-                (true, true) => pauli_str.push('Y'),
-            }
-            pauli_str.push(' ');
-        }
-        pauli_str.pop();
-        write!(f, "{}", pauli_str)
+        let mut s: String = (0..self.len())
+            .map(|i| format!("{} ", self.pauli(i)))
+            .collect();
+        s.pop();
+        write!(f, "{}", s)
     }
 }
 
