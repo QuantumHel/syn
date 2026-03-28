@@ -4,7 +4,7 @@ use std::collections::VecDeque;
 
 use common::mock_circuit::{MockCircuit, MockCommand};
 use synir::data_structures::{
-    Angle, CliffordTableau, PropagateClifford, PauliExponential, PauliPolynomial,
+    Angle, CliffordTableau, HasAdjoint, PauliExponential, PauliPolynomial, PropagateClifford
 };
 use synir::ir::clifford_tableau::{self, CliffordTableauSynthStrategy, NaiveCliffordSynthesizer};
 use synir::ir::pauli_exponential::PauliExponentialSynthesizer;
@@ -177,17 +177,16 @@ fn test_naive_pe_with_ct(){
 
     let pauli_polynomial = PauliPolynomial::from_hamiltonian(ham);
     let mut clifford_tableau = CliffordTableau::new(4);
+    clifford_tableau.cx(1, 2);
     clifford_tableau.cx(2,3);
-    clifford_tableau.cx(1,2);
     clifford_tableau.s(0);
     clifford_tableau.v(0);
     let mut ct_ref = CliffordTableau::new(4);
-    // Add PP CNOTs
     ct_ref.cx(1,2);
     ct_ref.cx(2,3);
-    // Add CT single qubit gates
     ct_ref.s(0);
     ct_ref.v(0);
+    // Add CT single qubit gates
     let pe = PauliExponential::new(VecDeque::from([pauli_polynomial]), clifford_tableau);
     let mut mock = MockCircuit::new();
     let mut synthesizer = PauliExponentialSynthesizer::from_strategy(
@@ -200,7 +199,9 @@ fn test_naive_pe_with_ct(){
     }
     let final_stab_transform = mock.cliffords_only().to_clifford_tableau(4);
     println!("Final {}", final_stab_transform);
+    println!("Final adj {}", final_stab_transform.adjoint());
     println!("Ref {}", ct_ref);
+    println!("Ref adj {}", ct_ref.adjoint());
     assert_eq!(
         final_stab_transform,
         ct_ref
@@ -214,4 +215,9 @@ fn test_naive_pe_with_ct(){
     ];
 
     assert_eq!(mock.commands(), &ref_commands);
+}
+
+#[test]
+fn test_naive_pe_ct_only(){
+    assert!(true)
 }

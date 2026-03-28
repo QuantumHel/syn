@@ -75,26 +75,36 @@ where
             },
         };
         // NOTE: The `ct` contains the current transformation of the qubits
-        //       i.e. the Cliffords as synthesized - in order
+        //       i.e. the Cliffords as synthesized - from left to right in the circuit
+        //       i.e. the Cliffords are appended to the ct
         //       i.e. `ct.adjoint()` needs to be applied before `clifford_tableau`. 
+        
         /*
         let (mut lhs, mut rhs) = (ct, clifford_tableau);
+        println!("lhs.compose(rhs) {}", lhs.compose(&rhs));
+        println!("lhs.compose(rhs.adjoint() {}", lhs.compose(&rhs.adjoint()));
+        println!("lhs.compose(rhs).adjoint() {}", lhs.compose(&rhs).adjoint());
+        println!("lhs.compose(rhs.adjoint()).adjoint() {}", lhs.compose(&rhs.adjoint()).adjoint());
         println!("lhs_adj.compose(rhs) {}", lhs.adjoint().compose(&rhs));
         println!("lhs_adj.compose(rhs.adjoint() {}", lhs.adjoint().compose(&rhs.adjoint()));
         println!("lhs_adj.compose(rhs).adjoint() {}", lhs.adjoint().compose(&rhs).adjoint());
-        // Below seems to be correct
         println!("lhs_adj.compose(rhs.adjoint()).adjoint() {}", lhs.adjoint().compose(&rhs.adjoint()).adjoint());
         (rhs, lhs) = (lhs, rhs);
         
+        println!("rhs.compose(rhs) {}", lhs.compose(&rhs));
+        println!("rhs.compose(rhs.adjoint() {}", lhs.compose(&rhs.adjoint()));
+        println!("rhs.compose(rhs).adjoint() {}", lhs.compose(&rhs).adjoint());
+        println!("rhs.compose(rhs.adjoint()).adjoint() {}", lhs.compose(&rhs.adjoint()).adjoint());
         println!("rhs_adj.compose(lhs) {}", lhs.adjoint().compose(&rhs));
         println!("rhs_adj.compose(lhs.adjoint() {}", lhs.adjoint().compose(&rhs.adjoint()));
         println!("rhs_adj.compose(lhs).adjoint() {}", lhs.adjoint().compose(&rhs).adjoint());
-        // Belwo also seems to be correct.
         println!("rhs_adj.compose(lhs.adjoint()).adjoint() {}", lhs.adjoint().compose(&rhs.adjoint()).adjoint());
         (rhs, lhs) = (lhs, rhs);
-        let combined_ct = lhs.adjoint().compose(&rhs.adjoint());
+        //let combined_ct = lhs.adjoint().compose(&rhs.adjoint()).adjoint();
+        let combined_ct = lhs.compose(&rhs.adjoint());
         */
-        let combined_ct = ct.adjoint().compose(&clifford_tableau.adjoint()).adjoint();
+        let combined_ct = ct.compose(&clifford_tableau.adjoint());
+        //let combined_ct = ct.adjoint().compose(&clifford_tableau.adjoint()).adjoint();
         let final_ct = match &self.clifford_strategy {
             CliffordTableauSynthStrategy::Naive => {
                 let mut clifford_synthesizer = NaiveCliffordSynthesizer::default();
