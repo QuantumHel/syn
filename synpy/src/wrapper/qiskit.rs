@@ -30,6 +30,62 @@ impl QiskitSynIR {
             None => None,
         }
     }
+
+    pub fn s(&mut self, target: synir::IndexType) {
+        CliffordGates::s(self, target)
+    }
+
+    pub fn v(&mut self, target: synir::IndexType) {
+        CliffordGates::v(self, target)
+    }
+
+    pub fn s_dgr(&mut self, target: synir::IndexType) {
+        CliffordGates::s_dgr(self, target)
+    }
+
+    pub fn v_dgr(&mut self, target: synir::IndexType) {
+        CliffordGates::v_dgr(self, target)
+    }
+
+    pub fn x(&mut self, target: synir::IndexType) {
+        CliffordGates::x(self, target)
+    }
+
+    pub fn y(&mut self, target: synir::IndexType) {
+        CliffordGates::y(self, target)
+    }
+
+    pub fn z(&mut self, target: synir::IndexType) {
+        CliffordGates::z(self, target)
+    }
+
+    pub fn h(&mut self, target: synir::IndexType) {
+        CliffordGates::h(self, target)
+    }
+
+    fn cx(&mut self, control: synir::IndexType, target: synir::IndexType) {
+        CliffordGates::cx(self, control, target)
+    }
+
+    fn cz(&mut self, control: synir::IndexType, target: synir::IndexType) {
+        CliffordGates::cz(self, control, target)
+    }
+
+    fn add_final_permutation(&mut self, permutation: Vec<synir::IndexType>) {
+        CliffordGates::add_final_permutation(self, permutation);
+    }
+
+    fn rx(&mut self, target: synir::IndexType, angle: f64) {
+        Gates::rx(self, target, angle)
+    }
+
+    fn ry(&mut self, target: synir::IndexType, angle: f64) {
+        Gates::ry(self, target, angle)
+    }
+
+    fn rz(&mut self, target: synir::IndexType, angle: f64) {
+        Gates::rz(self, target, angle)
+    }
 }
 
 impl CliffordGates for QiskitSynIR {
@@ -121,6 +177,8 @@ impl CliffordGates for QiskitSynIR {
             }
         })
     }
+    
+    
 }
 
 impl Gates for QiskitSynIR {

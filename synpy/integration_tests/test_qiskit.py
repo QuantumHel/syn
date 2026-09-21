@@ -12,21 +12,21 @@ from synpy.synpy_rust import QiskitSynIR
 
 def test_qiskit_synir() -> None:
     qc = QuantumCircuit(2)
-    synir = QiskitSynIR(qc)
+    synir_obj = QiskitSynIR(qc)
 
-    synir.s(0)
-    synir.v(0)
-    synir.s_dgr(0)
-    synir.v_dgr(0)
-    synir.x(0)
-    synir.y(0)
-    synir.z(0)
-    synir.h(0)
-    synir.cx(0, 1)
-    synir.cz(0, 1)
-    synir.rx(0, 1.23)
-    synir.ry(0, 1.23)
-    synir.rz(0, 1.23)
+    synir_obj.s(0)
+    synir_obj.v(0)
+    synir_obj.s_dgr(0)
+    synir_obj.v_dgr(0)
+    synir_obj.x(0)
+    synir_obj.y(0)
+    synir_obj.z(0)
+    synir_obj.h(0)
+    synir_obj.cx(0, 1)
+    synir_obj.cz(0, 1)
+    synir_obj.rx(0, 1.23)
+    synir_obj.ry(0, 1.23)
+    synir_obj.rz(0, 1.23)
 
     reference_circuit = ["s", "sx", "sdg", "sxdg", "x", "y", "z", "h", "cx", "cz", "rx", "ry", "rz"]
     reference_angles = [None, None, None, None, None, None, None, None, None, None, 1.23, 1.23, 1.23]

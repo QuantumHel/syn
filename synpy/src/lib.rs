@@ -8,6 +8,7 @@ use crate::synthesis::{PyCommand, PyPauliString};
 use crate::tableau::PyCliffordTableau;
 use crate::wrapper::qiskit::QiskitSynIR;
 use crate::wrapper::PyPauliExponential;
+use synir::ir::{CliffordGates, Gates};
 use pyo3::prelude::{PyModule, PyModuleMethods};
 use pyo3::{pymodule, wrap_pyfunction, Bound, PyResult};
 
