@@ -9,10 +9,23 @@ use super::helper::{
 
 use crate::data_structures::PauliLetter;
 
+/// Reduces a tableau qubit by qubit, ignoring hardware connectivity.
+///
+/// For each row in turn it finds a pivot column, swaps it into place, clears the pivot to a bare
+/// `X` and then to a bare `Z`, and uses it to eliminate that row's remaining entries in the
+/// destabilizer and stabilizer halves. A final pass fixes the signs.
+///
+/// Because it emits `CX` between arbitrary qubit pairs, the result needs routing before it can run
+/// on hardware with limited connectivity — use
+/// [`PermRowColCliffordSynthesizer`](super::PermRowColCliffordSynthesizer) to account for
+/// connectivity during synthesis instead.
+///
+/// Returns the residual permutation tableau.
 #[derive(Default, Debug)]
 pub struct NaiveCliffordSynthesizer {}
 
 impl NaiveCliffordSynthesizer {
+    /// The short name of this strategy, `"naive"`.
     pub fn name(&self) -> &str {
         return "naive";
     }

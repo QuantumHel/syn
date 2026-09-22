@@ -1,3 +1,5 @@
+"""Qiskit integration: a Clifford synthesis plugin and a circuit importer."""
+
 from qiskit.transpiler import CouplingMap, Target
 from qiskit.transpiler.passes.synthesis.plugin import HighLevelSynthesisPlugin
 from qiskit.quantum_info import Clifford
@@ -10,10 +12,38 @@ from synpy.utils import pycommand_to_qasm
 
 
 class SynPyCliffordPlugin(HighLevelSynthesisPlugin):
+    """A Qiskit high-level-synthesis plugin that synthesizes ``Clifford`` objects with synIR.
+
+    Register it as a ``clifford`` synthesis plugin to have Qiskit's ``HighLevelSynthesis`` pass
+    route Clifford blocks through :class:`PyCliffordTableau`.
+
+    Synthesis currently uses the naive strategy, which assumes all-to-all connectivity -- the
+    ``coupling_map`` and ``target`` arguments are accepted but not yet consulted.
+    """
+
     def __init__(self) -> None:
         super().__init__()
 
     def run(self, clifford: Clifford, coupling_map: CouplingMap, target: Target, qubits: list) -> QuantumCircuit:
+        """Synthesize a Qiskit ``Clifford`` into a ``QuantumCircuit``.
+
+        Qiskit stores its tableau as rows of ``[X | Z | sign]``; synIR stores columns per qubit.
+        The transpose happens here, packing each ``(x, z)`` bit pair into a letter of ``IZXY``.
+
+        Parameters
+        ----------
+        clifford
+            The Clifford operator to synthesize.
+        coupling_map, target
+            Accepted for the plugin interface; not currently used.
+        qubits
+            Accepted for the plugin interface; not currently used.
+
+        Returns
+        -------
+        QuantumCircuit
+            An equivalent circuit over ``clifford.num_qubits`` qubits.
+        """
         n = clifford.num_qubits
         tableau_x = clifford.tableau[:, :n]
         tableau_z = clifford.tableau[:, n : 2 * n]
@@ -31,6 +61,31 @@ class SynPyCliffordPlugin(HighLevelSynthesisPlugin):
 
 
 def qiskit_to_synir(circuit: QuantumCircuit) -> PyPauliExponential:
+    """Import a Qiskit circuit into a :class:`PyPauliExponential`, ready for synthesis.
+
+    The circuit is first transpiled to the ``cx``/``h``/``rz``/``x`` basis if it is not already
+    in it, then walked **backwards** -- ``PyPauliExponential`` expects gates last-executed-first,
+    so that each Clifford conjugates the gadgets that follow it.
+
+    ``x`` and ``rx`` are re-expressed as ``h . rz . h`` on the way in; ``s`` arrives as an
+    ``rz(pi/2)``, which the importer recognizes as Clifford and folds into the tableau.
+
+    Parameters
+    ----------
+    circuit
+        Any circuit whose gates survive transpilation to the basis above.
+
+    Returns
+    -------
+    PyPauliExponential
+        A builder holding the whole circuit. Synthesize it with ``synthesize_to_qiskit``, which
+        consumes it.
+
+    Raises
+    ------
+    Exception
+        If a gate outside the supported set survives transpilation.
+    """
     #basis_gates=["cx", "h", "rz", "rx", "s"]
     basis_gates=["cx", "h", "rz", "x"]
 

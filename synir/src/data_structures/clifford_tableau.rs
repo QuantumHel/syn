@@ -1,3 +1,7 @@
+//! Clifford operators in tableau form.
+//!
+//! See [`CliffordTableau`].
+
 use bitvec::prelude::BitVec;
 use bitvec::vec;
 use itertools::{izip, Itertools};
@@ -12,6 +16,51 @@ use super::{
 };
 use crate::data_structures::{Angle, PauliLetter};
 
+/// A Clifford operator, recorded as what it does to the Pauli generators.
+///
+/// A Clifford `U` is determined (up to global phase) by the images `U X_q U^dag` and
+/// `U Z_q U^dag` of each generator, and each image is again a signed Pauli string. Storing those
+/// `2n` images *is* the tableau, and it is why Clifford circuits compose in polynomial rather than
+/// exponential time.
+///
+/// # Layout
+///
+/// The images are stored **by qubit, not by generator**: `pauli_columns[q]` is one
+/// [`PauliString`] of length `2n` holding everything that happens on qubit `q`.
+///
+/// ```text
+///                       rows 0..n          rows n..2n
+///                     (destabilizers)     (stabilizers)
+///                     image of X_0..      image of Z_0..
+///   pauli_columns[0]  [ . . . . . . . ][ . . . . . . . ]   <- qubit 0
+///   pauli_columns[1]  [ . . . . . . . ][ . . . . . . . ]   <- qubit 1
+///                        ...
+/// ```
+///
+/// So the letter that the image of `X_i` puts on qubit `q` is `pauli_columns[q].pauli(i)`, and for
+/// `Z_i` it is `pauli_columns[q].pauli(i + n)`. This transposed layout means propagating a gate on
+/// qubit `q` touches one column instead of striping across every row.
+///
+/// `signs` is a separate `2n`-bit vector — bit `i` is the sign of the image of `X_i`, bit `i + n`
+/// that of `Z_i`. Keeping the sign out of [`PauliString`] is what lets the Pauli operations stay
+/// pure XOR/AND.
+///
+/// # Ordering
+///
+/// [`compose`](Self::compose) reads in **circuit order**: `a.compose(&b)` is `-[a]-[b]-`, whose
+/// matrix is `U_b * U_a`. [`PropagateClifford`] on a tableau **appends** — it puts the gate at the
+/// end of the circuit, `T <- G * T`. The [`Mul`] impl is ordinary matrix order, so `a * b` runs
+/// `b` first.
+///
+/// ```
+/// use synir::data_structures::{CliffordTableau, HasAdjoint, PropagateClifford};
+///
+/// let mut ct = CliffordTableau::new(2);
+/// ct.h(0).cx(0, 1);
+///
+/// // A Clifford composed with its own inverse is the identity.
+/// assert_eq!(ct.compose(&ct.adjoint()), CliffordTableau::new(2));
+/// ```
 #[derive(PartialEq, Eq, Debug, Clone, Default)]
 pub struct CliffordTableau {
     // We keep track of the pauli letters per qubit not per stabilizer
@@ -22,7 +71,7 @@ pub struct CliffordTableau {
 }
 
 impl CliffordTableau {
-    /// Constructs a Clifford Tableau of `n` qubits initialized to the identity operation
+    /// The identity operation on `n` qubits: every generator maps to itself, all signs positive.
     pub fn new(n: usize) -> Self {
         CliffordTableau {
             pauli_columns: { (0..n).map(|i| PauliString::from_basis_int(i, n)).collect() },
@@ -31,6 +80,16 @@ impl CliffordTableau {
         }
     }
 
+    /// Builds a tableau directly from its columns and sign vector.
+    ///
+    /// `pauli_columns` is indexed by qubit and each entry has `2n` positions; `signs` has `2n`
+    /// bits. See the type-level layout diagram. Nothing checks that the result is a valid
+    /// (symplectic) Clifford — this is the entry point used when importing a tableau computed
+    /// elsewhere, such as Qiskit's `Clifford`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `pauli_columns` is empty.
     pub fn from_parts(pauli_columns: Vec<PauliString>, signs: BitVec) -> Self {
         let size = pauli_columns[0].len() / 2;
         CliffordTableau {
@@ -40,6 +99,7 @@ impl CliffordTableau {
         }
     }
 
+    /// The number of qubits, `n`. The tableau itself has `2n` rows.
     pub fn size(&self) -> usize {
         self.size
     }
@@ -88,6 +148,11 @@ impl CliffordTableau {
         &self.pauli_columns
     }
 
+    /// Composes in **circuit order**: `self` runs first, then `rhs`.
+    ///
+    /// As a matrix this is `U_rhs * U_self` — the reverse of the reading order. The convention is
+    /// pinned by `convention_tests::compose_matches_matrix_product`; see [`Mul`] for the
+    /// matrix-order spelling.
     pub fn compose(&self, rhs: &Self) -> Self {
         // -[lhs]-[rhs]-
         rhs.prepend(self)
@@ -192,6 +257,13 @@ impl CliffordTableau {
         }
     }
 
+    /// Absorbs a Pauli gadget `exp(-i * theta/2 * P)` into the tableau.
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err` if the gadget's width differs from [`Self::size`], or if the angle is not
+    /// Clifford — a non-Clifford gadget has no tableau representation. See
+    /// [`PropagateClifford::propate_gadget`].
     pub fn compose_gadget(&mut self, rhs: (PauliString, Angle)) -> Result<(), String> {
         let (pauli_string, angle) = rhs;
         let size = self.size();
@@ -203,6 +275,11 @@ impl CliffordTableau {
         self.propate_gadget(pauli_string, angle)
     }
 
+    /// Relabels the qubits, moving the column of qubit `i` to position `permutation_vector[i]`.
+    ///
+    /// # Panics
+    ///
+    /// Panics unless `permutation_vector` is a permutation of `0..size()`.
     pub fn permute(&mut self, permutation_vector: Vec<usize>) {
         assert_eq!(
             permutation_vector
@@ -221,8 +298,16 @@ impl CliffordTableau {
         self.pauli_columns = sorted_pauli_columns;
     }
 
-    /// Calculates the row permutation of a Clifford tableau if it is a permutation of identity.
-    /// The permutation indicates perm[physical] = logical, such that the for [1, 0, 2], physical qubit 0 stores logical qubit 1.
+    /// The qubit permutation this tableau implements, if it is nothing more than a permutation.
+    ///
+    /// Returns `Some(perm)` when every column carries exactly one `X` and one `Z` bit — i.e. the
+    /// operator only relabels qubits and does not mix them. `perm[physical] = logical`, so
+    /// `[1, 0, 2]` means physical qubit 0 holds logical qubit 1.
+    ///
+    /// Returns `None` for any tableau that does real Clifford work. Synthesis uses this as its
+    /// termination check: once the residual tableau is a bare permutation, the remaining work is a
+    /// relabelling rather than gates (see
+    /// [`CliffordGates::add_final_permutation`](crate::ir::CliffordGates::add_final_permutation)).
     pub fn get_permutation(&self) -> Option<Vec<usize>> {
         let mut row_permutation = Vec::new();
         //let mut col_permutation = Vec::new();
@@ -355,6 +440,9 @@ fn lookup(accum: (&bool, &bool, &bool, &bool)) -> usize {
     }
 }
 
+/// Composition in **matrix order**: `a * b` applies `b` first, then `a`.
+///
+/// The mirror image of [`CliffordTableau::compose`], which reads in circuit order.
 impl Mul for CliffordTableau {
     type Output = Self;
 

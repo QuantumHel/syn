@@ -1,9 +1,20 @@
+//! Rewrites that shrink a [`PauliPolynomial`] without changing the unitary it denotes.
+//!
+//! Two passes, both run by the importer before synthesis:
+//!
+//! * [`merge_repeats`] — gadgets on the same Pauli string collapse into one, adding their angles.
+//! * [`split_off_cliffords`] — gadgets whose angle is Clifford are separated out, so the caller
+//!   can fold them into a tableau instead of emitting rotations for them.
+
 use crate::data_structures::{PauliLetter, PauliPolynomial, PauliString};
 use itertools::{Either, Itertools};
 use std::collections::HashMap;
 
-/// Check for items in PauliPolynomial that has the same Pauli string
-/// Returns a vector of a tuple of Pauli string identifier and the locations of this repeated string
+/// Finds gadgets that share a Pauli string.
+///
+/// Returns `(key, indices)` pairs for each string appearing more than once, sorted by key. The key
+/// is the string packed into a `usize`, two bits per qubit — which caps this at 32 qubits on a
+/// 64-bit target before distinct strings start colliding.
 pub(crate) fn check_repeats(pp: &PauliPolynomial) -> Vec<(usize, Vec<usize>)> {
     let size = pp.num_qubits();
     let length = pp.length();
@@ -26,8 +37,11 @@ pub(crate) fn check_repeats(pp: &PauliPolynomial) -> Vec<(usize, Vec<usize>)> {
         .collect_vec()
 }
 
-/// Takes output of check_repeats and merges items with the same Pauli string
-/// Assumes that all angles are of the same type
+/// Applies the grouping from [`check_repeats`], summing angles and deleting the duplicates.
+///
+/// Each group's angle lands on its lowest index; the rest are removed. Removal preserves the order
+/// of the surviving gadgets, unlike
+/// [`PauliPolynomial::remove_gadget`](crate::data_structures::PauliPolynomial::remove_gadget).
 pub(crate) fn _merge_repeats(
     pp: &mut PauliPolynomial,
     merge_list: Vec<(usize, Vec<usize>)>,
@@ -55,12 +69,22 @@ pub(crate) fn _merge_repeats(
     pp
 }
 
-/// Merges all items in PauliPolynomial that share the same Pauli string
+/// Collapses every repeated Pauli string into a single gadget carrying the summed angle.
+///
+/// Sound because gadgets on the same string commute and compose by adding angles.
 pub fn merge_repeats(pp: &mut PauliPolynomial) -> &PauliPolynomial {
     let repeats = check_repeats(pp);
     _merge_repeats(pp, repeats)
 }
 
+/// Partitions a polynomial by whether each gadget's angle is Clifford.
+///
+/// Returns `(non_clifford, clifford)`. The Clifford half can be absorbed into a
+/// [`CliffordTableau`](crate::data_structures::CliffordTableau) and stop costing rotation gates;
+/// see [`push_clifford_angles_inverse`](crate::data_structures::pauli_exponential::push_clifford_angles_inverse),
+/// which is careful about the direction that folding has to go.
+///
+/// Relative order is preserved within each half.
 pub fn split_off_cliffords(pp: PauliPolynomial) -> (PauliPolynomial, PauliPolynomial) {
     // Removes clifford gates from this PauliPolynomial and returns them as a separate PP
     let mut to_remove = vec![];

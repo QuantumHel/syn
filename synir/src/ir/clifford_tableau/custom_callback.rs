@@ -8,16 +8,35 @@ use crate::{
 
 use super::helper::{clean_x_observables, clean_z_observables};
 
+/// Chooses the next `(column, row)` pivot, given the columns and rows still outstanding and the
+/// current tableau.
 type CliffordCallBack = Box<dyn FnMut(&[usize], &[usize], &CliffordTableau) -> (usize, usize)>;
+
+/// Tableau synthesis with the pivot choice delegated to a caller-supplied closure.
+///
+/// The elimination itself is the same as
+/// [`NaiveCliffordSynthesizer`](super::NaiveCliffordSynthesizer); only the order is external. That
+/// makes this the hook for experimenting with pivot heuristics, and — via
+/// [`custom_pivot`](Self::custom_pivot) — for replaying a fixed schedule so a run is reproducible.
+///
+/// The closure is called once per pivot and must return a `(column, row)` drawn from the slices it
+/// is given; returning anything else desynchronizes the elimination.
 pub struct CallbackCliffordSynthesizer {
     custom_callback: CliffordCallBack,
 }
 
 impl CallbackCliffordSynthesizer {
+    /// Builds a synthesizer driven by `custom_callback`.
     pub fn new(custom_callback: CliffordCallBack) -> Self {
         Self { custom_callback }
     }
 
+    /// Replays a fixed pivot schedule, taking the `i`-th pivot from
+    /// `(custom_columns[i], custom_rows[i])`.
+    ///
+    /// # Panics
+    ///
+    /// Panics during synthesis if either vector is shorter than the qubit count.
     pub fn custom_pivot(custom_columns: Vec<usize>, custom_rows: Vec<usize>) -> Self {
         let mut loc = 0;
         Self {
@@ -41,6 +60,7 @@ impl Default for CallbackCliffordSynthesizer {
 }
 
 impl CallbackCliffordSynthesizer {
+    /// Swaps in a different pivot callback.
     pub fn set_custom_callback(&mut self, callback: CliffordCallBack) -> &mut Self {
         self.custom_callback = callback;
         self

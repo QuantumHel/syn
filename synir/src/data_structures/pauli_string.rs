@@ -1,3 +1,7 @@
+//! Pauli strings in symplectic (`x`/`z` bit-pair) form.
+//!
+//! See [`PauliString`].
+
 use bitvec::{prelude::BitVec, slice::BitSlice};
 use itertools::Itertools;
 use std::fmt;
@@ -9,6 +13,34 @@ use crate::ir::CliffordGates;
 
 use super::PauliLetter;
 
+/// A tensor product of Pauli letters, stored as two parallel bit vectors.
+///
+/// Position `i` holds the letter encoded by the bit pair `(x[i], z[i])`, exactly as
+/// [`PauliLetter`] encodes it. This symplectic form is what makes Clifford conjugation cheap:
+/// `CX`, `S` and `V` all become a handful of whole-vector XOR and AND operations rather than a
+/// loop over qubits.
+///
+/// No phase is tracked. A `PauliString` is a Pauli *up to sign*; where the sign matters it is kept
+/// alongside, as on [`CliffordTableau`](super::CliffordTableau).
+///
+/// # Two different lengths
+///
+/// The type is used for two different things, and their lengths differ:
+///
+/// * as a **gadget** — one letter per qubit, so `len() == num_qubits`;
+/// * as a **tableau column** — one letter per tableau row, so `len() == 2 * num_qubits`, the
+///   destabilizer rows first and the stabilizer rows second (see
+///   [`CliffordTableau`](super::CliffordTableau)).
+///
+/// ```
+/// use synir::data_structures::{PauliLetter, PauliString};
+///
+/// let p = PauliString::from_text("IXYZ");
+/// assert_eq!(p.len(), 4);
+/// assert_eq!(p.pauli(2), PauliLetter::Y);
+/// assert_eq!(p.weight(), 3);            // non-identity positions
+/// assert_eq!(p.to_string(), "I X Y Z");
+/// ```
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PauliString {
     pub(super) x: BitVec,
@@ -16,7 +48,11 @@ pub struct PauliString {
 }
 
 impl PauliString {
-    /// Constructor for PauliString
+    /// Builds a string from raw `x` and `z` bit vectors.
+    ///
+    /// # Panics
+    ///
+    /// Panics unless the two vectors have equal length.
     pub fn new(pauli_x: BitVec, pauli_z: BitVec) -> Self {
         assert_eq!(pauli_x.len(), pauli_z.len());
         PauliString {
@@ -25,7 +61,15 @@ impl PauliString {
         }
     }
 
-    /// Construct identity PauliString for position `i`
+    /// The identity tableau's column for qubit `i` of a `length`-qubit register.
+    ///
+    /// The result has `2 * length` positions: `X` at row `i` (the destabilizer half) and `Z` at
+    /// row `i + length` (the stabilizer half), identity everywhere else. That is precisely the
+    /// column saying "qubit `i` maps `X_i -> X_i` and `Z_i -> Z_i`".
+    ///
+    /// # Panics
+    ///
+    /// Panics unless `i < length`.
     pub fn from_basis_int(i: usize, length: usize) -> Self {
         assert!(length > i);
         let mut x = BitVec::repeat(false, 2 * length);
@@ -35,6 +79,7 @@ impl PauliString {
         PauliString::new(x, z)
     }
 
+    /// Builds a string from an explicit list of letters.
     pub fn from_letters(paulis: &[PauliLetter]) -> Self {
         let (x, z): (BitVec, BitVec) = paulis
             .iter()
@@ -49,7 +94,11 @@ impl PauliString {
         PauliString::new(x, z)
     }
 
-    /// Takes in a String containing "I"
+    /// Parses a string such as `"IXYZ"`, one character per position.
+    ///
+    /// # Panics
+    ///
+    /// Panics on any character outside `IXYZ`.
     pub fn from_text(pauli: &str) -> Self {
         let letters: Vec<PauliLetter> = pauli
             .chars()
@@ -59,39 +108,61 @@ impl PauliString {
         PauliString::from_letters(&letters)
     }
 
+    /// The `x` bit at position `i`, i.e. whether the letter there is `X` or `Y`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `i` is out of bounds.
     pub fn x(&self, i: usize) -> bool {
         assert!(i < self.len());
         self.x[i]
     }
 
+    /// How many positions have their `x` bit set.
     pub fn x_weight(&self) -> usize {
         self.x.count_ones()
     }
 
+    /// How many positions have their `z` bit set.
     pub fn z_weight(&self) -> usize {
         self.z.count_ones()
     }
 
+    /// `x | z`: the support of the string, one bit per position.
     pub fn combine(&self) -> BitVec {
         let mut new_string = self.z.to_bitvec();
         new_string |= self.x.as_bitslice();
         new_string
     }
+    /// The number of non-identity positions.
     pub fn weight(&self) -> usize {
         let new_string = self.combine();
         new_string.count_ones()
     }
 
+    /// The `z` bit at position `i`, i.e. whether the letter there is `Z` or `Y`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `i` is out of bounds.
     pub fn z(&self, i: usize) -> bool {
         assert!(i < self.len());
         self.z[i]
     }
 
+    /// The letter at position `i`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `i` is out of bounds.
     pub fn pauli(&self, i: usize) -> PauliLetter {
         assert!(i < self.len());
         PauliLetter::new(self.x(i), self.z(i))
     }
 
+    /// Every letter, in order.
+    ///
+    /// Despite the name this allocates a `Vec` rather than returning a lazy iterator.
     pub fn iter(&self) -> Vec<PauliLetter> {
         self.x
             .iter()
@@ -100,6 +171,11 @@ impl PauliString {
             .collect::<Vec<PauliLetter>>()
     }
 
+    /// The number of positions — qubits for a gadget, `2 * num_qubits` for a tableau column.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the `x` and `z` vectors have drifted out of sync.
     pub fn len(&self) -> usize {
         assert!(
             self.x.len() == self.z.len(),
@@ -110,6 +186,7 @@ impl PauliString {
         self.x.len()
     }
 
+    /// Whether the string has no positions at all.
     pub fn is_empty(&self) -> bool {
         self.x.is_empty()
     }

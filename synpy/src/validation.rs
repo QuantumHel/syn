@@ -1,7 +1,16 @@
+//! Argument checks for [`synthesize_pauli_exponential`](crate::synthesis::synthesize_pauli_exponential).
+
 use crate::synthesis::{PyCommand, PyPauliString};
 use pyo3::exceptions::PyException;
 use pyo3::PyErr;
 
+/// Checks a Hamiltonian and Clifford prefix before synthesis.
+///
+/// # Errors
+///
+/// Returns a Python `Exception` if the Hamiltonian is empty, if its Pauli strings are not all the
+/// same length, if that length differs from `nr_qubits`, or if a Clifford gate names a qubit
+/// outside the register.
 pub fn validate(
     converted_hamiltonian: &Vec<Vec<PyPauliString>>,
     clifford_gates: &Vec<PyCommand>,

@@ -1,3 +1,7 @@
+//! Rotation angles that remember whether they are Clifford.
+//!
+//! See [`Angle`].
+
 use std::{
     f64::{consts::PI, EPSILON},
     fmt,
@@ -13,10 +17,42 @@ enum AngleType {
     Pi4Rotations(u8),
 }
 
+/// A rotation angle, held either exactly or approximately.
+///
+/// An angle is one of two things internally:
+///
+/// * an **exact** multiple of `pi/4`, stored as a count mod 8, or
+/// * an **arbitrary** angle in radians, normalized to `(-pi, pi]`.
+///
+/// The distinction is not cosmetic. Synthesis has to decide whether a gadget's angle is Clifford,
+/// because a Clifford gadget can be folded into the tableau and disappear, while a non-Clifford
+/// one must survive as a rotation gate. Deciding that on a bare `f64` means comparing against a
+/// tolerance, and a rotation that is Clifford only to within `1e-15` is not one this crate may
+/// silently absorb. Keeping the exact multiples in their own representation makes
+/// [`is_clifford`](Self::is_clifford) a decision rather than a guess.
+///
+/// Arithmetic preserves exactness where it can: adding two `pi/4` multiples stays exact, and
+/// mixing in an arbitrary angle falls back to radians.
+///
+/// ```
+/// use synir::data_structures::Angle;
+///
+/// let quarter = Angle::from_pi4_rotation(2);           // pi/2
+/// assert!(quarter.is_clifford());
+/// assert_eq!((quarter + quarter).to_pi4_rotation(), Ok(4));
+///
+/// let eighth = Angle::from_pi4_rotation(1);            // pi/4, the T gate
+/// assert!(!eighth.is_clifford());
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Angle(AngleType);
 
 impl Angle {
+    /// An arbitrary angle in radians, wrapped into `(-pi, pi]`.
+    ///
+    /// The result is *not* recognized as Clifford even when `rad` happens to be a multiple of
+    /// `pi/2` only up to floating-point error; use [`Self::from_pi4_rotation`] when the angle is
+    /// exact.
     pub fn from_angle(rad: f64) -> Self {
         let mut bounded_rad = rad;
         while bounded_rad < -PI {
@@ -28,6 +64,7 @@ impl Angle {
         Angle(AngleType::Arbitrary(bounded_rad))
     }
 
+    /// [`Self::from_angle`] over a slice.
     pub fn from_angles(angles: &[f64]) -> Vec<Self> {
         angles
             .into_iter()
@@ -35,16 +72,19 @@ impl Angle {
             .collect()
     }
 
+    /// The exact angle `n * pi/4`, taken mod `2*pi`.
     pub fn from_pi4_rotation(n: u8) -> Self {
         Angle(AngleType::Pi4Rotations(n % 8))
     }
 
+    /// [`Self::from_pi4_rotation`] over a slice.
     pub fn from_pi4_rotations(ns: &[u8]) -> Vec<Self> {
         ns.into_iter()
             .map(|n| Angle::from_pi4_rotation(*n))
             .collect()
     }
 
+    /// The angle in radians, however it is stored.
     pub fn to_radians(&self) -> f64 {
         match self {
             Angle(AngleType::Arbitrary(rad)) => *rad,
@@ -52,6 +92,12 @@ impl Angle {
         }
     }
 
+    /// The angle as a count of `pi/4` turns in `0..8`.
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err` if the angle is arbitrary and not exactly a multiple of `pi/4`. The
+    /// comparison is exact: an angle that only rounds to a multiple is rejected.
     pub fn to_pi4_rotation(&self) -> Result<u8, String> {
         match self {
             Angle(AngleType::Pi4Rotations(n)) => Ok(*n),
@@ -78,6 +124,10 @@ impl Angle {
         self.to_radians() * std::f64::consts::FRAC_1_PI
     }
 
+    /// Negates the angle in place.
+    ///
+    /// Conjugating a gadget by a Clifford can send `P` to `-P`, which is the same rotation run
+    /// backwards; the propagation code calls this instead of tracking the sign on the Pauli.
     pub fn flip(&mut self) {
         match self {
             Angle(AngleType::Arbitrary(rad)) => *rad = -*rad,
@@ -85,6 +135,10 @@ impl Angle {
         }
     }
 
+    /// Whether this is a multiple of `pi/2`, so a gadget carrying it stays inside the Clifford
+    /// group and can be folded into a [`CliffordTableau`](super::CliffordTableau).
+    ///
+    /// Always `false` for an arbitrary angle that is not exactly representable in `pi/4` units.
     pub fn is_clifford(&self) -> bool {
         match self.to_pi4_rotation() {
             Ok(n) => n % 2 == 0,

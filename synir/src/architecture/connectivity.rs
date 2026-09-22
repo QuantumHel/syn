@@ -1,3 +1,7 @@
+//! A concrete coupling graph.
+//!
+//! See [`Connectivity`].
+
 use super::{Architecture, EdgeWeight, GraphIndex, LadderError, NodeWeight};
 use itertools::Itertools;
 use petgraph::algo::floyd_warshall::floyd_warshall_path;
@@ -28,6 +32,34 @@ fn get_non_cutting_vertices(
         .collect()
 }
 
+/// A hardware coupling graph, with shortest paths and cut vertices precomputed.
+///
+/// Qubits are node indices, edges are couplings, and an edge weight is the cost of routing across
+/// it (1 for an unweighted graph).
+///
+/// # Precomputation
+///
+/// Construction runs Floyd–Warshall over the whole graph and finds the articulation points, so
+/// [`distance`](Architecture::distance), [`best_path`](Architecture::best_path) and
+/// [`non_cutting`](Architecture::non_cutting) are lookups rather than searches. Synthesis queries
+/// those in its inner loops, which is what makes the trade worthwhile.
+///
+/// The flip side: every mutation ([`remove_node`](Self::remove_node),
+/// [`add_edge`](Self::add_edge), [`add_weighted_edge`](Self::add_weighted_edge)) redoes that work
+/// for the whole graph. Build the graph with [`from_edges`](Self::from_edges) in one go rather
+/// than edge by edge.
+///
+/// ```
+/// use synir::architecture::connectivity::Connectivity;
+/// use synir::architecture::Architecture;
+///
+/// let line = Connectivity::line(4);              // 0 - 1 - 2 - 3
+/// assert_eq!(line.distance(0, 3), 3);
+/// assert_eq!(line.best_path(0, 2), vec![0, 1, 2]);
+///
+/// // The interior qubits of a line are cut vertices; only the endpoints are removable.
+/// assert_eq!(line.non_cutting(), &vec![0, 3]);
+/// ```
 #[derive(Debug, Default, Clone)]
 pub struct Connectivity {
     graph: StableUnGraph<NodeWeight, EdgeWeight, GraphIndex>,
@@ -37,6 +69,7 @@ pub struct Connectivity {
 }
 
 impl Connectivity {
+    /// `num_qubits` qubits and no couplings at all.
     pub fn new(num_qubits: usize) -> Self {
         let mut graph = StableUnGraph::with_capacity(num_qubits, 0);
         for _ in 0..num_qubits {
@@ -45,11 +78,13 @@ impl Connectivity {
         Connectivity::from_graph(graph)
     }
 
+    /// A path graph: `0 - 1 - ... - (num_qubits - 1)`.
     pub fn line(num_qubits: usize) -> Self {
         let edges: Vec<(usize, usize)> = (1..num_qubits).map(|i| (i - 1, i)).collect();
         Connectivity::from_edges(&edges)
     }
 
+    /// A rectangular lattice, with qubit `r * num_cols + c` at row `r`, column `c`.
     pub fn grid(num_rows: usize, num_cols: usize) -> Self {
         let mut edges = Vec::with_capacity(2 * num_rows * num_cols);
 
@@ -66,6 +101,10 @@ impl Connectivity {
         Connectivity::from_edges(&edges)
     }
 
+    /// All-to-all connectivity — every qubit coupled to every other.
+    ///
+    /// The "no constraints" case, and what the synthesis strategies default to when no
+    /// architecture is supplied.
     pub fn complete(num_qubits: usize) -> Self {
         let mut edges = Vec::with_capacity(num_qubits * num_qubits / 2);
         for i in 0..num_qubits {
@@ -76,6 +115,10 @@ impl Connectivity {
         Connectivity::from_edges(&edges)
     }
 
+    /// Builds a graph from unweighted couplings, each given weight 1.
+    ///
+    /// Node count is inferred from the largest index mentioned, so an isolated qubit at the end of
+    /// the register will not appear. An empty slice yields a single-qubit graph.
     pub fn from_edges(edges: &[(GraphIndex, GraphIndex)]) -> Self {
         if edges.len() > 0 {
             let mut graph = StableUnGraph::from_edges(edges);
@@ -86,6 +129,9 @@ impl Connectivity {
         }
     }
 
+    /// Builds a graph from `(i, j, weight)` couplings, for hardware where routing costs differ.
+    ///
+    /// An empty slice yields a single-qubit graph.
     pub fn from_weighted_edges(edges: &[(GraphIndex, GraphIndex, EdgeWeight)]) -> Self {
         if edges.len() > 0 {
             let graph = StableUnGraph::from_edges(edges);
@@ -95,6 +141,7 @@ impl Connectivity {
         }
     }
 
+    /// Wraps an existing petgraph graph, running the shortest-path and cut-vertex precomputation.
     pub fn from_graph(graph: StableUnGraph<NodeWeight, EdgeWeight, GraphIndex>) -> Self {
         let non_cutting = get_non_cutting_vertices(&graph);
         let (distance, prev) = floyd_warshall_path(&graph, |e| *e.weight()).unwrap();
@@ -108,6 +155,10 @@ impl Connectivity {
         }
     }
 
+    /// The qubits present in the graph.
+    ///
+    /// Not necessarily `0..node_count()`: [`remove_node`](Self::remove_node) leaves gaps, since
+    /// the remaining qubits keep their original indices.
     pub fn nodes(&self) -> Vec<GraphIndex> {
         self.graph
             .node_references()
@@ -115,14 +166,18 @@ impl Connectivity {
             .collect()
     }
 
+    /// How many qubits are in the graph.
     pub fn node_count(&self) -> usize {
         self.graph.node_count()
     }
 
+    /// How many couplings are in the graph.
     pub fn edge_count(&self) -> usize {
         self.graph.edge_count()
     }
 
+    /// The couplings, as `(source, target)` pairs. The graph is undirected, so the order within
+    /// each pair carries no meaning.
     pub fn edges(&self) -> Vec<(GraphIndex, GraphIndex)> {
         self.graph
             .edge_references()
@@ -136,15 +191,21 @@ impl Connectivity {
         *self = updated_self;
     }
 
+    /// Removes qubit `i` and every coupling touching it, in place.
+    ///
+    /// Surviving qubits keep their indices. Recomputes all shortest paths — see the type-level
+    /// note on mutation cost.
     pub fn remove_node(&mut self, i: GraphIndex) {
         self.graph.remove_node(self.graph.from_index(i));
         self.update();
     }
 
+    /// Couples `i` and `j` with weight 1. Recomputes all shortest paths.
     pub fn add_edge(&mut self, i: GraphIndex, j: GraphIndex) {
         self.add_weighted_edge(i, j, 1);
     }
 
+    /// Couples `i` and `j` with the given weight. Recomputes all shortest paths.
     pub fn add_weighted_edge(&mut self, i: GraphIndex, j: GraphIndex, weight: EdgeWeight) {
         self.graph
             .add_edge(self.graph.from_index(i), self.graph.from_index(j), weight);
@@ -169,6 +230,7 @@ impl Connectivity {
         path
     }
 
+    /// Whether `v1` and `v2` are directly coupled.
     pub fn has_edge(&self, v1: GraphIndex, v2: GraphIndex) -> bool {
         self.edges().contains(&(v1, v2)) || self.edges().contains(&(v2, v1))
     }
@@ -194,7 +256,8 @@ impl Architecture for Connectivity {
         &self.non_cutting
     }
 
-    /// Obtain cx ladder that is architecture conforming that is rooted at `root`
+    /// Builds the ladder from a Steiner tree spanning `nodes`, traversed breadth-first from
+    /// `root`.
     fn get_cx_ladder(
         &self,
         nodes: &[GraphIndex],

@@ -1,3 +1,7 @@
+//! Whole-circuit synthesis: the polynomial half, then the Clifford half.
+//!
+//! See [`PauliExponentialSynthesizer`].
+
 use core::num;
 use std::collections::VecDeque;
 
@@ -17,6 +21,32 @@ use crate::ir::{
     pauli_polynomial::{naive::NaivePauliPolynomialSynthesizer, PauliPolynomialSynthStrategy},
 };
 
+/// Synthesizes a [`PauliExponential`] end to end, into a sink implementing
+/// [`CliffordGates`] + [`Gates`].
+///
+/// The two halves of the normal form are handled by separate algorithms, chosen independently:
+///
+/// 1. the polynomials, via [`PauliPolynomialSynthStrategy`];
+/// 2. the trailing Clifford, via [`CliffordTableauSynthStrategy`].
+///
+/// # Why the two halves are not independent
+///
+/// The polynomial synthesizer does not un-compute the basis changes it introduces; it returns them
+/// as a tableau `ct`, so what it actually emitted is `C_pp` with `ct = C_pp * U_pp^dag`. The
+/// Clifford half therefore has to clean up after it, synthesizing `T * ct^dag` rather than `T`
+/// alone. Since the tableau algorithms emit inverses, the value handed to them is
+/// `(T * ct^dag)^dag = ct * T^dag`, spelled `T^dag.compose(&ct)` in circuit order.
+///
+/// Folding the fix-up into a tableau that has to be synthesized anyway makes it nearly free —
+/// which is the whole reason the polynomial synthesizers skip the un-computation.
+///
+/// Whatever permutation is left over at the end goes to
+/// [`CliffordGates::add_final_permutation`].
+///
+/// # Panics
+///
+/// Panics if the residual tableau after Clifford synthesis is not a bare permutation, which would
+/// mean one of the two halves failed to reduce.
 #[derive(Default)]
 pub struct PauliExponentialSynthesizer {
     pauli_strategy: PauliPolynomialSynthStrategy,
@@ -24,6 +54,7 @@ pub struct PauliExponentialSynthesizer {
 }
 
 impl PauliExponentialSynthesizer {
+    /// Builds a synthesizer with both strategies chosen up front.
     pub fn from_strategy(
         pauli_strategy: PauliPolynomialSynthStrategy,
         clifford_strategy: CliffordTableauSynthStrategy,
@@ -34,6 +65,7 @@ impl PauliExponentialSynthesizer {
         }
     }
 
+    /// Chooses the algorithm for the polynomial half.
     pub fn set_pauli_strategy(
         &mut self,
         pauli_strategy: PauliPolynomialSynthStrategy,
@@ -42,6 +74,7 @@ impl PauliExponentialSynthesizer {
         self
     }
 
+    /// Chooses the algorithm for the Clifford half.
     pub fn set_clifford_strategy(
         &mut self,
         clifford_strategy: CliffordTableauSynthStrategy,
@@ -113,6 +146,10 @@ where
     }
 }
 
+/// Prints each gadget and angle of every polynomial to stdout, one per line, with `--` between
+/// polynomials.
+///
+/// A debugging aid, used by the test suite to make a failing comparison readable.
 pub fn print_pp_help(pauli_polynomials: &VecDeque<PauliPolynomial>) {
     for pp in pauli_polynomials {
         for i in 0..pp.length() {

@@ -1,3 +1,7 @@
+//! Bags of Pauli gadgets.
+//!
+//! See [`PauliPolynomial`].
+
 use std::borrow::{Borrow, BorrowMut};
 use std::iter::zip;
 
@@ -8,6 +12,43 @@ use itertools::{zip_eq, Itertools};
 
 pub mod simplify;
 
+/// A sequence of Pauli gadgets `exp(-i * theta_j/2 * P_j)` sharing a qubit register.
+///
+/// This is where the non-Clifford content of a circuit ends up. Each gadget is a Pauli string
+/// `P_j` paired with an [`Angle`] `theta_j`.
+///
+/// # Layout: chains are transposed
+///
+/// The gadgets are **not** stored one string per gadget. They are stored one string per *qubit*:
+/// `chains[q]` is a [`PauliString`] whose position `j` is the letter gadget `j` puts on qubit `q`.
+///
+/// ```text
+///                 gadget 0   gadget 1   gadget 2
+///   chains[0]  =     Z          X          I        <- qubit 0
+///   chains[1]  =     Z          I          Y        <- qubit 1
+///   angles     =  [ theta_0,  theta_1,  theta_2 ]
+/// ```
+///
+/// Reading gadget `j` therefore means transposing — that is [`pauli_gadget`](Self::pauli_gadget),
+/// which allocates. Propagating a Clifford on qubit `q` is the cheap direction: it rewrites one
+/// chain in place with vector-wide bit operations, which is the operation that actually runs in
+/// the inner loop.
+///
+/// Two lengths that are easy to confuse: [`num_qubits`](Self::num_qubits) is the number of chains,
+/// [`length`](Self::length) is the number of gadgets.
+///
+/// ```
+/// use synir::data_structures::{Angle, PauliPolynomial, PauliString};
+///
+/// let pp = PauliPolynomial::from_hamiltonian(vec![
+///     ("ZZ", Angle::from_angle(0.5)),
+///     ("XI", Angle::from_angle(1.5)),
+/// ]);
+///
+/// assert_eq!(pp.num_qubits(), 2);
+/// assert_eq!(pp.length(), 2);
+/// assert_eq!(pp.pauli_gadget(0), PauliString::from_text("ZZ"));
+/// ```
 #[derive(Debug, Clone, Default)]
 pub struct PauliPolynomial {
     chains: Vec<PauliString>,
@@ -15,6 +56,7 @@ pub struct PauliPolynomial {
 }
 
 impl PauliPolynomial {
+    /// An empty polynomial over `num_qubits` qubits — no gadgets, but the register is fixed.
     pub fn new(num_qubits: usize) -> Self {
         PauliPolynomial::from_components(
             (0..num_qubits)
@@ -24,6 +66,15 @@ impl PauliPolynomial {
         )
     }
 
+    /// Builds a polynomial from `(pauli_string, angle)` pairs, one per gadget.
+    ///
+    /// This is the natural way to write a Hamiltonian down: each `&str` is a gadget spelled out
+    /// across the qubits, such as `("ZZII", theta)`. The transposition into chains happens here.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the list is empty (the qubit count would be unknown) or if the strings are not
+    /// all the same length.
     pub fn from_hamiltonian(hamiltonian_representation: Vec<(&str, Angle)>) -> Self {
         assert!(!hamiltonian_representation.is_empty());
         let terms = hamiltonian_representation.len();
@@ -47,6 +98,14 @@ impl PauliPolynomial {
         Self { chains, angles }
     }
 
+    /// Builds a polynomial from chains that are **already transposed** — one string per qubit.
+    ///
+    /// Use [`from_pauli_gadgets`](Self::from_pauli_gadgets) or
+    /// [`from_hamiltonian`](Self::from_hamiltonian) if you have one string per gadget instead.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `chains` is empty, or if a chain's length differs from the number of angles.
     pub fn from_components(chains: Vec<PauliString>, angles: Vec<Angle>) -> Self {
         assert!(
             chains.len() > 0,
@@ -61,6 +120,11 @@ impl PauliPolynomial {
         Self { chains, angles }
     }
 
+    /// Builds a polynomial from one [`PauliString`] per gadget, transposing into chains.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `gadgets` is empty or if it has a different length from `angles`.
     pub fn from_pauli_gadgets(gadgets: Vec<PauliString>, angles: Vec<Angle>) -> Self {
         assert!(
             gadgets.len() > 0,
@@ -82,56 +146,96 @@ impl PauliPolynomial {
         )
     }
 
+    /// The width of the register — the number of chains.
     pub fn num_qubits(&self) -> usize {
         self.chains.len()
     }
 
+    /// The number of gadgets. Not the qubit count — see [`Self::num_qubits`].
     pub fn length(&self) -> usize {
         self.angles.len()
     }
 
+    /// Gadget `i` as a single Pauli string across the qubits.
+    ///
+    /// This transposes the chains, so it allocates a fresh string on every call — prefer
+    /// [`chain`](Self::chain) in a hot loop over qubits.
+    ///
+    /// # Panics
+    ///
+    /// Panics unless `i < length()`.
     pub fn pauli_gadget(&self, i: usize) -> PauliString {
         assert!(i < self.length());
         PauliString::from_letters(&self.chains.iter().map(|ps| ps.pauli(i)).collect_vec())
     }
 
+    /// Every gadget, transposed. See [`pauli_gadget`](Self::pauli_gadget).
     pub fn pauli_gadgets(&self) -> Vec<PauliString> {
         (0..self.length())
             .map(|i| self.pauli_gadget(i))
             .collect_vec()
     }
 
+    /// The chain for qubit `i`: what every gadget puts on that one qubit.
+    ///
+    /// # Panics
+    ///
+    /// Panics unless `i < num_qubits()`.
     pub fn chain(&self, i: usize) -> &PauliString {
         assert!(i < self.num_qubits());
         &self.chains[i]
     }
 
+    /// All chains, indexed by qubit.
     pub fn chains(&self) -> &Vec<PauliString> {
         &self.chains
     }
 
+    /// The rotation angles, indexed by gadget.
     pub fn angles(&self) -> &Vec<Angle> {
         &self.angles
     }
 
+    /// Mutable access to the angles.
+    ///
+    /// Keep the length in step with the chains; the two are only checked together in
+    /// [`mut_chains_and_angles`](Self::mut_chains_and_angles).
     pub fn mut_angles(&mut self) -> &mut Vec<Angle> {
         &mut self.angles
     }
 
+    /// The angle of gadget `i`.
+    ///
+    /// # Panics
+    ///
+    /// Panics unless `i < length()`.
     pub fn angle(&self, i: usize) -> Angle {
         assert!(i < self.length());
         self.angles[i]
     }
 
+    /// Mutable access to the chains.
+    ///
+    /// Keep every chain the same length as the angle vector.
     pub fn mut_chains(&mut self) -> &mut Vec<PauliString> {
         &mut self.chains
     }
 
+    /// Mutable access to chains and angles at once, checking they agree first.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the chain length and the angle count have drifted apart.
     pub fn mut_chains_and_angles(&mut self) -> (&mut Vec<PauliString>, &mut Vec<Angle>) {
         assert!(self.angles.len() == self.chains[0].len(), "PauliPolynomials should always have the same amount of Chains and Angles, but they are {} {}.", self.chains[0].len(), self.angles.len());
         (&mut self.chains, &mut self.angles)
     }
 
+    /// Appends a single-qubit `Z` rotation on `target` as a new gadget.
+    ///
+    /// # Panics
+    ///
+    /// Panics unless `target < num_qubits()`.
     pub fn extend_z(&mut self, target: usize, angle: f64) {
         assert!(target < self.num_qubits());
         for (i, chain) in self.chains.iter_mut().enumerate() {
@@ -145,12 +249,22 @@ impl PauliPolynomial {
         self.angles.push(Angle::from_angle(angle));
     }
 
+    /// Appends every gadget of `other` to this polynomial.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the two have different qubit counts.
     pub fn append_other(&mut self, other: &PauliPolynomial) {
         for (gadget, angle) in zip(other.pauli_gadgets(), other.angles()) {
             self.append_gadget(gadget, *angle);
         }
     }
 
+    /// Appends one gadget.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `gadget` is not exactly [`num_qubits`](Self::num_qubits) wide.
     pub fn append_gadget(&mut self, gadget: PauliString, angle: Angle) {
         if self.num_qubits() != gadget.len() {
             panic!(
@@ -166,6 +280,15 @@ impl PauliPolynomial {
         }
     }
 
+    /// Removes gadget `i` and returns it, shortening the polynomial.
+    ///
+    /// This uses `swap_remove`: the **last** gadget moves into slot `i`, so every index at or
+    /// after `i` may now refer to a different gadget. A caller holding positional masks across
+    /// this call wants [`clear_gadget`](Self::clear_gadget) instead.
+    ///
+    /// # Panics
+    ///
+    /// Panics unless `i < length()`.
     pub fn remove_gadget(&mut self, i: usize) -> (PauliString, Angle) {
         assert!(i < self.length());
         let angle = self.angles.swap_remove(i);
@@ -197,6 +320,11 @@ impl PauliPolynomial {
         (gadget, angle)
     }
 
+    /// Whether every gadget of `self` commutes with every gadget of `other`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the two have different qubit counts.
     pub fn commutes_with(&self, other: &PauliPolynomial) -> bool {
         if self.num_qubits() != other.num_qubits() {
             panic!("Commutation checking only works with PauliPolynomials of the same size, but found {} and {}", self.num_qubits(), other.num_qubits());
@@ -210,6 +338,11 @@ impl PauliPolynomial {
         true
     }
 
+    /// Whether every gadget of `self` commutes with `gadget`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `gadget` is not [`num_qubits`](Self::num_qubits) wide.
     pub fn commutes_with_gadget(&self, gadget: PauliString) -> bool {
         if self.num_qubits() != gadget.len() {
             panic!("Commutation checking only works with PauliPolynomials of the same size, but found {} and {}", self.num_qubits(), gadget.len());
@@ -222,10 +355,20 @@ impl PauliPolynomial {
         true
     }
 
+    /// Conjugates every gadget by a Clifford gadget, instead of storing it.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `angle` is not Clifford — see [`PropagateClifford::propate_gadget`].
     pub fn push_clifford_gadget(&mut self, gadget: PauliString, angle: Angle) {
         self.propate_gadget(gadget, angle).unwrap();
     }
 
+    /// [`push_clifford_gadget`](Self::push_clifford_gadget) for every gadget of `other`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if any of `other`'s angles is non-Clifford.
     pub fn push_clifford(&mut self, other: &PauliPolynomial) {
         for (gadget, angle) in zip(other.pauli_gadgets(), other.angles()) {
             self.push_clifford_gadget(gadget, *angle);

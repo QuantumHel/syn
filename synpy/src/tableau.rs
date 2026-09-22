@@ -1,3 +1,5 @@
+//! The Python-facing Clifford tableau.
+
 use crate::synthesis::{CommandCollector, PyCommand, Synthesize};
 
 use bitvec::prelude::BitVec;
@@ -10,6 +12,16 @@ use synir::data_structures::PropagateClifford;
 use synir::ir::clifford_tableau::NaiveCliffordSynthesizer;
 use synir::ir::Synthesizer;
 
+/// A Clifford operator on `n` qubits, exposed to Python.
+///
+/// Wraps [`synir::data_structures::CliffordTableau`]. Build one from Qiskit's `Clifford` with
+/// [`from_parts`](Self::from_parts), or start from the identity and propagate gates into it.
+///
+/// `synthesize` always uses the naive strategy, which ignores connectivity — go through
+/// [`PyPauliExponential`](crate::wrapper::PyPauliExponential) if you need a
+/// connectivity-aware result.
+///
+/// Supports `==` and `!=`.
 #[pyclass(unsendable)]
 pub struct PyCliffordTableau {
     tableau: CliffordTableau,
@@ -17,6 +29,7 @@ pub struct PyCliffordTableau {
 
 #[pymethods]
 impl PyCliffordTableau {
+    /// The identity operation on `n` qubits.
     #[new]
     fn new(n: usize) -> Self {
         PyCliffordTableau {
@@ -24,6 +37,14 @@ impl PyCliffordTableau {
         }
     }
 
+    /// Builds a tableau from its columns and signs.
+    ///
+    /// `pauli_strings` holds one string per qubit, each `2n` letters long — rows `0..n` are the
+    /// images of the `X` generators and rows `n..2n` those of the `Z` generators. `signs` has `2n`
+    /// booleans in the same order, `True` meaning negative.
+    ///
+    /// Note this is the *transpose* of how Qiskit's `Clifford.tableau` is laid out; see
+    /// `synpy.qiskit.plugin.SynPyCliffordPlugin` for the conversion.
     #[staticmethod]
     pub fn from_parts(pauli_strings: Vec<String>, signs: Vec<bool>) -> Self {
         let pauli_columns: Vec<PauliString> = pauli_strings
@@ -36,10 +57,12 @@ impl PyCliffordTableau {
         PyCliffordTableau { tableau }
     }
 
+    /// The number of qubits.
     pub fn size(&self) -> usize {
         self.tableau.size()
     }
 
+    /// Composes in circuit order: `self` runs first, then `rhs`.
     pub(crate) fn compose(&self, rhs: &Self) -> Self {
         PyCliffordTableau {
             tableau: self.tableau.compose(&rhs.tableau),
@@ -54,6 +77,9 @@ impl PyCliffordTableau {
         }
     }
 
+    /// Synthesizes this tableau into a list of [`PyCommand`]s, in circuit order.
+    ///
+    /// Uses the naive strategy, so the result assumes all-to-all connectivity.
     pub fn synthesize(&self) -> Vec<PyCommand> {
         <Self as Synthesize>::synthesize(self)
     }

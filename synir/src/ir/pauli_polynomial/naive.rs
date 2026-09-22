@@ -8,6 +8,15 @@ use bitvec::{bitvec, order::Lsb0};
 
 use super::helper::push_down_pauli_polynomial_update;
 
+/// Synthesizes each polynomial by pushing its gadgets down one at a time.
+///
+/// No structure is shared between gadgets: each is diagonalized, emitted, and propagated through
+/// whatever remains. Simple and connectivity-agnostic — the baseline that
+/// [`PSGSPauliPolynomialSynthesizer`](super::psgs::PSGSPauliPolynomialSynthesizer) is measured
+/// against.
+///
+/// Returns the tableau of basis changes left in place; see the module documentation for why they
+/// are not un-computed here.
 #[derive(Default)]
 pub struct NaivePauliPolynomialSynthesizer {}
 

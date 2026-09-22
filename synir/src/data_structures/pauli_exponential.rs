@@ -1,3 +1,7 @@
+//! The top-level normal form, plus the preprocessing passes that tidy it.
+//!
+//! See [`PauliExponential`].
+
 use std::borrow::{Borrow, BorrowMut};
 use std::collections::VecDeque;
 use std::iter::zip;
@@ -7,6 +11,22 @@ use crate::data_structures::pauli_polynomial::simplify::{
 };
 use crate::data_structures::{CliffordTableau, PauliPolynomial, PropagateClifford};
 
+/// A whole circuit in synIR's normal form: gadgets first, then one Clifford.
+///
+/// ```text
+/// U = T * U_pp
+/// ```
+///
+/// in matrix order, so `U_pp` runs first. `U_pp` is the deque of
+/// [`PauliPolynomial`]s in circuit order, and `T` is the trailing [`CliffordTableau`].
+///
+/// Why a deque of polynomials rather than one flat list of gadgets: the gadgets *within* a single
+/// polynomial pairwise commute, so a synthesizer may reorder them freely and pay for their shared
+/// structure once. A gadget that fails to commute starts a new polynomial. That grouping is what
+/// [`merge_commuting_pp`] computes.
+///
+/// Build one with [`crate::import`] rather than by hand; consume it with
+/// [`PauliExponentialSynthesizer`](crate::ir::pauli_exponential::PauliExponentialSynthesizer).
 #[derive(Default)]
 pub struct PauliExponential {
     pub(crate) pauli_polynomials: VecDeque<PauliPolynomial>,
@@ -14,6 +34,7 @@ pub struct PauliExponential {
 }
 
 impl PauliExponential {
+    /// Pairs a run of polynomials with the Clifford that follows them.
     pub fn new(
         pauli_polynomials: VecDeque<PauliPolynomial>,
         clifford_tableau: CliffordTableau,
@@ -24,22 +45,27 @@ impl PauliExponential {
         }
     }
 
+    /// The polynomials, in circuit order.
     pub fn chains(&self) -> &VecDeque<PauliPolynomial> {
         &self.pauli_polynomials
     }
 
+    /// Mutable access to the polynomials.
     pub fn mut_chains(&mut self) -> &mut VecDeque<PauliPolynomial> {
         &mut self.pauli_polynomials
     }
 
+    /// The number of qubits, taken from the tableau.
     pub fn size(&self) -> usize {
         self.clifford_tableau.size()
     }
 
+    /// The trailing Clifford `T`.
     pub fn clifford_tableau(&self) -> &CliffordTableau {
         &self.clifford_tableau
     }
 
+    /// Mutable access to the trailing Clifford.
     pub fn mut_clifford_tableau(&mut self) -> &mut CliffordTableau {
         &mut self.clifford_tableau
     }
@@ -75,12 +101,21 @@ impl PropagateClifford for PauliExponential {
     }
 }
 
+/// Merges gadgets that share a Pauli string, within each polynomial.
+///
+/// Two gadgets on the same string are one rotation by the sum of their angles, so this strictly
+/// shrinks the polynomial. Runs the `simplify::merge_repeats` pass on each member.
 pub fn merge_repeats(pe: &mut PauliExponential) {
     for pp in pe.mut_chains() {
         merge_repeats_pp(pp);
     }
 }
 
+/// Regroups the polynomials so each one holds only mutually commuting gadgets, greedily.
+///
+/// Walks the deque in order, pulling every gadget that commutes with the polynomial being built
+/// into it and starting a fresh polynomial at the first one that does not. Larger commuting blocks
+/// give the synthesizers more freedom to reorder, so this is worth running before synthesis.
 pub fn merge_commuting_pp(pe: &mut PauliExponential) {
     let mut new_pps = vec![];
     pe.pauli_polynomials.make_contiguous(); // Stores all elements in as_mut_slices.0

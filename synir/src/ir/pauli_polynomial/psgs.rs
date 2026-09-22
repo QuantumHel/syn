@@ -10,17 +10,39 @@ use crate::{
 };
 use bitvec::{bitvec, order::Lsb0};
 
+/// Pauli String Gadget Synthesis: recursive partitioning that shares CNOT structure.
+///
+/// Instead of handling one gadget at a time, PSGS looks for a qubit whose column splits the
+/// remaining gadgets into two sizeable groups, diagonalizes on that qubit, and recurses into each
+/// group with a mask restricting it to those gadgets. Gadgets that share legs therefore share the
+/// CNOT ladder that folds those legs together, which is where the saving over
+/// [`NaivePauliPolynomialSynthesizer`](super::NaivePauliPolynomialSynthesizer) comes from.
+///
+/// The recursion consumes gadgets by *blanking* them
+/// ([`PauliPolynomial::clear_gadget`](crate::data_structures::PauliPolynomial::clear_gadget))
+/// rather than removing them, so the positional masks held across recursive calls stay valid.
+///
+/// Set the target hardware graph with [`set_connectivity`](Self::set_connectivity); the default is
+/// an empty graph, so callers that do not set one get a single-qubit architecture.
+///
+/// # Panics
+///
+/// Panics if handed an empty deque, or if the recursion finishes with a gadget left
+/// unsynthesized — a bug rather than a usage error, but one worth failing loudly on, since
+/// otherwise it surfaces as a silently wrong unitary.
 #[derive(Default)]
 pub struct PSGSPauliPolynomialSynthesizer {
     connectivity: Connectivity,
 }
 
 impl PSGSPauliPolynomialSynthesizer {
+    /// Sets the hardware graph the recursion routes against.
     pub fn set_connectivity(&mut self, connectivity: Connectivity) -> &mut Self {
         self.connectivity = connectivity;
         self
     }
 
+    /// The hardware graph this synthesizer targets.
     pub fn get_connectivity(&self) -> &Connectivity {
         &self.connectivity
     }
