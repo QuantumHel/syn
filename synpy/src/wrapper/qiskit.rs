@@ -199,7 +199,6 @@ impl Gates for QiskitSynIR {
     }
 
     fn rz(&mut self, target: synir::IndexType, angle: f64) {
-        println!("RZ on {}", target);
         Python::attach(|py| -> PyResult<()> {
             self.circuit.call_method1(py, "rz", (angle, target))?;
             Ok(())

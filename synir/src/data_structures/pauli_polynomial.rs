@@ -261,7 +261,6 @@ impl MaskedPropagateClifford for PauliPolynomial {
                     (PauliLetter::Y, PauliLetter::Y) => angle.flip(),
                     _ => (),
                 };
-                //println!("{} {} {}", control.pauli(i), target.pauli(i), angle);
                 *angle
             })
             .collect();

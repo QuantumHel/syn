@@ -255,7 +255,6 @@ where
         let row = row_permutation[r];
         repr.x(row);
         clifford_tableau.x(row);
-        println!("X on {}", row);
     }
     assert_eq!(
         clifford_tableau.z_signs(),

@@ -3,7 +3,6 @@ pub(crate) mod qiskit;
 extern crate pyo3;
 extern crate pyo3_ffi;
 
-use std::borrow::Borrow;
 
 use pyo3::prelude::*;
 use synir::{
@@ -109,7 +108,6 @@ where
     let num_qubits = pe.importer.num_qubits();
     let importer = std::mem::replace(&mut pe.importer, CircuitImporter::new(num_qubits));
     let pe = importer.finish();
-    pe_print_helper(pe.borrow());
     synth.synthesize(pe, circuit);
 }
 

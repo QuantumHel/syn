@@ -20,7 +20,6 @@ def our_transpile(circuit: QuantumCircuit, method = "Naive") -> QuantumCircuit:
     pe_wrap.synthesize_to_qiskit(synir_result)
     perm1 = synir_result.get_permutation()
     perm2 = [perm1.index(i) for i in range(len(perm1))]
-    print(perm2)
     new_circuit = synir_result.get_circuit()
     new_circuit.append(PermutationGate(perm2), new_circuit.qubits, [])
     return synir_result.get_circuit()
@@ -35,7 +34,6 @@ for gate in original_shor.data:
         no_qft.compose(gate, gate.qubits, gate.clbits, inplace=True)
 no_qft.count_ops()
 
-# TODO replace qft into the circuit
 shor_circuit = no_qft.compose(QFT(num_qubits=10), no_qft.qubits[-10:])
 basic_shor = transpile(shor_circuit, basis_gates=["cx", "h", "x", "rz"], optimization_level=0)
 print("Decomposed gate count",basic_shor.count_ops())
@@ -43,6 +41,6 @@ print("Decomposed gate count",basic_shor.count_ops())
 qiskit_shor = transpile(basic_shor, optimization_level=3, basis_gates=["cx", "h", "x", "rz"])
 print("Qiskit optimized gatecount", qiskit_shor.count_ops())
 #check_equivalent(shor_circuit, qiskit_shor)
-#syn_shor = our_transpile(basic_shor)
-#print("SynPy gate count", syn_shor.count_ops())
+syn_shor = our_transpile(basic_shor)
+print("SynPy gate count", syn_shor.count_ops())
 #check_equivalent(shor_circuit, syn_shor)
