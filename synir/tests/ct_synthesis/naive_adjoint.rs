@@ -4,6 +4,7 @@ use crate::common::sample_clifford_tableaus::{
     sample_cnot_reverse_gate, sample_s_dgr_gate, sample_s_gate, sample_swap_ct, sample_v_dgr_gate,
     sample_v_gate, setup_sample_ct, setup_sample_inverse_ct,
 };
+use crate::common::tableau_from_unitary::assert_realises_tableau;
 use synir::data_structures::{CliffordTableau, HasAdjoint};
 use synir::ir::clifford_tableau::NaiveCliffordSynthesizer;
 use synir::ir::AdjointSynthesizer;
@@ -25,7 +26,16 @@ macro_rules! test_clifford {
                 if $expected.is_some() {
                     assert_eq!(mock.commands(), $expected.unwrap());
                 }
-                mock.equals_clifford_tableau(&clifford_tableau, new_ct.get_permutation());
+                assert!(
+                    mock.equals_clifford_tableau(&clifford_tableau, new_ct.get_permutation()),
+                    "synthesized circuit does not reproduce the input tableau"
+                );
+                assert_realises_tableau(
+                    &mock,
+                    &clifford_tableau,
+                    new_ct.get_permutation(),
+                    concat!(module_path!(), "::", stringify!($fun)),
+                );
             }
         }
     };

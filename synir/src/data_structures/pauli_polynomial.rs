@@ -178,6 +178,25 @@ impl PauliPolynomial {
         (gadget, angle)
     }
 
+    /// Blanks gadget `i` to all-identity and returns what was there, keeping the polynomial's
+    /// length and every other gadget's index.
+    ///
+    /// [`Self::remove_gadget`] uses `swap_remove`, which both shortens the polynomial and moves the
+    /// last gadget into the freed slot -- that invalidates any positional mask a caller is holding.
+    /// PSGS holds such masks across recursive calls, so it consumes gadgets with this instead. The
+    /// blanked gadget is inert: it is identity under every Clifford conjugation and contributes
+    /// only a global phase.
+    pub fn clear_gadget(&mut self, i: usize) -> (PauliString, Angle) {
+        assert!(i < self.length());
+        let gadget = self.pauli_gadget(i);
+        let angle = std::mem::replace(&mut self.angles[i], Angle::from_angle(0.));
+        for chain in self.chains.iter_mut() {
+            chain.x.set(i, false);
+            chain.z.set(i, false);
+        }
+        (gadget, angle)
+    }
+
     pub fn commutes_with(&self, other: &PauliPolynomial) -> bool {
         if self.num_qubits() != other.num_qubits() {
             panic!("Commutation checking only works with PauliPolynomials of the same size, but found {} and {}", self.num_qubits(), other.num_qubits());

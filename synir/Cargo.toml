@@ -13,6 +13,7 @@ petgraph = { version = "0.8.2", features = ["stable_graph"], git = "https://gith
 criterion = "0.8.1"
 rand = "0.9.0"
 paste = "1.0.15"
+num-complex = "0.4"
 
 [[bench]]
 name = "clifford_tableau"

@@ -93,8 +93,13 @@ pub(super) fn push_down_pauli_polynomial_update<G>(
                 }
                 PauliLetter::Y => {
                     affected_qubits.push(i);
+                    // The emitted gate is `V^dag`, and with the debt written as `T^dag * U_rest *
+                    // U_cur` every polynomial still to be synthesized -- the current one *and* the
+                    // rest -- must be conjugated the same way, by `V^dag ( ) V`. That is what both
+                    // `masked_v` and `v` do; `v_dgr` would conjugate the other way round, which
+                    // only ever showed up once a second, non-commuting polynomial was present.
                     pauli_polynomial.masked_v(i, &mask);
-                    pauli_polynomials.v_dgr(i);
+                    pauli_polynomials.v(i);
                     clifford_tableau.v_dgr(i);
                     repr.v_dgr(i);
                 }
@@ -148,8 +153,17 @@ pub(super) fn pick_qubit(
     selected_qubits[costs.iter().position_max().unwrap()]
 }
 
-/// Checks if any Pauli Gadgets have no or 1 identity legs.
-/// The gadget is removed from scope and the bit in polynomial mask is set to 0
+/// Emits every in-scope gadget that has become a single-qubit rotation, and takes it out of scope.
+///
+/// Only gadgets whose bit is set in `polynomial_mask` are considered: a gadget outside this frame's
+/// scope belongs to an ancestor frame of [`identity_recurse`] and must be left for it. Emitting out
+/// of order *within* a polynomial is otherwise free, because `merge_commuting_pp` guarantees that
+/// all gadgets of one [`PauliPolynomial`] pairwise commute -- that is what makes the whole masked,
+/// out-of-order recursion legal.
+///
+/// Consumed gadgets are blanked in place with [`PauliPolynomial::clear_gadget`] rather than removed:
+/// `remove_gadget` would `swap_remove` and so scramble the gadget indices that every outstanding
+/// mask, in this frame and in every ancestor, is written against.
 pub(super) fn check_columns<G>(
     repr: &mut G,
     pauli_polynomial: &mut PauliPolynomial,
@@ -162,72 +176,31 @@ pub(super) fn check_columns<G>(
         return;
     }
 
-    let length = pauli_polynomial.length();
-    let to_remove = (0..length)
-        .rev()
-        .filter(|i| pauli_polynomial.pauli_gadget(*i).weight() == 1)
-        .collect_vec();
-    for i in to_remove {
-        let (gadget, angle) = pauli_polynomial.remove_gadget(i);
-        polynomial_mask.swap_remove(i);
-        match (0..gadget.len())
-            .filter_map(|i| {
-                let p = gadget.pauli(i);
-                match p {
-                    PauliLetter::I => None,
-                    _ => Some((i, p)),
-                }
-            })
-            .collect_vec()[0]
-        {
-            (qubit, PauliLetter::X) => {
-                repr.rx(qubit, angle.to_radians());
+    for i in polynomial_mask.iter_ones().collect_vec() {
+        let gadget = pauli_polynomial.pauli_gadget(i);
+        match gadget.weight() {
+            // An all-identity gadget is a global phase. It cannot be diagonalized, so leaving it in
+            // scope would spin `identity_recurse` forever.
+            0 => {
+                polynomial_mask.set(i, false);
             }
-            (qubit, PauliLetter::Y) => {
-                repr.ry(qubit, angle.to_radians());
-            }
-            (qubit, PauliLetter::Z) => {
-                repr.rz(qubit, angle.to_radians());
-            }
-            _ => unreachable!(),
-        }
-    }
-
-    return;
-    let invalid = {
-        let length = pauli_polynomial.length();
-
-        let mut invalid = BitVec::repeat(false, length);
-        let mut seen_one = BitVec::repeat(false, length);
-
-        for chain in pauli_polynomial.chains().iter() {
-            let combination = chain.combine();
-            invalid |= seen_one.clone() & &combination;
-            seen_one |= combination;
-        }
-        invalid
-    };
-    let length = pauli_polynomial.length();
-    let (chains, angles) = pauli_polynomial.mut_chains_and_angles();
-    for index in (0..length).rev() {
-        if !invalid[index] && polynomial_mask[index] {
-            polynomial_mask.swap_remove(index);
-            let angle = angles.swap_remove(index);
-            for (qubit, chain) in chains.iter_mut().enumerate() {
-                let letter = chain.swap_remove(index);
+            1 => {
+                let (gadget, angle) = pauli_polynomial.clear_gadget(i);
+                polynomial_mask.set(i, false);
+                let (qubit, letter) = (0..gadget.len())
+                    .find_map(|q| match gadget.pauli(q) {
+                        PauliLetter::I => None,
+                        p => Some((q, p)),
+                    })
+                    .expect("weight-1 gadget has exactly one non-identity leg");
                 match letter {
-                    PauliLetter::X => {
-                        repr.rx(qubit, angle.to_radians());
-                    }
-                    PauliLetter::Y => {
-                        repr.ry(qubit, angle.to_radians());
-                    }
-                    PauliLetter::Z => {
-                        repr.rz(qubit, angle.to_radians());
-                    }
-                    PauliLetter::I => {}
+                    PauliLetter::X => repr.rx(qubit, angle.to_radians()),
+                    PauliLetter::Y => repr.ry(qubit, angle.to_radians()),
+                    PauliLetter::Z => repr.rz(qubit, angle.to_radians()),
+                    PauliLetter::I => unreachable!(),
                 }
             }
+            _ => {}
         }
     }
 }
@@ -325,6 +298,18 @@ pub(super) fn max_partition(
     )
 }
 
+/// Synthesizes every gadget whose bit is set in `polynomial_mask`.
+///
+/// **Invariant:** the masks handed to the recursive calls, together with whatever
+/// [`check_columns`] emitted, must cover `polynomial_mask` exactly. A gadget that appears in no
+/// recursive call is silently dropped from the circuit -- it does not show up as a bad gate, it
+/// shows up as a missing rotation many gates later. [`PSGSPauliPolynomialSynthesizer`] asserts the
+/// polynomial is fully consumed on return, which is the cheap way to catch a violation here.
+///
+/// The masks are indexed by gadget position, so nothing in this recursion may reorder or remove
+/// gadgets: an ancestor frame's mask stays live across every call below it.
+///
+/// [`PSGSPauliPolynomialSynthesizer`]: super::psgs::PSGSPauliPolynomialSynthesizer
 pub(super) fn identity_recurse<G>(
     pauli_polynomial: &mut PauliPolynomial,
     remainder_pe: &mut PauliExponential,
@@ -357,8 +342,8 @@ pub(super) fn identity_recurse<G>(
             identity_mask,
             repr,
         );
-        // ensure remainder is synthesized
-        let other_mask = other_mask.iter_ones().map(|_| true).collect();
+        // ensure remainder is synthesized. `other_mask` is still valid here: `check_columns`
+        // blanks consumed gadgets in place, so the recursion above cannot have moved any index.
         identity_recurse(
             pauli_polynomial,
             remainder_pe,
@@ -401,7 +386,11 @@ pub(super) fn identity_recurse<G>(
                 selected_qubit,
                 next_qubit,
             );
+            // Everything `largest_mask` was split into has to come back: `disconnect_i` frees
+            // `selected_qubit` for the `next_other` gadgets, but it maps the `next_identity` ones
+            // from `(1, 0)` to `(1, 1)` on `(selected, next)`, so they still need work.
             remaining_mask |= next_other_mask.as_bitslice();
+            remaining_mask |= next_identity_mask.as_bitslice();
 
             let (identity_mask, other_mask) =
                 identity_partition(pauli_polynomial, remaining_mask, selected_qubit);
@@ -427,13 +416,15 @@ pub(super) fn identity_recurse<G>(
                 largest_next_pauli,
                 second_mask,
                 second_next_pauli,
-                third_mask,
+                mut third_mask,
                 _,
             ) = max_partition(pauli_polynomial, next_other_mask, next_qubit);
 
             largest_mask |= second_mask.as_bitslice();
-            let is_x = largest_next_pauli == PauliLetter::X || second_next_pauli == PauliLetter::X;
-            let is_y = largest_next_pauli == PauliLetter::Y || second_next_pauli == PauliLetter::Y;
+            // `remaining_mask` -- the gadgets that did not carry `largest_pauli` on
+            // `selected_qubit` -- is only partitioned further in the branch above. Here it has to
+            // be folded back in, or those gadgets are never synthesized at all.
+            third_mask |= remaining_mask.as_bitslice();
 
             disconnect(
                 pauli_polynomial,
@@ -499,8 +490,11 @@ fn disconnect<G>(
             remainder_pe.h(next_qubit);
             repr.h(next_qubit);
         } else {
-            // S_dgr so that the sign doesn't flip.
-            pauli_polynomial.s_dgr(next_qubit);
+            // Emitting S^dag, so the gadgets are conjugated by `S^dag ( ) S` -- which is what
+            // `PauliPolynomial::s` does. (`remainder_pe` takes the emitted name and adjoints the
+            // polynomial side itself.) The sign flip this causes is correct: it is undone by the
+            // residual tableau, exactly as in `push_down_pauli_polynomial_update`.
+            pauli_polynomial.s(next_qubit);
             remainder_pe.s_dgr(next_qubit);
             repr.s_dgr(next_qubit);
         }
@@ -543,8 +537,8 @@ fn diagonalize_qubit<G>(
             repr.h(selected_qubit);
         }
         PauliLetter::Y => {
-            // V_dgr so that the sign doesn't flip
-            pauli_polynomial.v_dgr(selected_qubit);
+            // Emitting V^dag, so the gadgets are conjugated by `V^dag ( ) V` -- `PauliPolynomial::v`.
+            pauli_polynomial.v(selected_qubit);
             remainder_pe.v_dgr(selected_qubit);
             repr.v_dgr(selected_qubit);
         }

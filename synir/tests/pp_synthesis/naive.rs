@@ -2,6 +2,7 @@ use std::collections::VecDeque;
 
 use crate::common::mock_circuit::{MockCircuit, MockCommand};
 use crate::common::sample_pauli_poly::*;
+use crate::common::tableau_from_unitary::assert_pauli_polynomials_round_trip;
 use synir::data_structures::HasAdjoint;
 use synir::data_structures::{CliffordTableau, PauliPolynomial};
 use synir::ir::pauli_polynomial::NaivePauliPolynomialSynthesizer;
@@ -22,11 +23,20 @@ macro_rules! test_pp {
             #[test]
             fn [< synthesize_ $fun>]() {
                 let pp = $fun();
+                let num_qubits = pp[0].num_qubits();
+                let pp_reference = pp.clone();
                 let ref_pp_mock: MockCircuit = $expected;
                 let ref_ct_mock = ref_pp_mock.cliffords_only();
                 let (mock, new_ct) = run_synthesizer(pp);
                 assert_eq!(mock, ref_pp_mock);
                 assert!(ref_ct_mock.equals_clifford_tableau(&new_ct, new_ct.get_permutation()));
+                assert_pauli_polynomials_round_trip(
+                    concat!(module_path!(), "::", stringify!($fun)),
+                    &pp_reference,
+                    num_qubits,
+                    &mock,
+                    &new_ct,
+                );
             }
         }
     };

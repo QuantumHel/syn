@@ -45,6 +45,16 @@ impl PauliExponential {
     }
 }
 
+/// Records a gate that a synthesizer has just **emitted**.
+///
+/// With the outstanding work written as `T^dag * U_rest`, emitting `G` means `T <- G * T` (append)
+/// and `U_rest <- G U_rest G^dag`. `PropagateClifford for PauliPolynomial` conjugates the other
+/// way (`Q -> G^dag Q G`), so the polynomial side takes the **adjoint** gate while the tableau
+/// takes the gate itself. The two sides therefore disagree by a dagger on purpose; `h`, `x`, `y`,
+/// `z` and `cx` are self-adjoint, which is why the mismatch stayed hidden.
+///
+/// This is *not* the operation an importer wants -- folding a circuit into the IR needs the
+/// tableau prepended instead. See [`crate::import::CircuitImporter`].
 impl PropagateClifford for PauliExponential {
     fn cx(&mut self, control: crate::IndexType, target: crate::IndexType) -> &mut Self {
         self.pauli_polynomials.cx(control, target);
@@ -53,13 +63,13 @@ impl PropagateClifford for PauliExponential {
     }
 
     fn s(&mut self, target: crate::IndexType) -> &mut Self {
-        self.pauli_polynomials.s(target);
+        self.pauli_polynomials.s_dgr(target);
         self.clifford_tableau.s(target);
         self
     }
 
     fn v(&mut self, target: crate::IndexType) -> &mut Self {
-        self.pauli_polynomials.v(target);
+        self.pauli_polynomials.v_dgr(target);
         self.clifford_tableau.v(target);
         self
     }
@@ -105,7 +115,13 @@ pub fn merge_commuting_pp(pe: &mut PauliExponential) {
     pe.pauli_polynomials = VecDeque::from(new_pps);
 }
 
-pub fn push_clifford_angles(pe: &mut PauliExponential) {
+/// Splits Clifford-angle gadgets out of the polynomials and folds them into the tableau.
+///
+/// Only valid while the tableau is held in **inverse form**, which is the case inside
+/// `CircuitImporter::finish` -- its sole caller. Splitting `P_1 = D * P_1'` and pushing `D` left
+/// past the later polynomials gives `T <- T * D`, so the inverse-form tableau must absorb `D^dag`,
+/// i.e. the gadget with the angle negated.
+pub fn push_clifford_angles_inverse(pe: &mut PauliExponential) {
     let mut new_pps = VecDeque::new();
     pe.pauli_polynomials.make_contiguous();
     let mut maybe_fst = pe.pauli_polynomials.as_mut_slices().0.split_first_mut();
@@ -116,13 +132,13 @@ pub fn push_clifford_angles(pe: &mut PauliExponential) {
             new_pps.push_back(non_clifford);
         }
         if clifford.length() > 0 {
-            println!("Found {} clifford gadgets", clifford.length());
             for other_pp in others.iter_mut() {
                 other_pp.push_clifford(&clifford);
             }
             for (gadget, angle) in zip(clifford.pauli_gadgets(), clifford.angles()) {
+                // `-angle` because the tableau is in inverse form here: see the doc comment.
                 pe.clifford_tableau
-                    .compose_gadget((gadget, *angle))
+                    .compose_gadget((gadget, -*angle))
                     .unwrap();
             }
         }

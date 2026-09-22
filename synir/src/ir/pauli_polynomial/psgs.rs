@@ -4,10 +4,7 @@ use crate::{
     architecture::connectivity::Connectivity,
     data_structures::{CliffordTableau, PauliExponential, PauliPolynomial},
     ir::{
-        pauli_polynomial::{
-            self,
-            helper::{check_columns, identity_recurse},
-        },
+        pauli_polynomial::{self, helper::identity_recurse},
         CliffordGates, Gates, Synthesizer,
     },
 };
@@ -53,13 +50,25 @@ where
                 pauli_polynomials: pauli_polynomials.to_owned(),
                 clifford_tableau: clifford_tableau.to_owned(),
             };
-            check_columns(repr, &mut pauli_polynomial, &mut polynomial_mask);
             identity_recurse(
                 &mut pauli_polynomial,
                 &mut remainder_pe,
                 &self.connectivity,
                 polynomial_mask,
                 repr,
+            );
+            // `identity_recurse` blanks each gadget as it emits it, so anything left non-identity
+            // is a gadget that fell out of the recursion's masks and was never synthesized. That
+            // used to surface only as a wrong unitary, many gates downstream.
+            let unsynthesized = (0..pauli_polynomial.length())
+                .filter(|i| pauli_polynomial.pauli_gadget(*i).weight() > 0)
+                .map(|i| format!("{} @ {}", pauli_polynomial.pauli_gadget(i), pauli_polynomial.angle(i)))
+                .collect::<Vec<_>>();
+            assert!(
+                unsynthesized.is_empty(),
+                "PSGS left {} gadget(s) unsynthesized: [{}]",
+                unsynthesized.len(),
+                unsynthesized.join(", ")
             );
             pauli_polynomials = remainder_pe.pauli_polynomials;
             clifford_tableau = remainder_pe.clifford_tableau;

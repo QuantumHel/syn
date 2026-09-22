@@ -4,7 +4,7 @@ use std::collections::VecDeque;
 
 use common::mock_circuit::{MockCircuit, MockCommand};
 use synir::data_structures::{
-    Angle, CliffordTableau, HasAdjoint, PauliExponential, PauliPolynomial, PropagateClifford
+    Angle, CliffordTableau, HasAdjoint, PauliExponential, PauliPolynomial, PropagateClifford,
 };
 use synir::ir::clifford_tableau::{self, CliffordTableauSynthStrategy, NaiveCliffordSynthesizer};
 use synir::ir::pauli_exponential::PauliExponentialSynthesizer;
@@ -45,10 +45,7 @@ fn test_naive_pauli_exponential_synthesis() {
     }
     let final_stab_transform = mock.cliffords_only().to_clifford_tableau(4);
     println!("{}", final_stab_transform);
-    assert_eq!(
-        final_stab_transform,
-        CliffordTableau::new(4)
-    );
+    assert_eq!(final_stab_transform, CliffordTableau::new(4));
     let ref_commands = [
         MockCommand::CX(1, 2),
         MockCommand::CX(2, 3),
@@ -61,9 +58,13 @@ fn test_naive_pauli_exponential_synthesis() {
     assert_eq!(mock.commands(), &ref_commands);
 }
 
+/// Disabled with `#[ignore]` rather than the bare `return;` it used to start with: a `return` on
+/// the first line makes the test report as passing, which is worse than reporting as skipped.
+/// Re-enable it once the `PauliExponential` round trip in `pe_synthesis_tests.rs` is green -- the
+/// hard-coded gate lists below were captured from behaviour that test shows to be wrong.
 #[test]
+#[ignore = "expectations captured from known-broken behaviour; see pe_synthesis_tests round trips"]
 fn test_naive_pauli_exponential_complex() {
-    return;
     let pe = setup_complex_pe();
     let mut mock = MockCircuit::new();
 
@@ -171,19 +172,18 @@ fn test_naive_pauli_exponential_complex() {
 }
 
 #[test]
-fn test_naive_pe_with_ct(){
-
+fn test_naive_pe_with_ct() {
     let ham = vec![("IZZZ", Angle::from_angle(0.3))];
 
     let pauli_polynomial = PauliPolynomial::from_hamiltonian(ham);
     let mut clifford_tableau = CliffordTableau::new(4);
     clifford_tableau.cx(1, 2);
-    clifford_tableau.cx(2,3);
+    clifford_tableau.cx(2, 3);
     clifford_tableau.s(0);
     clifford_tableau.v(0);
     let mut ct_ref = CliffordTableau::new(4);
-    ct_ref.cx(1,2);
-    ct_ref.cx(2,3);
+    ct_ref.cx(1, 2);
+    ct_ref.cx(2, 3);
     ct_ref.s(0);
     ct_ref.v(0);
     // Add CT single qubit gates
@@ -202,22 +202,19 @@ fn test_naive_pe_with_ct(){
     println!("Final adj {}", final_stab_transform.adjoint());
     println!("Ref {}", ct_ref);
     println!("Ref adj {}", ct_ref.adjoint());
-    assert_eq!(
-        final_stab_transform,
-        ct_ref
-    );
+    assert_eq!(final_stab_transform, ct_ref);
     let ref_commands = [
         MockCommand::CX(1, 2),
         MockCommand::CX(2, 3),
         MockCommand::Rz(3, 0.3),
         MockCommand::S(0), // TODO Generates H here, which causes a sign error.
-        MockCommand::V(0) // Potential sign error in adjoint() or compose().
+        MockCommand::V(0), // Potential sign error in adjoint() or compose().
     ];
 
     assert_eq!(mock.commands(), &ref_commands);
 }
 
 #[test]
-fn test_naive_pe_ct_only(){
+fn test_naive_pe_ct_only() {
     assert!(true)
 }

@@ -3,17 +3,12 @@ pub(crate) mod qiskit;
 extern crate pyo3;
 extern crate pyo3_ffi;
 
-use std::{
-    borrow::{Borrow, BorrowMut},
-    collections::VecDeque,
-};
+use std::borrow::Borrow;
 
 use pyo3::prelude::*;
 use synir::{
-    data_structures::pauli_exponential::{merge_commuting_pp, merge_repeats, push_clifford_angles},
-    data_structures::{
-        Angle, CliffordTableau, PauliExponential, PauliPolynomial, PropagateClifford,
-    },
+    data_structures::PauliExponential,
+    import::CircuitImporter,
     ir::{
         clifford_tableau::CliffordTableauSynthStrategy,
         pauli_exponential::PauliExponentialSynthesizer,
@@ -25,7 +20,9 @@ use crate::wrapper::qiskit::QiskitSynIR;
 
 #[pyclass]
 pub struct PyPauliExponential {
-    pe: PauliExponential,
+    /// The gate-by-gate import lives in `synir::import` so that `synir`'s own tests exercise the
+    /// same code path this wrapper does. `qiskit_to_synir` feeds gates in reverse circuit order.
+    importer: CircuitImporter,
     pauli_strategy: PauliPolynomialSynthStrategy,
     tableau_strategy: CliffordTableauSynthStrategy,
 }
@@ -34,9 +31,8 @@ pub struct PyPauliExponential {
 impl PyPauliExponential {
     #[new]
     pub fn new(num_qubits: usize) -> Self {
-        let pe = PauliExponential::new(VecDeque::from(vec![]), CliffordTableau::new(num_qubits));
         Self {
-            pe,
+            importer: CircuitImporter::new(num_qubits),
             pauli_strategy: PauliPolynomialSynthStrategy::Naive,
             tableau_strategy: CliffordTableauSynthStrategy::PermRowCol,
         }
@@ -62,82 +58,44 @@ impl PyPauliExponential {
     }
 
     pub fn add_h(&mut self, target: usize) {
-        self.pe.h(target);
+        self.importer.add_h(target);
     }
 
     pub fn add_v(&mut self, target: usize) {
-        self.pe.v(target);
+        self.importer.add_v(target);
     }
 
     pub fn add_s(&mut self, target: usize) {
-        self.pe.s(target);
+        self.importer.add_s(target);
     }
 
     pub fn add_s_dgr(&mut self, target: usize) {
-        self.pe.s_dgr(target);
+        self.importer.add_s_dgr(target);
     }
 
     pub fn add_x(&mut self, target: usize) {
-        self.pe.x(target);
+        self.importer.add_x(target);
     }
 
     pub fn add_y(&mut self, target: usize) {
-        self.pe.y(target);
+        self.importer.add_y(target);
     }
 
     pub fn add_z(&mut self, target: usize) {
-        self.pe.z(target);
+        self.importer.add_z(target);
     }
 
     pub fn add_cx(&mut self, control: usize, target: usize) {
-        self.pe.cx(control, target);
+        self.importer.add_cx(control, target);
     }
 
     pub fn add_rz(&mut self, target: usize, angle: f64) {
-        let mut angle = Angle::from_angle(angle);
-        let maybe_pi4_rot = angle.to_pi4_rotation();
-        if maybe_pi4_rot.is_ok() {
-            match maybe_pi4_rot.unwrap() {
-                0 => return,
-                2 => return self.add_s(target),
-                4 => return self.add_z(target),
-                6 => return self.add_s_dgr(target),
-                n => angle = Angle::from_pi4_rotation(n), //Non-Clifford
-            }
-        }
-        let size = self.pe.size();
-        let mut ppvec = self.pe.mut_chains();
-
-        let newpp = PauliPolynomial::from_hamiltonian(vec![(
-            &to_pauli_component(size, &target, 'Z'),
-            angle,
-        )]);
-        /*let first_pp = ppvec.front_mut();
-        if first_pp.is_some() {
-            let pp: &mut PauliPolynomial = first_pp.unwrap();
-            if pp.commutes_with(&newpp){
-                pp.append_other(newpp);
-                return;
-            }
-        }*/
-        ppvec.push_front(newpp);
+        self.importer.add_rz(target, angle);
     }
 
     pub fn print(&self) {
-        pe_print_helper(self.pe.borrow());
+        pe_print_helper(self.importer.raw());
     }
-}
-
-fn to_pauli_component(size: usize, target: &usize, pauli: char) -> String {
-    let mut term = String::new();
-    for i in 0..size {
-        if i == *target {
-            term.push(pauli);
-        } else {
-            term.push('I');
-        }
-    }
-    term
 }
 
 pub fn synthesize<G>(pe: &mut PyPauliExponential, circuit: &mut G)
@@ -148,11 +106,10 @@ where
         pe.pauli_strategy.clone(),
         pe.tableau_strategy.clone(),
     );
-    let mut pe = std::mem::take(&mut pe.pe);
-    merge_commuting_pp(pe.borrow_mut());
-    merge_repeats(pe.borrow_mut());
-    push_clifford_angles(pe.borrow_mut());
-    pe_print_helper(&pe);
+    let num_qubits = pe.importer.num_qubits();
+    let importer = std::mem::replace(&mut pe.importer, CircuitImporter::new(num_qubits));
+    let pe = importer.finish();
+    pe_print_helper(pe.borrow());
     synth.synthesize(pe, circuit);
 }
 

@@ -1,6 +1,7 @@
 extern crate rand;
 
 use crate::common::mock_circuit::{MockCircuit, MockCommand};
+use crate::common::tableau_from_unitary::assert_realises_tableau;
 use itertools::Itertools;
 use synir::data_structures::{Angle, CliffordTableau, PropagateClifford};
 use synir::ir::clifford_tableau::CallbackCliffordSynthesizer;
@@ -28,7 +29,16 @@ macro_rules! test_clifford {
                 if $expected.is_some() {
                     assert_eq!(mock.commands(), $expected.unwrap());
                 }
-                assert!(mock.equals_clifford_tableau(&clifford_tableau, new_ct.get_permutation()));
+                assert!(
+                    mock.equals_clifford_tableau(&clifford_tableau, new_ct.get_permutation()),
+                    "synthesized circuit does not reproduce the input tableau"
+                );
+                assert_realises_tableau(
+                    &mock,
+                    &clifford_tableau,
+                    new_ct.get_permutation(),
+                    concat!(module_path!(), "::", stringify!($fun)),
+                );
             }
         }
     };
