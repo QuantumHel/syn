@@ -32,14 +32,17 @@ class SynPyCliffordPlugin(HighLevelSynthesisPlugin):
 
 def qiskit_to_synir(circuit: QuantumCircuit) -> PyPauliExponential:
     #basis_gates=["cx", "h", "rz", "rx", "s"]
-    basis_gates=["cx", "h", "rz"]
+    basis_gates=["cx", "h", "rz", "x"]
+    print(f"Got circuit with {circuit.count_ops()}")
 
     if not all(gate in basis_gates for gate in circuit.count_ops()):
+        print("Writing the circuit to the correct basis gates")
         new_circuit = transpile(circuit, basis_gates=basis_gates, routing_method="none", optimization_level=0)
     else:
+        print("No basis change needed.")
         new_circuit = circuit
+    print("Original after Qiskit", new_circuit.count_ops())
     pe = PyPauliExponential(new_circuit.num_qubits)
-    print("Original after Qiskit", new_circuit)
     for gate in reversed(new_circuit.data):
         qubit_indices = [new_circuit.find_bit(q).index for q in gate.qubits]
         if gate.name == "cx":
@@ -50,6 +53,10 @@ def qiskit_to_synir(circuit: QuantumCircuit) -> PyPauliExponential:
             pe.add_rz(*qubit_indices, gate.params[0])
         elif gate.name == "s":
             pe.add_rz(*qubit_indices, pi/2)
+        elif gate.name == "x":
+            pe.add_h(*qubit_indices)
+            pe.add_rz(*qubit_indices, pi)
+            pe.add_h(*qubit_indices)
         elif gate.name == "rx":
             pe.add_h(*qubit_indices)
             pe.add_rz(*qubit_indices, gate.params[0])
