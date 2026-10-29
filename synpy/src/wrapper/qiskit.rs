@@ -227,8 +227,6 @@ impl CliffordGates for QiskitSynIR {
             }
         })
     }
-    
-    
 }
 
 impl Gates for QiskitSynIR {

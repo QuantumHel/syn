@@ -2,7 +2,6 @@
 //!
 //! See [`PauliExponentialSynthesizer`].
 
-use core::num;
 use std::collections::VecDeque;
 
 use crate::{
@@ -46,11 +45,19 @@ use crate::ir::{
 /// # Panics
 ///
 /// Panics if the residual tableau after Clifford synthesis is not a bare permutation, which would
-/// mean one of the two halves failed to reduce.
+/// mean one of the two halves failed to reduce, or if a connectivity set with
+/// [`set_connectivity`](Self::set_connectivity) does not fit the circuit — see
+/// [`Connectivity::validate_for`].
 #[derive(Default)]
 pub struct PauliExponentialSynthesizer {
     pauli_strategy: PauliPolynomialSynthStrategy,
     clifford_strategy: CliffordTableauSynthStrategy,
+    /// `None` means "no hardware constraints": each connectivity-aware strategy is handed
+    /// `Connectivity::complete(num_qubits)`, which is what this type used unconditionally before
+    /// the graph could be supplied. The right default depends on the qubit count, which is only
+    /// known inside `synthesize`, so it cannot be a bare `Connectivity` — and `Connectivity`'s own
+    /// `Default` is a *zero*-node graph, which no circuit can be synthesized against.
+    connectivity: Option<Connectivity>,
 }
 
 impl PauliExponentialSynthesizer {
@@ -62,6 +69,7 @@ impl PauliExponentialSynthesizer {
         Self {
             pauli_strategy,
             clifford_strategy,
+            connectivity: None,
         }
     }
 
@@ -82,6 +90,28 @@ impl PauliExponentialSynthesizer {
         self.clifford_strategy = clifford_strategy;
         self
     }
+
+    /// Constrains synthesis to a hardware coupling graph.
+    ///
+    /// Both halves route against it — the polynomial half under
+    /// [`PauliPolynomialSynthStrategy::PSGS`] and the Clifford half under
+    /// [`CliffordTableauSynthStrategy::PermRowCol`] — so every two-qubit gate emitted by those
+    /// strategies lands on an edge of the graph, with no routing pass afterwards.
+    ///
+    /// Unset (the default) means all-to-all. The `Naive` strategies ignore connectivity by
+    /// construction: pairing one with a graph yields a circuit that does not fit it.
+    ///
+    /// The graph must cover exactly `0..num_qubits` and be connected; see
+    /// [`Connectivity::validate_for`].
+    pub fn set_connectivity(&mut self, connectivity: Connectivity) -> &mut Self {
+        self.connectivity = Some(connectivity);
+        self
+    }
+
+    /// The hardware graph synthesis targets, or `None` for all-to-all.
+    pub fn get_connectivity(&self) -> Option<&Connectivity> {
+        self.connectivity.as_ref()
+    }
 }
 
 impl<G> Synthesizer<PauliExponential, G> for PauliExponentialSynthesizer
@@ -94,6 +124,20 @@ where
             clifford_tableau,
         } = pauli_exponential;
         let num_qubits = clifford_tableau.size();
+        // Resolved once, and shared by both halves: building `Connectivity::complete` is O(n^2)
+        // edges plus a Floyd-Warshall, and it used to be paid twice.
+        let connectivity = match &self.connectivity {
+            Some(connectivity) => {
+                // The Python layer reports this as a `ValueError` before synthesis starts; this is
+                // the backstop for direct Rust callers, and it turns what would otherwise be an
+                // index panic deep inside petgraph into a sentence naming the problem.
+                if let Err(error) = connectivity.validate_for(num_qubits) {
+                    panic!("{error}");
+                }
+                connectivity.clone()
+            }
+            None => Connectivity::complete(num_qubits),
+        };
         let ct = match pauli_polynomials.is_empty() {
             true => CliffordTableau::new(num_qubits), // Skip PauliPolynomial synthesis
             false => match self.pauli_strategy {
@@ -103,7 +147,7 @@ where
                 }
                 PauliPolynomialSynthStrategy::PSGS => {
                     let mut pauli_synthesizer = PSGSPauliPolynomialSynthesizer::default();
-                    pauli_synthesizer.set_connectivity(Connectivity::complete(num_qubits));
+                    pauli_synthesizer.set_connectivity(connectivity.clone());
                     pauli_synthesizer.synthesize(pauli_polynomials, repr)
                 }
             },
@@ -133,8 +177,7 @@ where
                 clifford_synthesizer.synthesize_adjoint(combined_ct, repr)
             }
             CliffordTableauSynthStrategy::PermRowCol => {
-                let mut clifford_synthesizer =
-                    PermRowColCliffordSynthesizer::new(Connectivity::complete(num_qubits));
+                let mut clifford_synthesizer = PermRowColCliffordSynthesizer::new(connectivity);
                 clifford_synthesizer.synthesize_adjoint(combined_ct, repr)
             }
         };

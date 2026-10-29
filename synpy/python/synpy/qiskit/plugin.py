@@ -17,8 +17,13 @@ class SynPyCliffordPlugin(HighLevelSynthesisPlugin):
     Register it as a ``clifford`` synthesis plugin to have Qiskit's ``HighLevelSynthesis`` pass
     route Clifford blocks through :class:`PyCliffordTableau`.
 
-    Synthesis currently uses the naive strategy, which assumes all-to-all connectivity -- the
-    ``coupling_map`` and ``target`` arguments are accepted but not yet consulted.
+    Synthesis goes through ``PyCliffordTableau.synthesize()``, which uses the naive strategy and so
+    assumes all-to-all connectivity; the ``coupling_map`` and ``target`` arguments are accepted for
+    the plugin interface but not consulted. Routing them through
+    :func:`synpy.qiskit.connectivity.coupling_map_to_connectivity` would need
+    ``PyCliffordTableau`` to gain a PermRowCol path first -- the connectivity-aware synthesis
+    reachable today goes through :func:`qiskit_to_synir` and
+    ``PyPauliExponential.synthesize_to_qiskit``.
     """
 
     def __init__(self) -> None:
@@ -79,15 +84,18 @@ def qiskit_to_synir(circuit: QuantumCircuit) -> PyPauliExponential:
     -------
     PyPauliExponential
         A builder holding the whole circuit. Synthesize it with ``synthesize_to_qiskit``, which
-        consumes it.
+        consumes it. Pass that method a connectivity -- see
+        :func:`synpy.qiskit.connectivity.target_to_connectivity` -- to constrain where two-qubit
+        gates may be placed; note the graph spans the whole device, so ``circuit`` must be
+        device-width for a device's ``Target`` to fit it.
 
     Raises
     ------
     Exception
         If a gate outside the supported set survives transpilation.
     """
-    #basis_gates=["cx", "h", "rz", "rx", "s"]
-    basis_gates=["cx", "h", "rz", "x"]
+    # basis_gates=["cx", "h", "rz", "rx", "s"]
+    basis_gates = ["cx", "h", "rz", "x"]
 
     if not all(gate in basis_gates for gate in circuit.count_ops()):
         new_circuit = transpile(circuit, basis_gates=basis_gates, routing_method="none", optimization_level=0)
@@ -103,7 +111,7 @@ def qiskit_to_synir(circuit: QuantumCircuit) -> PyPauliExponential:
         elif gate.name == "rz":
             pe.add_rz(*qubit_indices, gate.params[0])
         elif gate.name == "s":
-            pe.add_rz(*qubit_indices, pi/2)
+            pe.add_rz(*qubit_indices, pi / 2)
         elif gate.name == "x":
             pe.add_h(*qubit_indices)
             pe.add_rz(*qubit_indices, pi)

@@ -33,4 +33,19 @@ Synthesize a Qiskit circuit::
 
 The result is correct up to ``sink.get_permutation()``, a final qubit relabelling that the
 sink records rather than emitting as swap gates.
+
+Constrain synthesis to a device's coupling graph by passing a connectivity. Both halves have to
+be the architecture-aware strategies for the *whole* circuit to fit::
+
+    from synpy.qiskit.connectivity import target_to_connectivity
+
+    pe = qiskit_to_synir(circuit)
+    pe.set_pauli_strategy("PSGS")
+    pe.set_tableau_strategy("PermRowCol")
+
+    sink = QiskitSynIR(circuit.copy_empty_like())
+    pe.synthesize_to_qiskit(sink, target_to_connectivity(backend.target))
+
+Every two-qubit gate in the result then lies on an edge of the graph, with no routing pass
+afterwards.
 """

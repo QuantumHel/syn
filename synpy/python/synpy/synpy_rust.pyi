@@ -179,8 +179,22 @@ class PyPauliExponential(object):
         adds nothing.
         """
         ...
-    def synthesize_to_qiskit(self, circuit: "QiskitSynIR") -> None:
-        """Synthesize everything accumulated so far into ``circuit``, and reset this builder."""
+    def synthesize_to_qiskit(self, circuit: "QiskitSynIR", connectivity: "PyConnectivity | None" = None) -> None:
+        """Synthesize everything accumulated so far into ``circuit``, and reset this builder.
+
+        ``connectivity`` constrains where two-qubit gates may go; ``None`` means all-to-all. Its
+        qubit count must match this builder's.
+
+        Only ``"PSGS"`` (polynomial half) and ``"PermRowCol"`` (Clifford half) consult it, and
+        conformance takes both. One ``"Naive"`` half raises ``UserWarning``; two raise
+        ``ValueError``, since then nothing would consult it.
+
+        Raises
+        ------
+        ValueError
+            If ``connectivity`` does not cover exactly this builder's qubits, is disconnected, or
+            both strategies are ``"Naive"``. The builder is left intact in that case.
+        """
         ...
     def print(self) -> None:
         """Print the accumulated gadgets and tableau, for debugging.
@@ -188,6 +202,68 @@ class PyPauliExponential(object):
         The tableau shown is still in the inverse form the importer keeps it in.
         """
         ...
+
+class PyConnectivity(object):
+    """A hardware coupling graph: which qubit pairs may host a two-qubit gate.
+
+    Qubits are ``0`` through ``num_qubits - 1`` and couplings are undirected, since a ``cx`` can
+    be reversed with four Hadamards. Pass one to
+    :meth:`PyPauliExponential.synthesize_to_qiskit` and every two-qubit gate synthesis emits will
+    lie on an edge of it.
+
+    Synthesis requires the graph to cover exactly ``0..num_qubits`` and to be connected: it routes
+    two-qubit gates along paths, and there is no path between components.
+
+    Build one from a Qiskit backend with
+    :func:`synpy.qiskit.connectivity.target_to_connectivity`.
+    """
+
+    def __init__(self, num_qubits: int, edges: list[tuple[int, int]] | None = None) -> None:
+        """Create a graph over ``num_qubits`` qubits, coupled by ``edges``.
+
+        Couplings are undirected, so ``(i, j)`` and ``(j, i)`` are one edge and duplicates are
+        dropped; self-loops are ignored. Qubits named by no edge are kept as isolated nodes, so the
+        register width is always exactly ``num_qubits``.
+
+        Raises
+        ------
+        ValueError
+            If a coupling names a qubit outside ``0..num_qubits``.
+        """
+        ...
+    def __new__(*args: Any, **kwargs: Any) -> Any: ...
+    @staticmethod
+    def line(num_qubits: int) -> "PyConnectivity":
+        """A path graph: ``0 - 1 - ... - (num_qubits - 1)``."""
+        ...
+    @staticmethod
+    def grid(num_rows: int, num_cols: int) -> "PyConnectivity":
+        """A rectangular lattice, with qubit ``r * num_cols + c`` at row ``r``, column ``c``."""
+        ...
+    @staticmethod
+    def complete(num_qubits: int) -> "PyConnectivity":
+        """All-to-all: every qubit coupled to every other. The "no constraints" case."""
+        ...
+    def num_qubits(self) -> int:
+        """How many qubits the graph covers."""
+        ...
+    def edges(self) -> list[tuple[int, int]]:
+        """The couplings. Undirected, so the order within a pair means nothing."""
+        ...
+    def has_edge(self, i: int, j: int) -> bool:
+        """Whether ``i`` and ``j`` are directly coupled."""
+        ...
+    def is_connected(self) -> bool:
+        """Whether every qubit can reach every other one. Synthesis requires this."""
+        ...
+    def edge_count(self) -> int:
+        """The number of couplings.
+
+        Deliberately not ``__len__``: a graph with no couplings is still a graph, and making it
+        falsy would turn ``if connectivity:`` into a silent bug.
+        """
+        ...
+    def __repr__(self) -> str: ...
 
 class QiskitSynIR(object):
     """A gate sink backed by a Qiskit ``QuantumCircuit``.
@@ -262,6 +338,7 @@ __all__ = [
     "PyCommand",
     "synthesize_pauli_exponential",
     "PyPauliExponential",
+    "PyConnectivity",
     "QiskitSynIR",
 ]
 

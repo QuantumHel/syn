@@ -10,6 +10,7 @@
 //! | Python name | Rust type | Purpose |
 //! |---|---|---|
 //! | `PyPauliExponential` | [`PyPauliExponential`] | Build a circuit gate by gate, then synthesize it |
+//! | `PyConnectivity` | [`PyConnectivity`] | A hardware coupling graph, to constrain synthesis |
 //! | `PyCliffordTableau` | [`PyCliffordTableau`] | A Clifford operator; synthesizes on its own |
 //! | `QiskitSynIR` | [`QiskitSynIR`] | Gate sink writing into a Qiskit `QuantumCircuit` |
 //! | `PyCommand` | [`PyCommand`] | One emitted gate, as a Python enum |
@@ -19,11 +20,13 @@
 //! The Python package that wraps this module — including the Qiskit transpiler plugin — lives in
 //! `synpy/python/synpy`.
 
+pub mod connectivity;
 pub mod synthesis;
 pub mod tableau;
 pub mod validation;
 pub mod wrapper;
 
+use crate::connectivity::PyConnectivity;
 use crate::synthesis::synthesize_pauli_exponential;
 use crate::synthesis::{PyCommand, PyPauliString};
 use crate::tableau::PyCliffordTableau;
@@ -42,6 +45,7 @@ fn synpy_rust(m: &Bound<'_, PyModule>) -> PyResult<()> {
     let _ = m.add_function(wrap_pyfunction!(synthesize_pauli_exponential, m)?);
     m.add_class::<PyCliffordTableau>()?;
     m.add_class::<PyPauliExponential>()?;
+    m.add_class::<PyConnectivity>()?;
     m.add_class::<QiskitSynIR>()?;
     Ok(())
 }

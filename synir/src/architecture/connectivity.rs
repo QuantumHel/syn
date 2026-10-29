@@ -32,6 +32,52 @@ fn get_non_cutting_vertices(
         .collect()
 }
 
+/// Why a [`Connectivity`] cannot be used as given.
+#[derive(Debug, PartialEq)]
+pub enum ConnectivityError {
+    /// A coupling names a qubit outside `0..num_qubits`.
+    EdgeOutOfRange {
+        edge: (GraphIndex, GraphIndex),
+        num_qubits: usize,
+    },
+    /// The graph's qubits are not exactly `0..num_qubits`.
+    ///
+    /// Synthesis indexes tableau columns and polynomial chains *by qubit number*, so the right
+    /// count is not enough: [`remove_node`](Connectivity::remove_node) leaves index gaps, and a
+    /// gapped graph would have synthesis index its arrays with numbers that are out of range.
+    SizeMismatch {
+        nodes: Vec<GraphIndex>,
+        num_qubits: usize,
+    },
+    /// Some qubits are unreachable from others, so a two-qubit gate between them cannot be routed.
+    Disconnected {
+        root: GraphIndex,
+        unreachable: Vec<GraphIndex>,
+    },
+}
+
+impl std::fmt::Display for ConnectivityError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ConnectivityError::EdgeOutOfRange { edge, num_qubits } => {
+                write!(f, "coupling {edge:?} names a qubit outside 0..{num_qubits}")
+            }
+            ConnectivityError::SizeMismatch { nodes, num_qubits } => write!(
+                f,
+                "connectivity has qubits {nodes:?} but the circuit has {num_qubits} qubits; \
+                 synthesis indexes by qubit number, so the graph must cover exactly 0..{num_qubits}"
+            ),
+            ConnectivityError::Disconnected { root, unreachable } => write!(
+                f,
+                "connectivity is disconnected: qubits {unreachable:?} cannot be reached from \
+                 qubit {root}; a two-qubit gate between components cannot be routed"
+            ),
+        }
+    }
+}
+
+impl std::error::Error for ConnectivityError {}
+
 /// A hardware coupling graph, with shortest paths and cut vertices precomputed.
 ///
 /// Qubits are node indices, edges are couplings, and an edge weight is the cost of routing across
@@ -46,8 +92,8 @@ fn get_non_cutting_vertices(
 ///
 /// The flip side: every mutation ([`remove_node`](Self::remove_node),
 /// [`add_edge`](Self::add_edge), [`add_weighted_edge`](Self::add_weighted_edge)) redoes that work
-/// for the whole graph. Build the graph with [`from_edges`](Self::from_edges) in one go rather
-/// than edge by edge.
+/// for the whole graph. Build the graph in one go with [`from_edges`](Self::from_edges) or
+/// [`from_edges_with_size`](Self::from_edges_with_size) rather than edge by edge.
 ///
 /// ```
 /// use synir::architecture::connectivity::Connectivity;
@@ -127,6 +173,51 @@ impl Connectivity {
         } else {
             Connectivity::new(1)
         }
+    }
+
+    /// Builds a graph with exactly `num_qubits` qubits, coupling each listed pair with weight 1.
+    ///
+    /// Unlike [`from_edges`](Self::from_edges), the register width is given rather than inferred,
+    /// so an isolated qubit at the end of the register survives. That is what a Qiskit `Target`
+    /// hands over: a qubit count and an edge list, separately.
+    ///
+    /// Couplings are undirected, so `(i, j)` and `(j, i)` are the same edge and only one is kept;
+    /// self-loops carry no routing information and are ignored. The precomputation runs once,
+    /// however many edges there are — unlike a loop over [`add_edge`](Self::add_edge), which
+    /// redoes it per edge.
+    ///
+    /// # Errors
+    ///
+    /// [`ConnectivityError::EdgeOutOfRange`] if a coupling names a qubit `>= num_qubits`.
+    pub fn from_edges_with_size(
+        num_qubits: usize,
+        edges: &[(GraphIndex, GraphIndex)],
+    ) -> Result<Self, ConnectivityError> {
+        let mut graph: StableUnGraph<NodeWeight, EdgeWeight, GraphIndex> =
+            StableUnGraph::with_capacity(num_qubits, edges.len());
+        for _ in 0..num_qubits {
+            graph.add_node(());
+        }
+        let mut seen = std::collections::HashSet::with_capacity(edges.len());
+        for &(i, j) in edges {
+            if i >= num_qubits || j >= num_qubits {
+                return Err(ConnectivityError::EdgeOutOfRange {
+                    edge: (i, j),
+                    num_qubits,
+                });
+            }
+            if i == j {
+                continue;
+            }
+            // `StableUnGraph` happily stores parallel edges; a symmetrized coupling map would
+            // otherwise leave `edges()` and `edge_count()` reporting each coupling twice.
+            if !seen.insert((i.min(j), i.max(j))) {
+                continue;
+            }
+            let (a, b) = (graph.from_index(i), graph.from_index(j));
+            graph.add_edge(a, b, 1);
+        }
+        Ok(Connectivity::from_graph(graph))
     }
 
     /// Builds a graph from `(i, j, weight)` couplings, for hardware where routing costs differ.
@@ -230,6 +321,52 @@ impl Connectivity {
         path
     }
 
+    /// Whether every qubit can reach every other one.
+    ///
+    /// A lookup, not a search: unreachability is already recorded in the shortest-path tree that
+    /// construction computes. The empty graph is vacuously connected.
+    pub fn is_connected(&self) -> bool {
+        let mut nodes = self.graph.node_indices();
+        let Some(root) = nodes.next() else {
+            return true;
+        };
+        let root = root.index();
+        nodes.all(|node| self.prev[root][node.index()].is_some())
+    }
+
+    /// The qubits that cannot be reached from `i`.
+    pub fn unreachable_from(&self, i: GraphIndex) -> Vec<GraphIndex> {
+        self.graph
+            .node_indices()
+            .map(|node| node.index())
+            .filter(|&node| node != i && self.prev[i][node].is_none())
+            .collect()
+    }
+
+    /// Checks this graph can host synthesis of a `num_qubits`-qubit circuit.
+    ///
+    /// Both requirements come from how synthesis uses the graph: it indexes chains and tableau
+    /// columns by qubit number, and it folds qubits together along paths.
+    ///
+    /// # Errors
+    ///
+    /// [`ConnectivityError::SizeMismatch`] if the qubits are not exactly `0..num_qubits`, or
+    /// [`ConnectivityError::Disconnected`] if some qubit cannot reach some other.
+    pub fn validate_for(&self, num_qubits: usize) -> Result<(), ConnectivityError> {
+        let nodes = self.nodes();
+        if nodes.len() != num_qubits || nodes.iter().enumerate().any(|(i, node)| i != *node) {
+            return Err(ConnectivityError::SizeMismatch { nodes, num_qubits });
+        }
+        if !self.is_connected() {
+            let root = nodes.first().copied().unwrap_or(0);
+            return Err(ConnectivityError::Disconnected {
+                root,
+                unreachable: self.unreachable_from(root),
+            });
+        }
+        Ok(())
+    }
+
     /// Whether `v1` and `v2` are directly coupled.
     pub fn has_edge(&self, v1: GraphIndex, v2: GraphIndex) -> bool {
         self.edges().contains(&(v1, v2)) || self.edges().contains(&(v2, v1))
@@ -323,7 +460,7 @@ impl Architecture for Connectivity {
 mod tests {
     use crate::architecture::{Architecture, EdgeWeight, GraphIndex, LadderError};
 
-    use super::Connectivity;
+    use super::{Connectivity, ConnectivityError};
     fn setup_weighted() -> Vec<(GraphIndex, GraphIndex, EdgeWeight)> {
         vec![
             (0, 1, 7),
@@ -773,5 +910,122 @@ mod tests {
             new_architecture.get_cx_ladder(&[1, 4, 5], &1).unwrap(),
             vec![(1, 5), (5, 4)]
         );
+    }
+
+    #[test]
+    fn test_from_edges_with_size_keeps_isolated_tail() {
+        // `from_edges` would infer three qubits here and lose qubit 3.
+        let architecture = Connectivity::from_edges_with_size(4, &[(0, 1), (1, 2)]).unwrap();
+        assert_eq!(architecture.nodes(), vec![0, 1, 2, 3]);
+        assert_eq!(architecture.edge_count(), 2);
+        assert_eq!(Connectivity::from_edges(&[(0, 1), (1, 2)]).node_count(), 3);
+    }
+
+    #[test]
+    fn test_from_edges_with_size_matches_line() {
+        let architecture =
+            Connectivity::from_edges_with_size(4, &[(0, 1), (1, 2), (2, 3)]).unwrap();
+        assert_eq!(architecture.edges(), Connectivity::line(4).edges());
+    }
+
+    #[test]
+    fn test_from_edges_with_size_rejects_out_of_range() {
+        assert_eq!(
+            Connectivity::from_edges_with_size(2, &[(0, 5)]).unwrap_err(),
+            ConnectivityError::EdgeOutOfRange {
+                edge: (0, 5),
+                num_qubits: 2
+            }
+        );
+    }
+
+    #[test]
+    fn test_from_edges_with_size_ignores_self_loops_and_duplicates() {
+        // A symmetrized Qiskit coupling map hands over both directions of every pair.
+        let architecture =
+            Connectivity::from_edges_with_size(3, &[(1, 1), (0, 1), (1, 0), (1, 2)]).unwrap();
+        assert_eq!(architecture.edge_count(), 2);
+        assert_eq!(architecture.nodes(), vec![0, 1, 2]);
+    }
+
+    #[test]
+    fn test_is_connected() {
+        assert!(Connectivity::line(5).is_connected());
+        assert!(Connectivity::grid(2, 3).is_connected());
+        assert!(Connectivity::complete(3).is_connected());
+        assert!(Connectivity::new(1).is_connected());
+        assert!(Connectivity::default().is_connected()); // vacuous: no qubits
+        assert!(!Connectivity::new(2).is_connected()); // two isolated qubits
+        assert!(!Connectivity::from_edges_with_size(4, &[(0, 1), (2, 3)])
+            .unwrap()
+            .is_connected());
+        assert!(!Connectivity::from_edges_with_size(3, &[(0, 1)])
+            .unwrap()
+            .is_connected());
+    }
+
+    #[test]
+    fn test_unreachable_from() {
+        let architecture = Connectivity::from_edges_with_size(4, &[(0, 1), (2, 3)]).unwrap();
+        assert_eq!(architecture.unreachable_from(0), vec![2, 3]);
+        assert_eq!(architecture.unreachable_from(2), vec![0, 1]);
+        assert!(Connectivity::line(4).unreachable_from(0).is_empty());
+    }
+
+    #[test]
+    fn test_is_connected_after_remove_node() {
+        let mut architecture = Connectivity::line(3);
+        architecture.remove_node(1);
+        assert!(!architecture.is_connected());
+        assert_eq!(architecture.unreachable_from(0), vec![2]);
+    }
+
+    #[test]
+    fn test_validate_for() {
+        assert!(Connectivity::line(4).validate_for(4).is_ok());
+        assert!(Connectivity::complete(1).validate_for(1).is_ok());
+        assert!(matches!(
+            Connectivity::line(4).validate_for(5),
+            Err(ConnectivityError::SizeMismatch { .. })
+        ));
+        assert!(matches!(
+            Connectivity::line(4).validate_for(3),
+            Err(ConnectivityError::SizeMismatch { .. })
+        ));
+        assert!(matches!(
+            Connectivity::from_edges_with_size(4, &[(0, 1), (2, 3)])
+                .unwrap()
+                .validate_for(4),
+            Err(ConnectivityError::Disconnected { .. })
+        ));
+    }
+
+    #[test]
+    fn test_validate_for_rejects_gapped_indices() {
+        // The right *count* is not enough: `remove_node` leaves the surviving qubits with their
+        // original numbers, and synthesis would index its arrays with the out-of-range ones.
+        let mut architecture = Connectivity::complete(4);
+        architecture.remove_node(1);
+        assert_eq!(architecture.node_count(), 3);
+        assert!(matches!(
+            architecture.validate_for(3),
+            Err(ConnectivityError::SizeMismatch { .. })
+        ));
+    }
+
+    #[test]
+    fn test_connectivity_error_messages_name_the_problem() {
+        let message = Connectivity::line(4)
+            .validate_for(3)
+            .unwrap_err()
+            .to_string();
+        assert!(message.contains("the circuit has 3 qubits"), "{message}");
+
+        let message = Connectivity::from_edges_with_size(4, &[(0, 1), (2, 3)])
+            .unwrap()
+            .validate_for(4)
+            .unwrap_err()
+            .to_string();
+        assert!(message.contains("disconnected"), "{message}");
     }
 }

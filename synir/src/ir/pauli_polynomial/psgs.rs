@@ -22,14 +22,19 @@ use bitvec::{bitvec, order::Lsb0};
 /// ([`PauliPolynomial::clear_gadget`](crate::data_structures::PauliPolynomial::clear_gadget))
 /// rather than removing them, so the positional masks held across recursive calls stay valid.
 ///
-/// Set the target hardware graph with [`set_connectivity`](Self::set_connectivity); the default is
-/// an empty graph, so callers that do not set one get a single-qubit architecture.
+/// Set the target hardware graph with [`set_connectivity`](Self::set_connectivity). This is not
+/// optional: the default is an **empty** graph — zero qubits, not one — so a default-constructed
+/// synthesizer can synthesize nothing at all. Callers that do not care about connectivity should
+/// pass [`Connectivity::complete`], which is what
+/// [`PauliExponentialSynthesizer`](crate::ir::pauli_exponential::PauliExponentialSynthesizer) does
+/// on their behalf.
 ///
 /// # Panics
 ///
-/// Panics if handed an empty deque, or if the recursion finishes with a gadget left
-/// unsynthesized — a bug rather than a usage error, but one worth failing loudly on, since
-/// otherwise it surfaces as a silently wrong unitary.
+/// Panics if handed an empty deque, if the connectivity does not fit the polynomials (see
+/// [`Connectivity::validate_for`]), or if the recursion finishes with a gadget left
+/// unsynthesized — the last is a bug rather than a usage error, but one worth failing loudly on,
+/// since otherwise it surfaces as a silently wrong unitary.
 #[derive(Default)]
 pub struct PSGSPauliPolynomialSynthesizer {
     connectivity: Connectivity,
@@ -62,6 +67,11 @@ where
             panic!("You are trying to synthesize an empty PauliPolynomial.")
         }
         let num_qubits = &pauli_polynomials[0].num_qubits();
+        // Without this, an unset (or ill-fitting) graph surfaces as `Option::unwrap()` on `None`
+        // inside `pick_qubit`, several recursion levels down.
+        if let Err(error) = self.connectivity.validate_for(*num_qubits) {
+            panic!("PSGS: {error}");
+        }
         let mut clifford_tableau = CliffordTableau::new(*num_qubits);
         let mut maybe_pp = pauli_polynomials.pop_front();
         while maybe_pp.as_ref().is_some() {
@@ -84,7 +94,13 @@ where
             // used to surface only as a wrong unitary, many gates downstream.
             let unsynthesized = (0..pauli_polynomial.length())
                 .filter(|i| pauli_polynomial.pauli_gadget(*i).weight() > 0)
-                .map(|i| format!("{} @ {}", pauli_polynomial.pauli_gadget(i), pauli_polynomial.angle(i)))
+                .map(|i| {
+                    format!(
+                        "{} @ {}",
+                        pauli_polynomial.pauli_gadget(i),
+                        pauli_polynomial.angle(i)
+                    )
+                })
                 .collect::<Vec<_>>();
             assert!(
                 unsynthesized.is_empty(),

@@ -33,11 +33,9 @@ pub struct PermRowColCliffordSynthesizer {
 impl PermRowColCliffordSynthesizer {
     /// Builds a synthesizer for the given hardware graph, with the default pivot heuristics.
     ///
-    /// The graph must have at least as many nodes as the tableau has qubits; that is checked at
-    /// synthesis time.
+    /// The graph must cover exactly the tableau's qubits and be connected; that is checked at
+    /// synthesis time, via [`Connectivity::validate_for`].
     pub fn new(connectivity: Connectivity) -> Self {
-        let size = connectivity.node_count();
-
         Self {
             connectivity,
             row_strategy: pick_row,
@@ -80,14 +78,14 @@ where
         repr: &mut G,
     ) -> CliffordTableau {
         let num_qubits = clifford_tableau.size();
-        let machine_size = self.connectivity.node_count();
+        // `num_qubits <= node_count()` used to be the check here, but a *wider* graph is just as
+        // broken as a narrower one: `pick_row` reads `clifford_tableau.stabilizer(qubit, ..)` for
+        // every graph node, so a node beyond the tableau panics on the tableau's own bounds check.
+        // What synthesis actually needs is qubits numbered exactly `0..num_qubits`.
+        if let Err(error) = self.connectivity.validate_for(num_qubits) {
+            panic!("{error}");
+        }
         let mut connectivity = self.connectivity.clone();
-        assert!(
-            num_qubits <= machine_size,
-            "Number of qubits {} exceeds machine size {}",
-            num_qubits,
-            machine_size
-        );
         // logical qubit remaining to be disconnected
         let mut remaining_columns = (0..num_qubits).collect::<Vec<_>>();
         // stabilizers / destabilizers that are not yet identity rows

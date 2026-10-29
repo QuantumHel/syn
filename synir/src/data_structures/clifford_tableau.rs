@@ -1570,7 +1570,7 @@ mod tests {
     }
 
     #[test]
-    fn test_double_adjoint(){
+    fn test_double_adjoint() {
         for ct in all_2qb_ct() {
             assert_eq!(ct, ct.adjoint().adjoint());
         }
@@ -1580,13 +1580,13 @@ mod tests {
     }
 
     #[test]
-    fn test_joint_compose_adjoint(){
+    fn test_joint_compose_adjoint() {
         for ct in all_2qb_ct() {
             let ct_adj = ct.adjoint();
             assert_eq!(ct.compose(&ct_adj), CliffordTableau::new(2));
             assert_eq!(ct_adj.compose(&ct), CliffordTableau::new(2));
         }
-        for ct in all_single_qubit_ct(){
+        for ct in all_single_qubit_ct() {
             let ct_adj = ct.adjoint();
             println!("CT {}", ct);
             println!("Adj {}", ct_adj);
@@ -1622,31 +1622,31 @@ mod tests {
                             PauliLetter::Y => {
                                 assert_eq!(PauliLetter::Z, ct.column(control).pauli(i));
                             }
-                            _ => { // Nothing changes
+                            _ => {
+                                // Nothing changes
                                 assert_eq!(*tup[control], ct.column(control).pauli(i));
                             }
                         }
                     }
-                    PauliLetter::X => 
-                        match tup[target] {
-                            PauliLetter::X => {
-                                assert_eq!(PauliLetter::X, ct.column(control).pauli(i));
-                                assert_eq!(PauliLetter::I, ct.column(target).pauli(i));
-                            }
-                            PauliLetter::Y => {
-                                assert_eq!(PauliLetter::Y, ct.column(control).pauli(i));
-                                assert_eq!(PauliLetter::Z, ct.column(target).pauli(i));
-                            }
-                            PauliLetter::I => {
-                                assert_eq!(PauliLetter::X, ct.column(control).pauli(i));
-                                assert_eq!(PauliLetter::X, ct.column(target).pauli(i));
-                            }
-                            PauliLetter::Z => {
-                                assert_eq!(PauliLetter::Y, ct.column(control).pauli(i));
-                                assert_eq!(PauliLetter::Y, ct.column(target).pauli(i));
-                                signs[i] = !signs[i];
-                            }
-                        },
+                    PauliLetter::X => match tup[target] {
+                        PauliLetter::X => {
+                            assert_eq!(PauliLetter::X, ct.column(control).pauli(i));
+                            assert_eq!(PauliLetter::I, ct.column(target).pauli(i));
+                        }
+                        PauliLetter::Y => {
+                            assert_eq!(PauliLetter::Y, ct.column(control).pauli(i));
+                            assert_eq!(PauliLetter::Z, ct.column(target).pauli(i));
+                        }
+                        PauliLetter::I => {
+                            assert_eq!(PauliLetter::X, ct.column(control).pauli(i));
+                            assert_eq!(PauliLetter::X, ct.column(target).pauli(i));
+                        }
+                        PauliLetter::Z => {
+                            assert_eq!(PauliLetter::Y, ct.column(control).pauli(i));
+                            assert_eq!(PauliLetter::Y, ct.column(target).pauli(i));
+                            signs[i] = !signs[i];
+                        }
+                    },
                     PauliLetter::Y => match tup[target] {
                         PauliLetter::I => {
                             assert_eq!(PauliLetter::Y, ct.column(control).pauli(i));
@@ -1686,7 +1686,10 @@ mod tests {
                     },
                 };
             }
-            assert!(signs.iter().zip(ct.signs.iter().by_vals()).all(|(b1, b2)| *b1 == b2));
+            assert!(signs
+                .iter()
+                .zip(ct.signs.iter().by_vals())
+                .all(|(b1, b2)| *b1 == b2));
         }
     }
 }

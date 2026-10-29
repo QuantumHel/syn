@@ -14,6 +14,32 @@ The workspace has two crates:
 - **`synpy`** — Python bindings (the `synpy_rust` extension module), plus the `synpy` Python
   package with Qiskit and pauliopt integrations.
 
+## Constraining synthesis to a coupling graph
+
+Synthesis can target a hardware graph directly, rather than emitting an all-to-all circuit and
+paying a routing pass afterwards:
+
+```python
+from synpy.qiskit.connectivity import target_to_connectivity
+from synpy.qiskit.plugin import qiskit_to_synir
+from synpy.synpy_rust import PyConnectivity, QiskitSynIR
+
+pe = qiskit_to_synir(circuit)
+pe.set_pauli_strategy("PSGS")          # the connectivity-aware gadget synthesizer
+pe.set_tableau_strategy("PermRowCol")  # ... and the connectivity-aware Clifford one
+
+sink = QiskitSynIR(circuit.copy_empty_like())
+pe.synthesize_to_qiskit(sink, target_to_connectivity(backend.target))
+result = sink.get_circuit()
+```
+
+Every two-qubit gate in `result` then lies on an edge of the graph. Omit the second argument for
+all-to-all. `PyConnectivity` also has `line`, `grid`, `complete` and a raw `(num_qubits, edges)`
+constructor, so no Qiskit backend is needed.
+
+Conformance takes *both* architecture-aware strategies: a `"Naive"` half routes wherever it likes.
+Pairing a graph with one `"Naive"` half warns, with two it raises.
+
 ## Documentation
 
 Build and open the Rust API docs:

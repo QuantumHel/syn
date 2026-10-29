@@ -111,6 +111,21 @@ impl MockCircuit {
         *clifford_tableau == ref_ct
     }
 
+    /// The emitted two-qubit gates that do **not** lie on a coupling-graph edge.
+    ///
+    /// The list form of [`fits_connectivity`](Self::fits_connectivity): a failing assertion can
+    /// then name the offending gate instead of just reporting `false`.
+    pub fn connectivity_violations(&self, connectivity: &Connectivity) -> Vec<MockCommand> {
+        self.commands
+            .iter()
+            .filter(|command| match command {
+                MockCommand::CX(i, j) | MockCommand::CZ(i, j) => !connectivity.has_edge(*i, *j),
+                _ => false,
+            })
+            .cloned()
+            .collect()
+    }
+
     pub fn fits_connectivity(&self, connectivity: &Connectivity) -> bool {
         let mut result = true;
         for command in self.commands.iter() {
